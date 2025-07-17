@@ -1,17 +1,34 @@
+import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Header from './components/Header';
-import Promotions from './components/Promotions';
-import Products from './components/Products';
 import Footer from './components/Footer';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
 
+import ProductPage from './pages/ProductPage';
+import CartPage from './pages/CartPage';
+import WishesPage from './pages/WishesPage';
+import Products from './components/Products';
+
 export default function App() {
-  return (
-    <div className="bg-gray-100 min-h-screen pb-16">
+  return(
+    <Router>
+      {/* Header */}
       <Header />
-      <Promotions />
-      <Products />
-      <Footer />
+
+      {/* Routing Area */}
+      <main className="min-h-screen pt-20 pb-20">
+        <Routes>
+          <Route path="/" element={<Products />} />
+          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/wishes" element={<WishesPage />} />
+        </Routes>
+      </main>
+
+      {/* Footer */}
+      {/* <Footer /> */}
+
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNavigation />
-    </div>
+    </Router>
   )
 }
