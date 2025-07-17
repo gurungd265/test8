@@ -28,16 +28,21 @@ public class SecurityConfig {
         this.jwtToken = jwtToken;
     }
 
+    //비밀번호 암호화를 위한 빈 설정
+    //회원가입 시 저장, 로그인 시 비교
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
 
+    //로그인 시 UsernamePasswordAuthenticationToken 인증 수행에 사용
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws  Exception{
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    //Vite 개발 서버에서 API 호출이 가능하도록 허용
+    //나중에 배포할 땐 실제 도메인으로 변경 필요
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -52,6 +57,8 @@ public class SecurityConfig {
         return source;
     }
 
+    //UsernamePasswordAuthenticationFilter 이전에 JWT 인증 필터를 등록
+    //JwtAuthenticationFilter는 요청에서 토큰을 추출하고 유효성 검사 및 인증 주입 수행
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -62,7 +69,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/hello").permitAll()
+                        .requestMatchers("/api/users/signup").permitAll()
+                        .requestMatchers("/api/test/hello").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 // JWT 필터를 UsernamePasswordAuthenticationFilter 이전에 추가
@@ -70,4 +84,5 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 }
