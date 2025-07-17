@@ -7,6 +7,7 @@ import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import WishesPage from './pages/WishesPage';
 import Products from './components/Products';
+import LoginPage from './pages/LoginPage';
 
 export default function App() {
   return(
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/wishes" element={<WishesPage />} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </main>
 
