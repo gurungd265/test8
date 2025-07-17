@@ -70,6 +70,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/signup").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/test/hello").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
