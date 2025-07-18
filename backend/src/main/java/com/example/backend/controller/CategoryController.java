@@ -38,13 +38,10 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.createCategory(category));
     }
 
-    // 카테고리 삭제
+    // 카테고리 소프트 삭제
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        boolean deleted = categoryService.deleteCategory(id);
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.noContent().build();
+        categoryService.softDeleteCategory(id); // 실제 삭제 대신 deletedAt 등록 처리
+        return ResponseEntity.noContent().build(); // 상태 코드 204 No Content 반환
     }
 }
