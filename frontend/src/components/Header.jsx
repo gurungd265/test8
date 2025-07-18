@@ -7,13 +7,13 @@ export default function Header() {
     const navigate = useNavigate();
 
     useEffect(() =>{
-        const token = localStorage.getItem('jwpToken');
+        const token = localStorage.getItem('jwtToken');
         setIsLoggedIn(!!token);
         },[]);
 
     useEffect(() =>{
         const handleStorageChange = ()=>{
-                const token =localStorage.getItem('jwpToken');
+                const token =localStorage.getItem('jwtToken');
                 setIsLoggedIn(!!token);
             };
         window.addEventListener('storage',handleStorageChange);
@@ -22,7 +22,7 @@ export default function Header() {
             };
         },[]);
     const handleLogout = () =>{
-        localStorage.removeItem('jwpToken');
+        localStorage.removeItem('jwtToken');
         localStorage.removeItem('tokenType');
         localStorage.removeItem('userEmail');
         setIsLoggedIn(false);

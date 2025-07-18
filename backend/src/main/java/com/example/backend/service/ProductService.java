@@ -41,22 +41,22 @@ public class ProductService {
 
     // 전체 상품 조회
     public Page<Product> getProducts(Pageable pageable) {
-        return productRepository.findAll(pageable);
+        return productRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     // 개별 상품 조회 (상세페이지용)
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+        return productRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
     }
 
-    // 단일 상품 검색 (부분 일치, 대소문자 무시) + 페이징처리
+    // 상품 검색 (부분 일치, 대소문자 무시) + 페이징처리
     public Page<Product> searchProductsByName(String keyword, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCase(keyword, pageable);
+        return productRepository.findByNameContainingIgnoreCaseAndDeletedAtIsNull(keyword, pageable);
     }
 
     // 카테고리별 조회 + 페이징처리
     public Page<Product> getProductsByCategory(Long categoryId, Pageable pageable) {
-        return productRepository.findByCategoryId(categoryId, pageable);
+        return productRepository.findByCategoryIdAndDeletedAtIsNull(categoryId, pageable);
     }
 
     // 슬러그 조회 + 페이징처리
@@ -65,7 +65,7 @@ public class ProductService {
         if (category == null) {
             return Page.empty(pageable);
         }
-        return productRepository.findByCategoryId(category.getId(), pageable);
+        return productRepository.findByCategoryIdAndDeletedAtIsNull(category.getId(), pageable);
     }
 
 }

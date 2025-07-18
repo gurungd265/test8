@@ -5,6 +5,7 @@ import com.example.backend.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,14 +15,14 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    // 전체 카테고리 조회
+    // 소프트 삭제되지 않은 카테고리 전체 조회
     public List<Category> getAllCategories() {
-        return categoryRepository.findAll();
+        return categoryRepository.findByDeletedAtIsNull();
     }
 
-    // 단일 카테고리 조회
+    // 소프트 삭제되지 않은 카테고리 단일 조회
     public Optional<Category> getCategoryById(Long id) {
-        return categoryRepository.findById(id);
+        return categoryRepository.findByIdAndDeletedAtIsNull(id);
     }
 
     // 카테고리 등록
@@ -29,12 +30,11 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
-    // 카테고리 삭제
-    public boolean deleteCategory(Long id) {
-        if (!categoryRepository.existsById(id)) {
-            return false;
-        }
-        categoryRepository.deleteById(id);
-        return true;
+    // 카테고리 소프트 삭제 (일시만 기록, 실제 DB에는 그대로 보존)
+    public void softDeleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("カテゴリーが見つかりません。"));
+        category.setDeletedAt(LocalDateTime.now());
+        categoryRepository.save(category);
     }
 }
