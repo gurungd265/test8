@@ -1,18 +1,24 @@
+import { Link } from "react-router-dom";
+
 export default function Product({ product }) {
   return (
     <>
       {/* Product */}
       <div className="bg-white rounded shadow overflow-hidden">
         {/* Product Image */}
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-56 object-cover"
-        />
+        <Link to={`/product/${product.id}`}>
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-56 object-cover"
+          />
+        </Link>
         <div className="p-4">
           {/* Product Name */}
           <h2 className="font-semibold text-lg truncate">
-            {product.name}
+            <Link to={`/product/${product.id}`}>
+              {product.name}
+            </Link>
           </h2>
           {/* Product Description */}
           <p className="text-sm text-gray-500 truncate">
