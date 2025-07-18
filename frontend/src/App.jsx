@@ -16,7 +16,7 @@ export default function App() {
       <Header />
 
       {/* Routing Area */}
-      <main className="min-h-screen pt-20 pb-20">
+      <main className="min-h-screen pb-20">
         <Routes>
           <Route path="/" element={<Products />} />
           <Route path="/product/:id" element={<ProductPage />} />
