@@ -23,6 +23,5 @@ const productsApi = {
         }
     };
 
-};
 
 export default productsApi;
