@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import products from "../data/products.json";
+import productsApi from '../api/products';
 
 export default function ProductPage() {
   const { id } = useParams();
