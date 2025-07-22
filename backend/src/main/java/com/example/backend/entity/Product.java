@@ -38,9 +38,6 @@ public class Product {
     @JoinColumn(name = "category_id") //외래키 컬럼(category_id)을 JPA가 자동으로 관리
     private Category category;
 
-    @Column(name = "is_active")
-    private Boolean isActive = true;
-
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
