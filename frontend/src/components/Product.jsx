@@ -39,7 +39,7 @@ export default function Product({ product }) {
           {/* Product Image */}
           <Link to={`/product/${product.id}`}>
             <img
-              src={product.imageUrl} {/* 変更: product.image -> product.imageUrl */}
+              src={product.imageUrl}
               alt={product.name}
               className="w-full h-56 object-cover"
             />
@@ -66,7 +66,7 @@ export default function Product({ product }) {
                     <span className="text-purple-600">{displayPrice.toLocaleString()}円</span>
                   </>
                 ) : (
-                  <span>{displayPrice.toLocaleString()}円</span> {/* 元値 */}
+                  <span>{displayPrice.toLocaleString()}円</span>
                 )}
               </span>
               {/* Button of Adding To Cart */}

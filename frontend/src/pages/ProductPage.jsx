@@ -44,6 +44,7 @@ useEffect(() => {
   if (loading) {
     return (
       <div className="p-6 text-center text-gray-700">商品情報を読み込み中...</div>
+    );
   }
 
   if (error) {
