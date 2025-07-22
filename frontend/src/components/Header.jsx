@@ -1,33 +1,16 @@
-import React, {useState,useEffect} from 'react';
+import React from 'react';
 import {Menu, MapPin, Search, Heart, ShoppingCart, User, LogOut} from 'lucide-react';
 import {Link, useNavigate} from 'react-router-dom';
-import authApi from '../api/auth';
+import {useAuth} from '../contexts/AuthContext';
 
 export default function Header() {
-    const [isLoggedIn,setIsLoggedIn] = useState(false);
-    const navigate = useNavigate();
+   const {isLoggedIn,user,logout}=useAuth();
+   const navigate = useNavigate();
 
-    useEffect(() =>{
-        const token = localStorage.getItem('jwtToken');
-        setIsLoggedIn(!!token);
-        },[]);
-
-    useEffect(() =>{
-        const handleStorageChange = ()=>{
-                const token =localStorage.getItem('jwtToken');
-                setIsLoggedIn(!!token);
-            };
-        window.addEventListener('storage',handleStorageChange);
-        return ()=>{
-            window.removeEventListener('storage',handleStorageChange);
-            };
-        },[]);
-    const handleLogout = () =>{
-        authApi.logout();
-        navigate('/');
-//         window.location.reload();
-        };
-
+   const handleLogout = () =>{
+       logout();
+       navigate('/');
+   };
 
   return (
     <>
@@ -70,12 +53,16 @@ export default function Header() {
           {/* Liked Prdoucts */}
           <Heart className="cursor-pointer" />
           {/* Shopping Cart */}
-          <ShoppingCart className="hidden lg:block cursor-pointer" />
+          <Link to="/cart" className="relative">
+              <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
+              {/* item count ++ */}
+              {/* <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span> */}
+          </Link>
           {/* Profile */}
             {isLoggedIn ? (
                 <button onClick={handleLogout} className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-red-500 cursor-pointer">
                     <LogOut className="hidden lg:block" />
-                    <span className="hidden lg:block"> Logout</span>
+                    <span className="hidden lg:block">{user?.email ? user.email : 'Logout'}</span>
 {/*                     <User className="hidden lg:block cursor-pointer" /> */}
                 </button>
             ) : (
