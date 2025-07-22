@@ -2,10 +2,12 @@ package com.example.backend.service;
 
 import com.example.backend.entity.Category;
 import com.example.backend.repository.CategoryRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,9 +34,9 @@ public class CategoryService {
 
     // 카테고리 소프트 삭제 (일시만 기록, 실제 DB에는 그대로 보존)
     public void softDeleteCategory(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("カテゴリーが見つかりません。"));
-        category.setDeletedAt(LocalDateTime.now());
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new EntityNotFoundException("カテゴリーが見つかりません。"));
+        category.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         categoryRepository.save(category);
     }
 }

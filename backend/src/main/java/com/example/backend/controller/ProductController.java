@@ -37,13 +37,14 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
     
-    // 상품 전체 조회(슬러그별, 카테고리별) + 페이징 처리
+    // 상품 전체 조회(슬러그별, 카테고리별) + 페이징 처리 + 재고에 따른 노출
     @GetMapping
     public ResponseEntity<Page<Product>> getPagedProducts(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categorySlug,
             @RequestParam(defaultValue = "1") int page, // UI는 1부터
-            @RequestParam(defaultValue = "10000") int size // 크게 지정하면 페이지 구분없이 사용 가능
+            @RequestParam(defaultValue = "10000") int size, // 크게 지정하면 페이지 구분없이 사용 가능
+            @RequestParam(required = false) Boolean inStock // 재고 0 상품 노출 여부
     ) {
         int zeroBased = Math.max(page - 1, 0); // 내부적으로는 0처리
         Pageable pageable = PageRequest.of(zeroBased, size);
@@ -55,8 +56,11 @@ public class ProductController {
             // 카테고리 지정됨 → 해당 카테고리 상품만 페이징
             return ResponseEntity.ok(productService.getProductsByCategory(categoryId, pageable));
         } else {
-            // 카테고리 없음 → 전체 상품 페이징
-            return ResponseEntity.ok(productService.getProducts(pageable));
+            if (Boolean.TRUE.equals(inStock)) { // 재고가 0보다 큰 상품만 페이징 조회
+                return ResponseEntity.ok(productService.getProductsInStock(pageable));
+            } else { // 재고 상관없이 전체 상품 페이징 조회
+                return ResponseEntity.ok(productService.getProducts(pageable));
+            }
         }
     }
 
@@ -76,5 +80,21 @@ public class ProductController {
         }
         return ResponseEntity.ok(products);
     }
+
+    // 상품 수정
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
+        Product updated = productService.updateProduct(id, productDto);
+        return ResponseEntity.ok().build();
+    }
+
+    // 상품 소프트 삭제
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> softDeleteProduct(@PathVariable Long id) {
+        productService.softDeleteProduct(id);
+        return ResponseEntity.ok().build();
+    }
+
+
 
 }
