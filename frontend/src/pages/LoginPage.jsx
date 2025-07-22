@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+// import axios from 'axios';
 import { useNavigate,Link } from 'react-router-dom';
+import authApi from '../api/auth';
 
-// VITE_API_BASE_URL=http://localhost:8080
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,12 +18,9 @@ function LoginPage() {
     setSuccess('');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-        email,
-        password,
-      });
+      const responseData = await authApi.login(email,password);
 
-      const { token, type, userEmail } = response.data;
+      const { token, type, userEmail } = responseData;
 
       // Token detail
       localStorage.setItem('jwtToken', token);
@@ -31,7 +28,7 @@ function LoginPage() {
       localStorage.setItem('userEmail', userEmail);
 
       setSuccess('ログイン成功!');
-      console.log('ログイン成功:', response.data);
+      console.log('ログイン成功:', responseData);
 
       // ログイン成功 dashboard or mainpage
       window.dispatchEvent(new Event('storage'));

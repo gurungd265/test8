@@ -1,6 +1,7 @@
 import React, {useState,useEffect} from 'react';
 import {Menu, MapPin, Search, Heart, ShoppingCart, User, LogOut} from 'lucide-react';
 import {Link, useNavigate} from 'react-router-dom';
+import authApi from '../api/auth';
 
 export default function Header() {
     const [isLoggedIn,setIsLoggedIn] = useState(false);
@@ -22,10 +23,7 @@ export default function Header() {
             };
         },[]);
     const handleLogout = () =>{
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('tokenType');
-        localStorage.removeItem('userEmail');
-        setIsLoggedIn(false);
+        authApi.logout();
         navigate('/');
 //         window.location.reload();
         };

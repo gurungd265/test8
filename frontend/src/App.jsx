@@ -1,3 +1,4 @@
+import React,{useState,useEffect} from 'react';
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -9,8 +10,28 @@ import WishesPage from './pages/WishesPage';
 import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import authApi from './api/auth';
 
 export default function App() {
+    const [loading,setLoading] = useState(true);
+    useEffect(() => {
+        const autoLogin = async() => {
+            const token = localStorage.getItem('jwtToken');
+            if(token){
+                try{
+                    await authApi.validateToken();
+                    console.log('自動ログイン成功');
+                }catch(error){
+                    console.error('自動ログイン失敗：トークン無効',
+                        error.response ? error.response.status : error.message);
+                    authApi.logout();
+                }
+            }
+            setLoading(false);
+        };
+        autoLogin();
+        },[]);
+
   return(
     <Router>
       {/* Header */}
