@@ -26,8 +26,6 @@ const authApi = {
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('tokenType');
         localStorage.removeItem('userEmail');
-        // storage Event  -> Header update
-        window.dispatchEvent(new Event('storage'));
     },
 
     // トークン有効性検査

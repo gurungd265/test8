@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-// import axios from 'axios';
+import React, { useState,useEffect } from 'react';
 import { useNavigate,Link } from 'react-router-dom';
-import authApi from '../api/auth';
+import {useAuth} from '../contexts/AuthContext';
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,27 +10,25 @@ function LoginPage() {
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
+  const { login,isLoggedIn } = useAuth();
+
+  useEffect(() =>{
+      if(isLoggedIn){
+          console.log("LoginPage: Login on -> HomePage");
+          navigate('/');
+      }
+  },[isLoggedIn,navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     try {
-      const responseData = await authApi.login(email,password);
-
-      const { token, type, userEmail } = responseData;
-
-      // Token detail
-      localStorage.setItem('jwtToken', token);
-      localStorage.setItem('tokenType', type);
-      localStorage.setItem('userEmail', userEmail);
+      await login(email,password);
 
       setSuccess('ログイン成功!');
-      console.log('ログイン成功:', responseData);
-
-      // ログイン成功 dashboard or mainpage
-      window.dispatchEvent(new Event('storage'));
-      navigate('/');
+      console.log('ログイン成功:');
 
     } catch (err) {
       console.error('ログイン失敗:', err);
