@@ -15,16 +15,20 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CategoryService {
 
+    /*
+        (deleted_at IS NULL 자동 필터링)
+     */
+
     private final CategoryRepository categoryRepository;
 
-    // 소프트 삭제되지 않은 카테고리 전체 조회
+    // 카테고리 전체 조회
     public List<Category> getAllCategories() {
-        return categoryRepository.findByDeletedAtIsNull();
+        return categoryRepository.findAll();
     }
 
-    // 소프트 삭제되지 않은 카테고리 단일 조회
+    // 카테고리 단일 조회
     public Optional<Category> getCategoryById(Long id) {
-        return categoryRepository.findByIdAndDeletedAtIsNull(id);
+        return categoryRepository.findById(id);
     }
 
     // 카테고리 등록
@@ -34,7 +38,7 @@ public class CategoryService {
 
     // 카테고리 소프트 삭제 (일시만 기록, 실제 DB에는 그대로 보존)
     public void softDeleteCategory(Long id) {
-        Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
+        Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("カテゴリーが見つかりません。"));
         category.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         categoryRepository.save(category);

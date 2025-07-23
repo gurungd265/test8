@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ProductDto;
 import com.example.backend.entity.Product;
+import com.example.backend.entity.ProductImage;
 import com.example.backend.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class ProductController {
 
     // 상품 등록
     @PostMapping
-    public ResponseEntity<?> createProduct(@RequestBody ProductDto dto) {
+    public ResponseEntity<?> createProduct(@RequestParam ProductDto dto) {
         Product created = productService.createProduct(dto);
         return ResponseEntity.ok(created);
     }

@@ -14,6 +14,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // 유저 등록
     public void registerUser(SignUpDto dto){
 
         if (userRepository.existsByEmail(dto.getEmail())) {
@@ -26,7 +27,7 @@ public class UserService {
                 .firstName("")  // 혹은 null 또는 빈 문자열
                 .lastName("")
                 .phoneNumber("")
-                .build();
+                .build(); //유저 타입값은 자동으로 USER
 
         userRepository.save(user);
     }

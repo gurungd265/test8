@@ -1,5 +1,5 @@
 import React from 'react';
-import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
@@ -12,17 +12,29 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import {AuthProvider,useAuth} from './contexts/AuthContext';
 
-function AppContent() {
-     const { loading } = useAuth();
+    const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
+        const { isLoggedIn,loading } = useAuth();
 
-      if (loading) {
-        return (
-          <div className="flex justify-center items-center min-h-screen">
-            <p>ログイン状態を確認中...</p>
-            {/* Spinner ?? */}
-          </div>
-        );
-      }
+        if (loading) {
+            return null;
+        }
+
+        //case 1 : not login
+        if(onlyUnauthenticated){
+            if(isLoggedIn) return <Navigate to={redirectPath} replace />; //'replace' no back
+            return <Outlet />;
+        }
+
+        //case 2 : only login
+        if(requiresAuth){
+            if(!isLoggedIn) return <Navigate to={redirectPath} replace />;
+            return <Outlet />
+        }
+        //case 3 : public ok
+        return <Outlet />;
+    };
+
+function AppContent() {
 
   return (
       <>
@@ -31,15 +43,36 @@ function AppContent() {
 
         {/* Routing Area */}
         <main className="min-h-screen pb-20">
-          <Routes>
-            <Route path="/" element={<Products />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/wishes" element={<WishesPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-          </Routes>
-        </main>
+        {/* public */}
+            <Routes>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Products />} />
+                <Route path="/product/:id" element={<ProductPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                {/* (Payment/Checkout) 機能はショッピングカート内のアクションか別途ページ
+                    もし/checkoutページがあれば、次のように保護:
+                    <Route path="/checkout" element={<ProtectedRoute requiresAuth={true} redirectPath="/login"><CheckoutPage /></ProtectedRoute>} />
+                    */}
+              </Route>
+
+                  {/* not Login */}
+                  <Route element={<ProtectedRoute onlyUnauthenticated={true} redirectPath="/" />}>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
+                  </Route>
+
+                  {/* Need Login */}
+                  <Route element={<ProtectedRoute requiresAuth={true} redirectPath="/login" />}>
+                    <Route path="/wishes" element={<WishesPage />} />
+                    {/*  + login need page(ex: /profile, /dashboard) */}
+                    {/* <Route path="/profile" element={<ProfilePage />} /> */}
+                    {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
+                  </Route>
+
+                  {/* 404 Not Found page */}
+                  <Route path="*" element={<div>(404 Not Found)</div>} />
+                </Routes>
+            </main>
 
         {/* Footer */}
         {/* <Footer /> */}
