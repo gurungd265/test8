@@ -1,6 +1,5 @@
 import React,{useState,useEffect} from "react";
 import Product from "./Product";
-// import products from "../data/products.json"
 import productsApi from "../api/products";
 
 export default function Products() {
@@ -57,10 +56,10 @@ export default function Products() {
       {/* Products */}
        <main className="container mx-auto p-4">
            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-{/*                {products.map((product) => ( */}
-{/*                    // product backend API data (imageUrl, discountPrice, stockQuantity 포함) */}
-{/*                   <Product key={product.id} product={product} /> */}
-{/*                 ))} */}
+                {products.map((product) => (
+                    // ProductコンポーネントにバックエンドAPIから受け取った商品データをpropsで伝達します
+                   <Product key={product.id} product={product} />
+                 ))}
             </section>
        </main>
     </>
