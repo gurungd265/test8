@@ -1,13 +1,15 @@
 package com.example.backend.repository;
 
-import com.example.backend.entity.Category;
+import com.example.backend.entity.ProductImage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.*;
+
 @Repository
-public interface CategoryRepository extends JpaRepository<Category, Long> {
+public interface ProductImageRepository extends JpaRepository<ProductImage,Long> {
     /*
         (deleted_at IS NULL 자동 필터링)
      */
-    Category findBySlug(String slug);
+    List<ProductImage> findByProductId(Long productId);
 }
