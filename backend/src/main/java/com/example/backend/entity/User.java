@@ -42,6 +42,10 @@ public class User implements UserDetails {
     @Column(name = "phone", length = 20)
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false, updatable = true)
+    private UserType userType = UserType.USER; // or ADMIN
+
     @CreationTimestamp //생성 시 자동 기록 (수정 불가) (not null)
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

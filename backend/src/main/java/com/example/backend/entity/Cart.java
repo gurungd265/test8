@@ -1,12 +1,13 @@
 package com.example.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
+
+import java.util.*;
+
 
 import java.time.LocalDateTime;
 
@@ -24,11 +25,13 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 회원용 (비회원에서 로그인한 경우에도 연결)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
-    @Column(name = "session_id")
+    // 비회원 세션용
+    @Column(name = "session_id", nullable = true)
     private String sessionId;
 
     @CreationTimestamp
@@ -42,4 +45,20 @@ public class Cart {
     @Column(name = "deleted_at", updatable = true)
     private LocalDateTime deletedAt;
 
+    //============================================= CartItem =============================================
+    //카트 삭제 시 CartItem도 자동 삭제
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true) //LAZY Default
+    private List<CartItem> cartItems = new ArrayList<>();
+
+    // CartItem 추가
+    public void addCartItem(CartItem item) {
+        cartItems.add(item);
+        item.setCart(this);
+    }
+
+    // CartItem 제거
+    public void removeCartItem(CartItem item) {
+        cartItems.remove(item);
+        item.setCart(null);
+    }
 }
