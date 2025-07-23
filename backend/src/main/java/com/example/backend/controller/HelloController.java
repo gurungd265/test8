@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController //RESTful API controller
 @RequestMapping("/api/test") // URL 경로
-
 public class HelloController {
 
     @GetMapping("/hello") //GET
