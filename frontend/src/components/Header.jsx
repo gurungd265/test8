@@ -51,7 +51,9 @@ export default function Header() {
             </button>
           </div>
           {/* Liked Prdoucts */}
-          <Heart className="cursor-pointer" />
+          <Link to={`/wishes`}>
+            <Heart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
+          </Link>
           {/* Shopping Cart */}
           <Link to="/cart" className="relative">
               <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
