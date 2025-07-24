@@ -1,16 +1,15 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.AddressDto;
-import com.example.backend.entity.Address;
-import com.example.backend.entity.AddressType;
-import com.example.backend.entity.User;
+import com.example.backend.dto.user.AddressDto;
+import com.example.backend.entity.user.Address;
+import com.example.backend.entity.user.AddressType;
+import com.example.backend.entity.user.User;
 import com.example.backend.repository.AddressRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

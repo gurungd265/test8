@@ -3,10 +3,12 @@ package com.example.backend.service;
 import com.example.backend.dto.ProductDto;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.Product;
+import com.example.backend.entity.Wishlist;
 import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
 
+import com.example.backend.repository.WishlistRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.*;
 
@@ -29,6 +31,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final CartRepository cartRepository;
+    private final WishlistRepository wishlistRepository;
 
     // DTO -> Entity Packing
     public ProductDto toDto(Product product) {
@@ -102,7 +105,16 @@ public class ProductService {
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
         product.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         productRepository.save(product);
-        cartRepository.deleteByProductId(id); // 상품이 삭제됐으니 카트에서도 제거
+        // 카트에서도 소프트 삭제
+        cartRepository.deleteByProductId(id);
+        // 위시리스트에서도 소프트 삭제
+        List<Wishlist> wishlists = wishlistRepository.findByProductId(id);
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
+        for (Wishlist wishlist : wishlists) {
+            wishlist.setDeletedAt(now);
+        }
+        wishlistRepository.saveAll(wishlists);
+
     }
 
     // ===================================== Cart + ProductImage =====================================

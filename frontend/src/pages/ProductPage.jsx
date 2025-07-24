@@ -1,6 +1,6 @@
 import React,{useState,useEffect} from "react";
 import { useParams, Link } from "react-router-dom";
-import products from "../data/products.json";
+// import products from "../data/products.json";
 import productsApi from '../api/products';
 import cartApi from '../api/cart';
 
@@ -10,6 +10,10 @@ export default function ProductPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [quantity, setQuantity] = useState(1);
+    const [mainImage, setMainImage] = useState('');
+
+    const productRating = product?.rating ?? 0;
+    const productReviewCount = product?.reviewCount ?? 0;
 
 useEffect(() => {
     const fetchProduct = async () => {
@@ -27,6 +31,10 @@ useEffect(() => {
 
             const data = await productsApi.getProductById(productIdNum);
             setProduct(data);
+
+            if (data && data.images && data.images.length > 0) {
+                setMainImage(data.images[0].imageUrl);
+            }
         } catch (err) {
             console.error(`商品ID ${id}の読み込みに失敗しました:`, err);
             if (err.response && err.response.status === 404) {
@@ -124,20 +132,28 @@ const displayPrice = product.discountPrice !== null && product.discountPrice !==
             <div className="lg:col-span-2">
               {/* Main Image */}
               <img
-                src={product.imageUrl} // product.image -> product.imageUrl (DB image_url)
+                src={product.images && product.images.length > 0 ? product.images[0].imageUrl : 'https://via.placeholder.com/600/CCCCCC/FFFFFF?text=No+Image'}
                 alt={product.name}
                 className="w-full h-[420px] object-cover rounded-lg shadow"
               />
               {/* Mini Thumbnails */}
               <div className="flex gap-2 mt-2">
-                {[...Array(4)].map((_, i) => (
+                {product.images && product.images.slice(0, 5).map((img, i) => (
                   <img
                     key={i}
-                    src={product.imageUrl} // all same image
+                    src={img.imageUrl}
                     alt={`サムネイル ${i + 1}`} // 'Thumbnail' -> 'サムネイル'
-                    className="w-20 h-20 object-cover rounded border cursor-pointer"
+                    className={`w-20 h-20 object-cover rounded border ${mainImage === img.imageUrl ? 'border-purple-600 ring-2 ring-purple-600' : 'border-gray-300'} cursor-pointer`}
+                    onClick={() => setMainImage(img.imageUrl)}
                   />
                 ))}
+            {(!product.images || product.images.length === 0) && (
+                <img
+                    src="https://via.placeholder.com/80/CCCCCC/FFFFFF?text=No+Image"
+                    alt="No Thumbnail"
+                    className="w-20 h-20 object-cover rounded border"
+                />
+            )}
               </div>
 
               {/* Product Info */}

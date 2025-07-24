@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +24,7 @@ public class ProductController {
 
     // 상품 등록
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto dto) {
         Product created = productService.createProduct(dto);
         ProductDto resultDto = ProductDto.fromEntity(created);
@@ -85,6 +87,7 @@ public class ProductController {
 
     // 상품 수정
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductDto productDto) {
@@ -94,6 +97,7 @@ public class ProductController {
 
     // 상품 소프트 삭제
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> softDeleteProduct(@PathVariable Long id) {
         productService.softDeleteProduct(id);
         return ResponseEntity.ok().build();

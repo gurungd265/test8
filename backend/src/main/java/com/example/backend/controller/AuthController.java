@@ -1,7 +1,7 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.JwtResponse;
-import com.example.backend.dto.LoginDto;
+import com.example.backend.dto.user.JwtResponse;
+import com.example.backend.dto.user.LoginDto;
 import com.example.backend.jwt.JwtToken;
 
 import lombok.RequiredArgsConstructor;

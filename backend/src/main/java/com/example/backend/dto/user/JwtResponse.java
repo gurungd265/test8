@@ -1,8 +1,7 @@
-package com.example.backend.dto;
+package com.example.backend.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 //@Setter
