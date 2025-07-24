@@ -10,27 +10,32 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Product_images")
+@Table(name = "product_reviews")
+@Where(clause = "deleted_at IS NULL")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Where(clause = "deleted_at IS NULL") // 소프트 삭제 필터
-public class ProductImage {
+public class ProductReview {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Product와 다대일 (여러 이미지가 하나의 상품에 속함)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
 
-    @Column(name = "image_url", nullable = false)
-    private String imageUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "display_order")
-    private Integer displayOrder; //0, 1...
+    private Byte rating;
+
+    @Column(name = "review_text", columnDefinition = "TEXT")
+    private String reviewText;
+
+    @Column(name = "is_approved")
+    private Boolean isApproved; // 0(false) 1(true)
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -38,4 +43,5 @@ public class ProductImage {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
 }
