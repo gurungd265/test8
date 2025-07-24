@@ -1,14 +1,11 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.ProductCharacteristicDto;
 import com.example.backend.dto.ProductDto;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.Product;
-import com.example.backend.entity.ProductImage;
 import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
-import com.example.backend.repository.ProductImageRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.*;
