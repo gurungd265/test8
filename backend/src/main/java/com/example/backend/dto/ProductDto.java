@@ -17,6 +17,7 @@ public class ProductDto {
     private double price;
     private BigDecimal discountPrice;
     private int stockQuantity;
+
     private Long categoryId;
     private String categoryName;
     private String categorySlug;

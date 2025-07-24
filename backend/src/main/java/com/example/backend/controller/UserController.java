@@ -22,6 +22,14 @@ public class UserController {
     private final UserService userService;
     private final ProductReviewService reviewService;
 
+    // 회원가입 (사용자 등록)
+    @PostMapping("/signup")
+    public ResponseEntity<?> signUp(@RequestBody SignUpDto dto) {
+        userService.registerUser(dto);
+        return ResponseEntity.ok("登録が完了しました。");
+    }
+
+    // 현재 로그인한 사용자 정보 조회
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal User user) {
         if (user == null) {
@@ -32,18 +40,28 @@ public class UserController {
         return ResponseEntity.ok(userDto);
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@RequestBody SignUpDto dto) {
-        userService.registerUser(dto);
-        return ResponseEntity.ok("登録が完了しました。");
+    // 현재 로그인한 사용자 정보 수정
+    @PutMapping("/me")
+    public ResponseEntity<?> updateCurrentUser(
+            @AuthenticationPrincipal User user,
+            @RequestBody UserResponseDto dto) {
+        if (user == null) {
+            return ResponseEntity.status(401).body("認証されていないユーザーです。");
+        }
+        userService.updateUser(user.getId(), dto);
+        return ResponseEntity.noContent().build();
     }
 
     //======================================== ProductReview ========================================
+    // 현재 로그인한 사용자가 작성한 상품 리뷰 목록 조회
     @GetMapping("/me/reviews")
     public ResponseEntity<Page<ProductReviewDto>> getUserReviews(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal User user,
             Pageable pageable) {
-        Page<ProductReviewDto> reviews = reviewService.getReviewsByUser(userId, pageable);
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Page<ProductReviewDto> reviews = reviewService.getReviewsByUser(user.getId(), pageable);
         return ResponseEntity.ok(reviews);
     }
 
