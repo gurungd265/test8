@@ -5,6 +5,7 @@ import com.example.backend.dto.ProductDto;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.Product;
 import com.example.backend.entity.ProductImage;
+import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.ProductImageRepository;
@@ -15,6 +16,7 @@ import lombok.*;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -29,6 +31,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
     private final CategoryRepository categoryRepository;
+    private final CartRepository cartRepository;
 
     // DTO -> Entity Packing
     public ProductDto toDto(Product product) {
@@ -94,6 +97,7 @@ public class ProductService {
     }
 
     // 상품 수정
+    @Transactional
     public Product updateProduct(Long id, ProductDto dto) {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
@@ -112,11 +116,13 @@ public class ProductService {
     }
 
     // 상품 소프트 삭제
+    @Transactional
     public void softDeleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
         product.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         productRepository.save(product);
+        cartRepository.deleteByProductId(id); // 상품이 삭제됐으니 카트에서도 제거
     }
 
     // ===================================== Cart + ProductImage =====================================

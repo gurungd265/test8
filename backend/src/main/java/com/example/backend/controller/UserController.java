@@ -39,7 +39,7 @@ public class UserController {
     }
 
     //======================================== ProductReview ========================================
-    @GetMapping("/{userId}/reviews")
+    @GetMapping("/me/reviews")
     public ResponseEntity<Page<ProductReviewDto>> getUserReviews(
             @PathVariable Long userId,
             Pageable pageable) {
