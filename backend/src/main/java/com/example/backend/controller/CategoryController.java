@@ -1,5 +1,6 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.CategoryDto;
 import com.example.backend.entity.Category;
 import com.example.backend.service.CategoryService;
 import jakarta.validation.Valid;
@@ -23,8 +24,9 @@ public class CategoryController {
     // 카테고리 등록
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Category> createCategory(@RequestBody Category category) {
-        return ResponseEntity.ok(categoryService.createCategory(category));
+    public ResponseEntity<CategoryDto> createCategory(
+            @Valid @RequestBody CategoryDto categoryDto) {
+        return ResponseEntity.ok(categoryService.createCategory(categoryDto));
     }
 
     // 카테고리 소프트 삭제
@@ -38,13 +40,13 @@ public class CategoryController {
     // ================================================= ADMIN & USER ==================================================
     // 전체 카테고리 조회
     @GetMapping
-    public ResponseEntity<List<Category>> getAllCategories() {
+    public ResponseEntity<List<CategoryDto>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
     // 단일 카테고리 조회
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+    public ResponseEntity<CategoryDto> getCategoryById(@PathVariable Long id) {
         return categoryService.getCategoryById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

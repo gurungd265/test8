@@ -8,13 +8,15 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categories")
-@Getter
-@Setter
+@Table(name = "categories",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_category_slug", columnNames = "slug")
+        })
+@Where(clause = "deleted_at IS NULL")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Where(clause = "deleted_at IS NULL") //기본 조회 시 자동으로 삭제된 데이터는 제외
 public class Category {
 
     @Id

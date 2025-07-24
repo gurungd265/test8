@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,30 +30,12 @@ public class ProductService {
         (deleted_at IS NULL 자동 필터링)
      */
     private final ProductRepository productRepository;
-    private final ProductImageRepository productImageRepository;
     private final CategoryRepository categoryRepository;
     private final CartRepository cartRepository;
 
     // DTO -> Entity Packing
     public ProductDto toDto(Product product) {
-        ProductDto dto = new ProductDto();
-        dto.setName(product.getName());
-        dto.setDescription(product.getDescription());
-        dto.setPrice(product.getPrice());
-        dto.setDiscountPrice(product.getDiscountPrice());
-        dto.setStockQuantity(product.getStockQuantity());
-        if (product.getCategory() != null) {
-            dto.setCategoryId(product.getCategory().getId());
-            dto.setCategoryName(product.getCategory().getName());
-            dto.setCategorySlug(product.getCategory().getSlug());
-        }
-        List<ProductCharacteristicDto> charDtos = product.getCharacteristics() == null ?
-                List.of() :
-                product.getCharacteristics().stream()
-                        .map(c -> new ProductCharacteristicDto(c.getCharacteristicName(), c.getCharacteristicValue()))
-                        .toList();
-        dto.setCharacteristics(charDtos);
-        return dto;
+        return ProductDto.fromEntity(product);
     }
 
     // 상품 등록
@@ -140,10 +123,11 @@ public class ProductService {
 
     // 슬러그 조회 + 페이징처리
     public Page<ProductDto> getProductsByCategorySlug(String slug, Pageable pageable) {
-        Category category = categoryRepository.findBySlug(slug);
-        if (category == null) {
+        Optional<Category> categoryOpt = categoryRepository.findBySlug(slug);
+        if (categoryOpt.isEmpty()) {
             return Page.empty(pageable);
         }
+        Category category = categoryOpt.get();
         return productRepository.findByCategoryIdWithImages(category.getId(), pageable)
                 .map(this::toDto);
     }
