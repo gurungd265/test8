@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.example.backend.dto.UserResponseDto;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,7 +21,9 @@ public class UserController {
         if (user == null) {
             return ResponseEntity.status(401).body("認証されていないユーザーです。");
         }
-        return ResponseEntity.ok(user);
+
+        UserResponseDto userDto=UserResponseDto.fromEntity(user);
+        return ResponseEntity.ok(userDto);
     }
 
     @PostMapping("/signup")

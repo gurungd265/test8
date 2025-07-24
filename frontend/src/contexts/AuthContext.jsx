@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
       setLoading(false);
-      return response.data;
+      return loginData;
     } catch (error) {
       localStorage.removeItem('jwtToken');
       localStorage.removeItem('userEmail');

@@ -6,7 +6,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -87,7 +89,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
-        return Collections.singletonList(() -> "ROLE_USER");
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.userType.name()));
     }
 
     @Override
@@ -114,5 +116,10 @@ public class User implements UserDetails {
     public boolean isEnabled(){
         return deletedAt == null;
     } // deletedAt == null일 때만 true
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // 비밀번호가 만료되지 않았음을 나타냅니다.
+    }
     
 }
