@@ -1,10 +1,10 @@
 package com.example.backend.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SignUpDto {
 
     private String email;

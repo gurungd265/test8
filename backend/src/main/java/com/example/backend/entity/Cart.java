@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 @Table(name = "carts", indexes = {
         @Index(name = "idx_session_id", columnList = "session_id")
 })
+@Where(clause = "deleted_at IS NULL") //기본 조회 시 자동으로 삭제된 데이터는 제외
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Where(clause = "deleted_at IS NULL") //기본 조회 시 자동으로 삭제된 데이터는 제외
 public class Cart {
 
     @Id
@@ -44,6 +44,12 @@ public class Cart {
 
     @Column(name = "deleted_at", updatable = true)
     private LocalDateTime deletedAt;
+
+    //============================================= CartItem =============================================
+    //상품 삭제 시 Cart에서도 자동 삭제
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     //============================================= CartItem =============================================
     //카트 삭제 시 CartItem도 자동 삭제

@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cart_items")
+@Where(clause = "deleted_at IS NULL") //기본 조회 시 자동으로 삭제된 데이터는 제외
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Where(clause = "deleted_at IS NULL") //기본 조회 시 자동으로 삭제된 데이터는 제외
 public class CartItem {
 
     @Id

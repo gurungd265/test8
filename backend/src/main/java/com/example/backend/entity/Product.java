@@ -31,7 +31,7 @@ public class Product {
     @Column(name = "price")
     private double price;
 
-    @Column(name = "discount_price")
+    @Column(name = "discount_price", nullable = true)
     private BigDecimal discountPrice;
 
     @Column(name = "stock_quantity")
@@ -48,10 +48,18 @@ public class Product {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // ===================================== Cart =====================================
+    // =================================== Category ===================================
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id") //PK(category_id)를 JPA가 자동 관리
     private Category category;
+
+    // ============================= ProductCharacteristic =============================
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<ProductCharacteristic> characteristics;
+
+    // ================================= ProductReview =================================
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<ProductReview> reviews;
 
     // ================================= ProductImage =================================
     // ProductImageRepository 쿼리 참고
@@ -67,4 +75,5 @@ public class Product {
         productImages.remove(image);
         image.setProduct(null);
     }
+
 }

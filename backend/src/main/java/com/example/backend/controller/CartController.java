@@ -1,5 +1,7 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.CartDto;
+import com.example.backend.dto.CartItemDto;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
@@ -17,43 +19,49 @@ public class CartController {
 
     private final CartService cartService;
 
+    /**
+     * ADMIN, USER & ANONYMOUS (non-login) accessible
+     */
+
     // 카트 조회
     @GetMapping
-    public ResponseEntity<Cart> getCart(
+    public ResponseEntity<CartDto> getCart(
             @RequestParam String sessionId,
             Principal principal
     ) {
         // principal : JwtAuthenticationFilter가 JWT 검증 후 SecurityContext에 세팅한 인증 정보
         // principal이 null 아니면 로그인한 이메일 반환, null이면 비로그인 상태
         String userEmail = (principal != null) ? principal.getName() : null;
-        Cart cart = cartService.getCartByUserEmailOrSessionId(userEmail, sessionId);
-        return ResponseEntity.ok(cart);
+        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionId);
+        return ResponseEntity.ok(cartDto);
     }
 
     // 카트에 상품 추가
     @PostMapping("/items")
-    public ResponseEntity<CartItem> addProductToCart(
+    public ResponseEntity<CartItemDto> addProductToCart(
             @RequestParam(required = false) String sessionId,
             @RequestParam Long productId,
             @RequestParam int quantity,
             Principal principal
     ) {
-        String userEmail = (principal != null) ? principal.getName() : null;
+        String userEmail = getUserEmail(principal);
         CartItem cartItem = cartService.addProductToCart(userEmail, sessionId, productId, quantity);
-        return ResponseEntity.ok(cartItem);
+        CartItemDto dto = convertToDto(cartItem);
+        return ResponseEntity.ok(dto);
     }
 
     // 카트 상품 수량 변경
     @PutMapping("/items/{cartItemId}")
-    public ResponseEntity<CartItem> updateCartItem(
+    public ResponseEntity<CartItemDto> updateCartItem(
             @PathVariable Long cartItemId,
             @RequestParam int quantity,
             @RequestParam(required = false) String sessionId,
             Principal principal
     ) {
-        String userEmail = (principal != null) ? principal.getName() : null;
+        String userEmail = getUserEmail(principal);
         CartItem updatedItem = cartService.updateCartItemQuantity(userEmail, sessionId, cartItemId, quantity);
-        return ResponseEntity.ok(updatedItem);
+        CartItemDto dto = convertToDto(updatedItem);
+        return ResponseEntity.ok(dto);
     }
 
     // 카트 상품 삭제
@@ -77,5 +85,23 @@ public class CartController {
         String userEmail = (principal != null) ? principal.getName() : null;
         cartService.softClearCart(userEmail, sessionId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 편의 메소드 =====================================================================================================
+
+    // CartItem -> DTO 변환
+    private CartItemDto convertToDto(CartItem item) {
+        return new CartItemDto(
+                item.getId(),
+                item.getProduct().getId(),
+                item.getProduct().getName(),
+                item.getQuantity(),
+                item.getPriceAtAddition()
+        );
+    }
+    
+    // 사용자 이메일 추출
+    private String getUserEmail(Principal principal) {
+        return (principal != null) ? principal.getName() : null;
     }
 }
