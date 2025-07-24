@@ -17,6 +17,10 @@ public class CartController {
 
     private final CartService cartService;
 
+    /**
+     * ADMIN, USER & ANONYMOUS (non-login) accessible
+     */
+
     // 카트 조회
     @GetMapping
     public ResponseEntity<Cart> getCart(

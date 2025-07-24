@@ -24,7 +24,6 @@ public class UserResponseDto {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
-                .userType(user.getPhoneNumber())
                 .userType(user.getUserType().name())
                 .createdAt(user.getCreatedAt())
                 .build();

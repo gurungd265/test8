@@ -46,6 +46,12 @@ public class Cart {
     private LocalDateTime deletedAt;
 
     //============================================= CartItem =============================================
+    //상품 삭제 시 Cart에서도 자동 삭제
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    //============================================= CartItem =============================================
     //카트 삭제 시 CartItem도 자동 삭제
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true) //LAZY Default
     private List<CartItem> cartItems = new ArrayList<>();

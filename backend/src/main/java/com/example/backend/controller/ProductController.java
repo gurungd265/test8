@@ -1,8 +1,8 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.ProductDto;
-import com.example.backend.dto.ProductResponseDto;
 import com.example.backend.entity.Product;
+import com.example.backend.entity.ProductImage;
 import com.example.backend.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class ProductController {
     
     // 상품 전체 조회(슬러그별, 카테고리별) + 페이징 처리 + 재고에 따른 노출
     @GetMapping
-    public ResponseEntity<Page<ProductResponseDto>> getPagedProducts(
+    public ResponseEntity<Page<Product>> getPagedProducts(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categorySlug,
             @RequestParam(defaultValue = "1") int page, // UI는 1부터
@@ -50,24 +50,19 @@ public class ProductController {
         int zeroBased = Math.max(page - 1, 0); // 내부적으로는 0처리
         Pageable pageable = PageRequest.of(zeroBased, size);
 
-        Page<Product> productPage;
-
         if (categorySlug != null) {
             // 슬러그 지정됨 → 해당 카테고리 상품만 페이징
-            productPage=productService.getProductsByCategorySlug(categorySlug, pageable);
+            return ResponseEntity.ok(productService.getProductsByCategorySlug(categorySlug, pageable));
         } else if (categoryId != null) {
             // 카테고리 지정됨 → 해당 카테고리 상품만 페이징
-            productPage=productService.getProductsByCategory(categoryId, pageable);
+            return ResponseEntity.ok(productService.getProductsByCategory(categoryId, pageable));
         } else {
             if (Boolean.TRUE.equals(inStock)) { // 재고가 0보다 큰 상품만 페이징 조회
-                productPage=productService.getProductsInStock(pageable);
+                return ResponseEntity.ok(productService.getProductsInStock(pageable));
             } else { // 재고 상관없이 전체 상품 페이징 조회
-                productPage=productService.getProducts(pageable);
+                return ResponseEntity.ok(productService.getProducts(pageable));
             }
         }
-
-        Page<ProductResponseDto> dtoPage = productPage.map(ProductResponseDto::fromEntity);
-        return ResponseEntity.ok(dtoPage);
     }
 
     //단일 상품 검색 (부분 일치+대소문자 무시)

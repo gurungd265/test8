@@ -58,7 +58,11 @@ public class User implements UserDetails {
     @Column(name = "deleted_at") //soft delete용 (null)
     private LocalDateTime deletedAt;
 
-    // ===================================== Cart =====================================
+    // ================================================= ProductReview =================================================
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<ProductReview> reviews;
+
+    // ===================================================== Cart =====================================================
     // User 객체를 저장 또는 삭제할 때 연관된 Cart도 자동으로 함께 처리
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Cart> carts = new ArrayList<>();
@@ -76,7 +80,7 @@ public class User implements UserDetails {
         }
     }
 
-    // ================================ Spring Security ================================
+    // ================================================ Spring Security ================================================
     @Builder
     public User(String email, String passwordHash,String firstName,String lastName,String phoneNumber){
         this.email = email;
@@ -120,5 +124,6 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true; // 비밀번호가 만료되지 않았음을 나타냅니다.
     }
+
     
 }

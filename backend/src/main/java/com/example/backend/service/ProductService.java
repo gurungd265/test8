@@ -1,9 +1,11 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.ProductCharacteristicDto;
 import com.example.backend.dto.ProductDto;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.Product;
 import com.example.backend.entity.ProductImage;
+import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.ProductImageRepository;
@@ -14,9 +16,11 @@ import lombok.*;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,29 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
     private final CategoryRepository categoryRepository;
+    private final CartRepository cartRepository;
+
+    // DTO -> Entity Packing
+    public ProductDto toDto(Product product) {
+        ProductDto dto = new ProductDto();
+        dto.setName(product.getName());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setDiscountPrice(product.getDiscountPrice());
+        dto.setStockQuantity(product.getStockQuantity());
+        if (product.getCategory() != null) {
+            dto.setCategoryId(product.getCategory().getId());
+            dto.setCategoryName(product.getCategory().getName());
+            dto.setCategorySlug(product.getCategory().getSlug());
+        }
+        List<ProductCharacteristicDto> charDtos = product.getCharacteristics() == null ?
+                List.of() :
+                product.getCharacteristics().stream()
+                        .map(c -> new ProductCharacteristicDto(c.getCharacteristicName(), c.getCharacteristicValue()))
+                        .toList();
+        dto.setCharacteristics(charDtos);
+        return dto;
+    }
 
     // 상품 등록
     public Product createProduct(ProductDto dto) {
@@ -37,6 +64,7 @@ public class ProductService {
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
+        product.setDiscountPrice(dto.getDiscountPrice());
         product.setStockQuantity(dto.getStockQuantity());
         product.setCategory(category); //Category 엔티티 자체를 SET
 
@@ -44,27 +72,32 @@ public class ProductService {
     }
 
     // 전체 상품 조회
-    public Page<Product> getProducts(Pageable pageable) {
-        return productRepository.findAllWithImages(pageable);
+    public Page<ProductDto> getProducts(Pageable pageable) {
+        Page<Product> products = productRepository.findAllWithImages(pageable);
+        return products.map(this::toDto);
     }
 
     // 재고가 0보다 큰 상품만 조회
-    public Page<Product> getProductsInStock(Pageable pageable) {
-        return productRepository.findByStockQuantityGreaterThanWithImages(0, pageable);
+    public Page<ProductDto> getProductsInStock(Pageable pageable) {
+        return productRepository.findByStockQuantityGreaterThanWithImages(0, pageable)
+                .map(this::toDto);
     }
 
     // 개별 상품 조회 (상세페이지용)
-    public Product getProductById(Long id) {
-        return productRepository.findByIdWithImages(id)
+    public ProductDto getProductById(Long id) {
+        Product product = productRepository.findByIdWithImages(id)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
+        return toDto(product);
     }
 
     // 상품 검색 (부분 일치, 대소문자 무시) + 페이징처리
-    public Page<Product> searchProductsByName(String keyword, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCaseWithImages(keyword, pageable);
+    public Page<ProductDto> searchProductsByName(String keyword, Pageable pageable) {
+        Page<Product> products = productRepository.findByNameContainingIgnoreCaseWithImages(keyword, pageable);
+        return products.map(this::toDto);
     }
 
     // 상품 수정
+    @Transactional
     public Product updateProduct(Long id, ProductDto dto) {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
@@ -72,45 +105,47 @@ public class ProductService {
         existing.setName(dto.getName());
         existing.setDescription(dto.getDescription());
         existing.setPrice(dto.getPrice());
+        existing.setDiscountPrice(dto.getDiscountPrice());
         existing.setStockQuantity(dto.getStockQuantity());
-
-        // category 변경도 허용할 경우
         if (dto.getCategoryId() != null) {
             Category category = categoryRepository.findById(dto.getCategoryId())
                     .orElseThrow(() -> new IllegalArgumentException("カテゴリーが見つかりません"));
             existing.setCategory(category);
         }
-
         return productRepository.save(existing);
     }
 
     // 상품 소프트 삭제
+    @Transactional
     public void softDeleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
         product.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         productRepository.save(product);
+        cartRepository.deleteByProductId(id); // 상품이 삭제됐으니 카트에서도 제거
     }
 
     // ===================================== Cart + ProductImage =====================================
     // 특정 카테고리 내 모든 상품 조회
-    public Page<Product> getProductsByCategory(Long categoryId, Pageable pageable) {
-        return productRepository.findByCategoryIdWithImages(categoryId, pageable);
+    public Page<ProductDto> getProductsByCategory(Long categoryId, Pageable pageable) {
+        return productRepository.findByCategoryIdWithImages(categoryId, pageable)
+                .map(this::toDto);
     }
 
     // 특정 카테고리 내 재고가 0보다 큰 상품만 조회
-    public Page<Product> getProductsByCategoryInStock(Long categoryId, Pageable pageable) {
-        return productRepository.findByCategoryIdAndStockQuantityGreaterThanWithImages(categoryId, 0, pageable);
+    public Page<ProductDto> getProductsByCategoryInStock(Long categoryId, Pageable pageable) {
+        return productRepository.findByCategoryIdAndStockQuantityGreaterThanWithImages(categoryId, 0, pageable)
+                .map(this::toDto);
     }
 
     // 슬러그 조회 + 페이징처리
-    public Page<Product> getProductsByCategorySlug(String slug, Pageable pageable) {
+    public Page<ProductDto> getProductsByCategorySlug(String slug, Pageable pageable) {
         Category category = categoryRepository.findBySlug(slug);
         if (category == null) {
             return Page.empty(pageable);
         }
-        return productRepository.findByCategoryIdWithImages(category.getId(), pageable);
+        return productRepository.findByCategoryIdWithImages(category.getId(), pageable)
+                .map(this::toDto);
     }
-
 
 }
