@@ -3,9 +3,9 @@ import React from 'react';
 import cartApi from '../api/cart';
 
 export default function Product({ product }) {
-    const { id, name, price, description, discountPrice, stockQuantity, productImages } = product;
-    const mainImageUrl = productImages && productImages.length > 0
-        ? (productImages.find(img => img.isPrimary) || productImages[0]).imageUrl
+    const { id, name, price, description, discountPrice, stockQuantity, images } = product;
+    const mainImageUrl = images && images.length > 0
+        ? (images.find(img => img.isPrimary) || images[0]).imageUrl
         : 'https://via.placeholder.com/200/CCCCCC/FFFFFF?text=No+Image';
   //カートに商品を追加する臨時ハンドラー(cartApi連動は後で)
     const handleAddToCart = async(e) => {
