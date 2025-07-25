@@ -2,10 +2,12 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemDto;
+import com.example.backend.dto.OrderDto;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
 
+import com.example.backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,13 +19,22 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class CartController {
 
-    private final CartService cartService;
-
     /**
      * ADMIN, USER & ANONYMOUS (non-login) accessible
+     *
+     * 카트 조회	                GET	    /api/cart
+     * 카트에 상품 추가	        POST	/api/cart/items
+     * 카트 상품 수정	            PUT	    /api/cart/items/{id}
+     * 카트 상품 삭제	            DELETE	/api/cart/items/{id}
+     * 카트 전체 삭제	            DELETE	/api/cart
+     * 비로그인/로그인 카트 병합	POST	/api/cart/merge
+     * 주문 생성	                POST	/api/cart/order
      */
 
-    //유저 장바구니 조합
+    private final CartService cartService;
+    private final OrderService orderService;
+
+    //유저 카트 병합
     @PostMapping("/merge")
     public ResponseEntity<Void> mergeCarts(
             Principal principal,
@@ -97,6 +108,18 @@ public class CartController {
         cartService.softClearCart(userEmail, sessionId);
         return ResponseEntity.noContent().build();
     }
+
+    // ==================================================== Order ====================================================
+    @PostMapping("/order")
+    public ResponseEntity<OrderDto> createOrder(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build(); // 비로그인 접근 차단
+        }
+        String userEmail = principal.getName();
+        OrderDto orderDto = orderService.createOrderFromCart(userEmail);
+        return ResponseEntity.ok(orderDto);
+    }
+
 
     // 편의 메소드 =====================================================================================================
 
