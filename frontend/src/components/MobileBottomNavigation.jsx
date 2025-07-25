@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Menu, User, ShoppingCart, Heart, Search, MapPin } from "lucide-react";
 
 export default function MobileBottomNavigation() {
@@ -17,7 +18,9 @@ export default function MobileBottomNavigation() {
           <ShoppingCart />
         </button>
         <button>
-          <User />
+          <Link to={`/profile`}>
+            <User />
+          </Link>
         </button>
       </nav>
     </>

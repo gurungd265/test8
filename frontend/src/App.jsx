@@ -11,6 +11,7 @@ import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import {AuthProvider,useAuth} from './contexts/AuthContext';
+import ProfilePage from './pages/ProfilePage';
 
     const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
@@ -64,6 +65,7 @@ function AppContent() {
                   {/* Need Login */}
                   <Route element={<ProtectedRoute requiresAuth={true} redirectPath="/login" />}>
                     <Route path="/wishes" element={<WishesPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}
                     {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
