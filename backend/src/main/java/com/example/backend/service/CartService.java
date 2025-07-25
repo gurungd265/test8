@@ -31,48 +31,61 @@ public class CartService {
 
     /**
      * 카트에 상품 추가
-     *
-     * @param userEmail 로그인된 유저 이메일 (비회원은 null)
-     * @param sessionId 비회원 세션ID (로그인 유저는 null)
-     * @param productId 추가할 상품 ID
-     * @param quantity 수량
-     * @return CartItem반영
+     * - 로그인 유저(userEmail) 또는 비회원(sessionId) 기준 카트 조회 및 생성
+     * - 재고 수량 체크 후, 기존 아이템 수량 업데이트 또는 신규 아이템 추가
      */
-    @Transactional
+     @Transactional
     public CartItem addProductToCart(String userEmail, String sessionId, Long productId, int quantity) {
-        // 1. 유저 또는 세션 기반 카트 조회/생성
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("追加する数量は1以上である必要があります。");
+        }
+
+        // 카트 조회 또는 생성
         Cart cart = getOrCreateCart(userEmail, sessionId);
 
-        // 2. 상품 조회
+        // 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
 
-        // 3. 이미 카트에 상품이 있으면 수량 업데이트, 없으면 새로 추가
+        // 카트에 이미 존재하는 아이템 확인
         Optional<CartItem> existingItemOpt = cart.getCartItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
                 .findFirst();
 
-        CartItem cartItem;
+        int newQuantity = quantity;
         if (existingItemOpt.isPresent()) {
+            // 기존 수량에 추가
+            newQuantity += existingItemOpt.get().getQuantity();
+        }
+
+        // 재고 확인
+        if (product.getStockQuantity() == null || product.getStockQuantity() < newQuantity) {
+            throw new IllegalStateException("在庫切れです");
+        }
+
+        CartItem cartItem;
+        if (existingItemOpt.isPresent()) { // 기존 아이템 수량 업데이트
             cartItem = existingItemOpt.get();
-            cartItem.setQuantity(cartItem.getQuantity() + quantity);
-        } else {
+            cartItem.setQuantity(newQuantity);
+        } else { // 신규 아이템 생성 및 추가
             cartItem = new CartItem();
             cartItem.setCart(cart);
             cartItem.setProduct(product);
             cartItem.setQuantity(quantity);
-            cartItem.setPriceAtAddition(BigDecimal.valueOf(product.getPrice())); // 가격 저장
+            cartItem.setPriceAtAddition(BigDecimal.valueOf(product.getPrice()));
             cart.getCartItems().add(cartItem);
         }
 
-        // 저장
+        // 변경사항 저장
         cartRepository.save(cart);
 
         return cartItem;
     }
 
     /**
-     비회원에서 회원 로그인 시 장바구니 병합
+     비회원에서 회원 로그인 시 카트 병합
+     * - 로그인 후 세션 기반 카트를 유저 카트에 병합하는 기능
+     * - 중복 아이템은 수량 합산, 세션 카트는 소프트 삭제 처리
      */
     @Transactional
     public void mergeCarts(String userEmail, String sessionId) {
@@ -80,9 +93,11 @@ public class CartService {
             throw new IllegalArgumentException("ユーザーのメールアドレスとセッションIDは必須です");
         }
 
+        // 유저 조회
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("ユーザーが見つかりません。"));
 
+        // 유저 카트 조회 또는 생성
         Cart userCart = cartRepository.findByUser(user)
                 .orElseGet(() -> {
                     Cart newCart = new Cart();
@@ -90,6 +105,7 @@ public class CartService {
                     return cartRepository.save(newCart);
                 });
 
+        // 세션 카트 조회 (병합 대상)
         Cart sessionCart = cartRepository.findBySessionId(sessionId)
                 .orElse(null);
 
@@ -97,30 +113,36 @@ public class CartService {
             return; // 병합할 카트가 없으면 종료
         }
 
+        // 세션 카트 아이템을 유저 카트로 병합
         for (CartItem sessionItem : sessionCart.getCartItems()) {
             if (sessionItem.getDeletedAt() != null) continue; // 삭제된 아이템 무시
 
             Optional<CartItem> existingItemOpt = userCart.getCartItems().stream()
-                    .filter(item -> item.getProduct().getId().equals(sessionItem.getProduct().getId()) && item.getDeletedAt() == null)
+                    .filter(item -> item.getProduct().getId().equals(sessionItem.getProduct().getId())
+                            && item.getDeletedAt() == null)
                     .findFirst();
 
-            if (existingItemOpt.isPresent()) {
+            if (existingItemOpt.isPresent()) { // 중복 상품 수량 합산
                 CartItem existingItem = existingItemOpt.get();
                 existingItem.setQuantity(existingItem.getQuantity() + sessionItem.getQuantity());
-            } else {
+            } else { // 새로운 상품 추가 (카트 변경)
                 sessionItem.setCart(userCart);
                 userCart.getCartItems().add(sessionItem);
             }
         }
+
         // 세션 카트 소프트 삭제
         sessionCart.setDeletedAt(LocalDateTime.now());
 
+        // 변경된 카트 저장
         cartRepository.save(userCart);
         cartRepository.save(sessionCart);
     }
 
     /**
-     카트 상품 목록 조회
+     카트 아이템 목록 조회 (유저 이메일 또는 세션 ID 기반)
+     * - 카트가 없으면 생성
+     * - 카트와 카트 아이템 리스트를 DTO로 변환 후 반환
      */
     @Transactional(readOnly = true)
     public CartDto getCartByUserEmailOrSessionId(String userEmail, String sessionId) {
@@ -129,7 +151,7 @@ public class CartService {
     }
 
     /**
-     카트 상품 수량 변경
+     카트 아이템 수량 변경
      */
     @Transactional
     public CartItem updateCartItemQuantity(String userEmail, String sessionId, Long cartItemId, int newQuantity) {
@@ -152,7 +174,7 @@ public class CartService {
     }
 
     /**
-     카트 상품 삭제
+     카트 아이템 소프트 삭제
      */
     @Transactional
     public void softDeleteCartItem(String userEmail, String sessionId, Long cartItemId) {
@@ -162,13 +184,12 @@ public class CartService {
                 .filter(item -> item.getId().equals(cartItemId))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("カートアイテムが見つかりません。"));
-        // 소프트 삭제 처리
         cartItem.setDeletedAt(LocalDateTime.now());
         cartRepository.save(cart);
     }
 
     /**
-     카트 전체 삭제
+     카트 전체 소프트 삭제
      */
     @Transactional
     public void softClearCart(String userEmail, String sessionId) {
