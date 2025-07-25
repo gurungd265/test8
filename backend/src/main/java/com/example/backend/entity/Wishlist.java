@@ -11,38 +11,30 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "product_reviews")
-@Where(clause = "deleted_at IS NULL")
+@Table(name = "wishlists")
+@Where(clause = "deleted_at is NULL")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductReview {
+public class Wishlist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
-    private Product product;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    private Byte rating;
-
-    @Column(name = "review_text", columnDefinition = "TEXT")
-    private String reviewText;
-
-    @Column(name = "is_approved")
-    private Boolean isApproved; // 0(false) 1(true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "deleted_at")
+    @Column(name = "deleted_at", nullable = true, updatable = true)
     private LocalDateTime deletedAt;
 
 }

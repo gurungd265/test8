@@ -1,5 +1,7 @@
-package com.example.backend.entity;
+package com.example.backend.entity.user;
 
+import com.example.backend.entity.Cart;
+import com.example.backend.entity.ProductReview;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,13 +36,17 @@ public class User implements UserDetails {
     @Column(name = "password_hash", nullable = false) //비밀번호를 암호화한 값 저장
     private String passwordHash;
 
-    @Column(name = "first_name", nullable = false, length = 50)
+    @Column(name = "first_name", length = 50)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 50)
+    @Column(name = "last_name", length = 50)
     private String lastName;
 
-    @Column(name = "phone", length = 20)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", nullable = true, updatable = true)
+    private Gender gender;
+
+    @Column(name = "phone", nullable = true, length = 20)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
@@ -82,12 +88,18 @@ public class User implements UserDetails {
 
     // ================================================ Spring Security ================================================
     @Builder
-    public User(String email, String passwordHash,String firstName,String lastName,String phoneNumber){
+    public User(
+            String email, String passwordHash,
+            String firstName, String lastName,
+            Gender gender, String phoneNumber,
+            UserType userType){
         this.email = email;
         this.passwordHash = passwordHash;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.gender = gender;
         this.phoneNumber = phoneNumber;
+        this.userType = userType != null ? userType : UserType.USER;
     }
 
     @Override

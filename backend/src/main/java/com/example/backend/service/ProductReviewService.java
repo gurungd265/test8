@@ -3,7 +3,7 @@ package com.example.backend.service;
 import com.example.backend.dto.ProductReviewDto;
 import com.example.backend.entity.Product;
 import com.example.backend.entity.ProductReview;
-import com.example.backend.entity.User;
+import com.example.backend.entity.user.User;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.ProductReviewRepository;
 import com.example.backend.repository.UserRepository;

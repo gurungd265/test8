@@ -1,6 +1,8 @@
-package com.example.backend.dto;
+package com.example.backend.dto.user;
 
-import com.example.backend.entity.User;
+import com.example.backend.entity.user.Gender;
+import com.example.backend.entity.user.User;
+import com.example.backend.entity.user.UserType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +16,8 @@ public class UserResponseDto {
     private String firstName;
     private String lastName;
     private String phoneNumber;
-    private String userType;
+    private Gender gender;
+    private UserType userType;
     private LocalDateTime createdAt;
 
     public static UserResponseDto fromEntity(User user){
@@ -24,7 +27,8 @@ public class UserResponseDto {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
-                .userType(user.getUserType().name())
+                .gender(user.getGender())
+                .userType(user.getUserType())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

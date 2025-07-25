@@ -66,6 +66,16 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> productImages = new ArrayList<>();
 
+    //대표 이미지가져오기
+    public String getMainImageUrl() {
+        return productImages.stream()
+                .filter(img -> img.getDeletedAt() == null)   // soft delete 체크
+                .sorted(Comparator.comparingInt(ProductImage::getDisplayOrder))
+                .findFirst()
+                .map(ProductImage::getImageUrl)
+                .orElse(null);
+    }
+
     public void addProductImage(ProductImage image) {
         productImages.add(image);
         image.setProduct(this);

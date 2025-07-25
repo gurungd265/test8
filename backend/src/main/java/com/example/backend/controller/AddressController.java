@@ -1,6 +1,6 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.AddressDto;
+import com.example.backend.dto.user.AddressDto;
 import com.example.backend.service.AddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
