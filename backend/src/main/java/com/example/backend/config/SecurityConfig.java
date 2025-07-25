@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/cart/items","/api/cart").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/cart/merge").authenticated()
+                        .requestMatchers("/api/users/me/wishlists/**").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
