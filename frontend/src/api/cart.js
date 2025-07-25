@@ -104,6 +104,16 @@ const cartApi = {
             console.error('カートを空にできませんでした。', error);
             throw error;
         }
+    },
+
+    mergeAnonymousCart: async (sessionId) => {
+            try {
+                const response = await api.post(`/api/cart/merge?sessionId=${sessionId}`);
+                return response.data;
+            } catch (error) {
+                console.error('匿名カートの統合に失敗しました。', error);
+                throw error;
+            }
     }
 };
 

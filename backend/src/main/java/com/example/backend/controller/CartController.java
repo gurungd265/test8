@@ -23,10 +23,21 @@ public class CartController {
      * ADMIN, USER & ANONYMOUS (non-login) accessible
      */
 
+    //유저 장바구니 조합
+    @PostMapping("/merge")
+    public ResponseEntity<Void> mergeCarts(
+            Principal principal,
+            @RequestParam(required = true) String sessionId
+    ){
+        String userEmail = principal.getName();
+        cartService.mergeCarts(userEmail,sessionId);
+        return ResponseEntity.ok().build();
+    }
+
     // 카트 조회
     @GetMapping
     public ResponseEntity<CartDto> getCart(
-            @RequestParam String sessionId,
+            @RequestParam(required = false) String sessionId,
             Principal principal
     ) {
         // principal : JwtAuthenticationFilter가 JWT 검증 후 SecurityContext에 세팅한 인증 정보

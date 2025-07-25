@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import authApi from '../api/auth';
+import cartApi from '../api/cart';
+import Cookies from 'js-cookie';
 
 const AuthContext = createContext(null);
 
@@ -16,6 +18,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setIsLoggedIn(false);
+    Cookies.remove('sessionId', { path: '/' });
     delete api.defaults.headers.common['Authorization'];
   }, []);
 
@@ -51,6 +54,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     setLoading(true);
+
     try {
       const loginData = await authApi.login(email, password);
       const newToken = loginData.token;
@@ -61,6 +65,18 @@ export const AuthProvider = ({ children }) => {
 
       setToken(newToken);
       await validateToken();
+
+      const anonymousSessionId = Cookies.get('sessionId');
+      if(anonymousSessionId){
+          console.log('ログイン成功！既存の匿名セッションID:', anonymousSessionId, 'が見つかりました。カートの統合を試みます。');
+          try {
+              await cartApi.mergeAnonymousCart(anonymousSessionId);
+              Cookies.remove('sessionId', { path: '/' });
+              console.log('カートが正常に統合され、匿名セッションIDが削除されました。');
+          } catch (mergeError) {
+              console.error('カート統合に失敗しました。', mergeError);
+          }
+      }
 
       api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 

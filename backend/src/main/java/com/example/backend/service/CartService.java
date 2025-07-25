@@ -5,7 +5,7 @@ import com.example.backend.dto.CartItemDto;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import com.example.backend.entity.Product;
-import com.example.backend.entity.User;
+import com.example.backend.entity.user.User;
 import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.UserRepository;
