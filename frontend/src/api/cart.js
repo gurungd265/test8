@@ -1,11 +1,25 @@
 import api from './index';
+import Cookies from 'js-cookie';
+
+const isLoggedIn = () => {
+    return !!localStorage.getItem('jwtToken');
+};
 
 const cartApi = {
     // カートに商品を追加
     addToCart: async (productId, quantity) => {
+        let url = `/api/cart/items?productId=${productId}&quantity=${quantity}`;
+        if(!isLoggedIn()){
+            let sessionId = Cookies.get('sessionId');
+            if (!sessionId) {
+                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+            }
+            url += `&sessionId=${sessionId}`;
+        }
         try {
-            const response = await api.post('/api/cart/add', { productId, quantity });
-            return response.data; // 新しく追加された/アップデートされたショッピングカート項目
+            const response = await api.post(url);
+            return response.data;
         } catch (error) {
             console.error('カートに商品を追加できませんでした。', error);
             throw error;
@@ -14,8 +28,17 @@ const cartApi = {
 
     // ログインしたユーザーのショッピングカート項目の取得
     getCartItems: async () => {
+        let url = `/api/cart`;
+            if(!isLoggedIn()){
+                let sessionId = Cookies.get('sessionId');
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                }
+                url += url.includes('?') ? `&sessionId=${sessionId}` : `?sessionId=${sessionId}`;
+            }
         try {
-            const response = await api.get('/api/cart');
+            const response = await api.get(url);
             return response.data; // ショッピングカートリスト
         } catch (error) {
             console.error('カートアイテムを読み込むことができませんでした。', error);
@@ -25,8 +48,17 @@ const cartApi = {
 
     // ショッピングカート項目の数量変更
     updateCartItemQuantity: async (cartItemId, newQuantity) => {
+        let url = `/api/cart/items/${cartItemId}?quantity=${newQuantity}`;
+                if(!isLoggedIn()){
+                    let sessionId = Cookies.get('sessionId');
+                    if (!sessionId) {
+                        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                    }
+                    url += `&sessionId=${sessionId}`;
+                }
         try {
-            const response = await api.put(`/api/cart/${cartItemId}`, { newQuantity });
+            const response = await api.put(url);
             return response.data; // アップデートされたショッピングカート項目
         } catch (error) {
             console.error(`カートアイテムID ${cartItemId}の数量を更新できませんでした。`, error);
@@ -36,8 +68,17 @@ const cartApi = {
 
     // ショッピングカート項目削除
     removeCartItem: async (cartItemId) => {
+        let url = `/api/cart/items/${cartItemId}`;
+                if(!isLoggedIn()){
+                    let sessionId = Cookies.get('sessionId');
+                    if (!sessionId) {
+                        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                    }
+                    url += url.includes('?') ? `&sessionId=${sessionId}` : `?sessionId=${sessionId}`;
+                }
         try {
-            const response = await api.delete(`/api/cart/${cartItemId}`);
+            const response = await api.delete(url);
             return response.data;
         } catch (error) {
             console.error(`カートアイテムID ${cartItemId}を削除できませんでした。`, error);
@@ -47,8 +88,17 @@ const cartApi = {
 
     // 買い物かごを空けること
     clearCart: async () => {
+        let url = `/api/cart`;
+                if(!isLoggedIn()){
+                    let sessionId = Cookies.get('sessionId');
+                    if (!sessionId) {
+                        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                    }
+                    url += url.includes('?') ? `&sessionId=${sessionId}` : `?sessionId=${sessionId}`;
+                }
         try {
-            const response = await api.delete('/api/cart/clear');
+            const response = await api.delete(url);
             return response.data;
         } catch (error) {
             console.error('カートを空にできませんでした。', error);
