@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import cartApi from "../api/cart";
+import { Heart } from "lucide-react";
+import { useState } from "react";
 
 export default function Product({ product }) {
   const { id, name, price, description, discountPrice, stockQuantity, images } =
@@ -37,6 +39,11 @@ export default function Product({ product }) {
       }
     }
   };
+  const [wished, setWished] = useState(false); // マイリストに追加するための状態
+  const handleWishlist = () => {
+    e.preventDefault(); // Linkタグへの移動防止
+    setWished(!wished); // wishedの状態をトグル
+    alert(`${name}を${!wished ? "マイリストに追加しました" : "マイリストから削除しました"}！`);}
 
   // 表示される価格(割引価格があれば割引価格、なければ原価)
   const displayPrice =
@@ -47,13 +54,27 @@ export default function Product({ product }) {
   return (
     <>
       {/* Product */}
-      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500">
+      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative">
+        {/* Add To Wishes */}
+        <button
+          onClick={handleWishlist}
+          className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-trnsfrorm"
+          title="マイリストに追加"
+        >
+          <Heart 
+            size={18}
+            className={`stroke-2 ${
+              wished ? "text-purple-600 fill-purple-600" : "text-gray-400"
+            }`}
+          />
+        </button>
+
         {/* Product Image */}
         <Link to={`/product/${id}`}>
           <img
             src={mainImageUrl}
             alt={name}
-            className="w-full h-56 object-cover rounded-lg hover:rounded-t-lg"
+            className="w-full h-56 object-cover rounded-lg group-hover:rounded-t-lg group-hover:rounded-b-none transition-all duration-300"
           />
         </Link>
         <div className="p-4">
