@@ -54,6 +54,7 @@ const cartApi = {
                     if (!sessionId) {
                         sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                         Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                        console.log()
                     }
                     url += `&sessionId=${sessionId}`;
                 }
@@ -109,11 +110,33 @@ const cartApi = {
     mergeAnonymousCart: async (sessionId) => {
             try {
                 const response = await api.post(`/api/cart/merge?sessionId=${sessionId}`);
+                Cookies.remove('sessionId', { path: '/' });
                 return response.data;
             } catch (error) {
                 console.error('匿名カートの統合に失敗しました。', error);
                 throw error;
             }
+    },
+
+    getCartItemCount: async () => {
+        let url = '/api/cart/count';
+        if (!isLoggedIn()) {
+            const sessionId = Cookies.get('sessionId');
+            if (sessionId) {
+                url += `?sessionId=${sessionId}`;
+            }else{
+                return 0;
+            }
+        } else{
+            console.log('DEBUG_CART_API: getCartItemCount: not sessionId request:', url);
+        }
+        try {
+            const response = await api.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Failed to fetch cart item count:', error);
+            return 0;
+        }
     }
 };
 

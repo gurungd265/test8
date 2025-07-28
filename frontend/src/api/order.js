@@ -1,0 +1,48 @@
+import api from './index';
+
+const orderApi = {
+    createOrder: async () => {
+        try {
+            const response = await api.post('/api/orders');
+            return response.data;
+        } catch (error) {
+            console.error('注文の作成に失敗しました。', error);
+            throw error;
+        }
+    },
+
+    //(GET /api/orders)
+    getUserOrders: async () => {
+        try {
+            const response = await api.get('/api/orders');
+            return response.data; // List<OrderDto>
+        } catch (error) {
+            console.error('注文履歴の読み込みに失敗しました。', error);
+            throw error;
+        }
+    },
+
+    //(GET /api/orders/{orderId})
+    getOrderDetail: async (orderId) => {
+        try {
+            const response = await api.get(`/api/orders/${orderId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`注文ID ${orderId}の詳細読み込みに失敗しました。`, error);
+            throw error;
+        }
+    },
+
+    // delete
+    cancelOrder: async (orderId) => {
+        try {
+            const response = await api.delete(`/api/orders/${orderId}/cancel`);
+            return response.data; // 204 No Content
+        } catch (error) {
+            console.error(`注文ID ${orderId}のキャンセルに失敗しました。`, error);
+            throw error;
+        }
+    }
+};
+
+export default orderApi;

@@ -3,8 +3,9 @@ import api from '../api';
 import authApi from '../api/auth';
 import cartApi from '../api/cart';
 import Cookies from 'js-cookie';
+import {jwtDecode} from 'jwt-decode';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
+    console.log("ログアウト処理を開始します。");
     localStorage.removeItem('jwtToken');
     localStorage.removeItem('userEmail');
     setToken(null);
@@ -22,6 +24,20 @@ export const AuthProvider = ({ children }) => {
     delete api.defaults.headers.common['Authorization'];
   }, []);
 
+  const isTokenExpired = useCallback((currentToken) => {
+      if (!currentToken) {
+        return true;
+      }
+      try {
+        const decoded = jwtDecode(currentToken);
+        const currentTime = Date.now() / 1000;
+        return decoded.exp < currentTime;
+      } catch (error) {
+        console.error('トークンデコード失敗、または無効なトークン:', error);
+        return true;
+      }
+    },[]);
+
   const validateToken = useCallback(async () => {
     const currentToken = localStorage.getItem('jwtToken');
     if (!currentToken) {
@@ -29,6 +45,11 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setLoading(false);
       return;
+    } else if (isTokenExpired(currentToken)) {
+        console.log('クライアント側でJWTトークンが有効ではありません（期限切れ）。');
+        logout();
+        setLoading(false);
+        return;
     }
 
     try {
@@ -46,6 +67,25 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  }, [logout,isTokenExpired]);
+
+  useEffect(() => {
+      const interceptor = api.interceptors.response.use(
+          (response) => response,
+          (error) => {
+              if (error.response && error.response.status === 401) {
+                  console.error('API呼び出し中に401 Unauthorizedエラーが発生しました。ログアウトします。');
+                  logout();
+                  alert('セッションが切れました。再度ログインしてください。');
+                  return Promise.reject(error);
+              }
+            return Promise.reject(error);
+          }
+      );
+
+  return () => {
+      api.interceptors.response.eject(interceptor);
+      };
   }, [logout]);
 
   useEffect(() => {
@@ -65,30 +105,27 @@ export const AuthProvider = ({ children }) => {
 
       setToken(newToken);
       await validateToken();
-
+      console.log('DEBUG_AUTH: 로그인 성공 후 anonymousSessionId 확인 시작.');
       const anonymousSessionId = Cookies.get('sessionId');
-      if(anonymousSessionId){
-          console.log('ログイン成功！既存の匿名セッションID:', anonymousSessionId, 'が見つかりました。カートの統合を試みます。');
+      console.log('DEBUG_AUTH: Cookies.get("sessionId") 결과:', anonymousSessionId);
+      if (anonymousSessionId) {
+          console.log('ログイン成功！既存の匿名セッションIDが見つかりました。カートの統合を試みます。');
           try {
               await cartApi.mergeAnonymousCart(anonymousSessionId);
-              Cookies.remove('sessionId', { path: '/' });
-              console.log('カートが正常に統合され、匿名セッションIDが削除されました。');
+              console.log('カートが正常に統合されました。');
           } catch (mergeError) {
               console.error('カート統合に失敗しました。', mergeError);
           }
+      } else{
+          console.log('DEBUG_AUTH: not have anonymousSessionId');
       }
-
-      api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
       setLoading(false);
       return loginData;
     } catch (error) {
-      localStorage.removeItem('jwtToken');
-      localStorage.removeItem('userEmail');
-      setToken(null);
-      setUser(null);
       setIsLoggedIn(false);
-      delete api.defaults.headers.common['Authorization'];
+      console.error("ログイン失敗:", error);
+      logout();
       setLoading(false);
       throw error;
     }

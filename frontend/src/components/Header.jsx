@@ -1,4 +1,4 @@
-import React from "react";
+import React,{ useContext } from "react";
 import {
   Menu,
   MapPin,
@@ -11,9 +11,11 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/Logo.png"
+import { CartContext } from "../contexts/CartContext";
 
 export default function Header() {
   const { isLoggedIn, user, logout } = useAuth();
+  const { cartItemCount } = useContext(CartContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -64,11 +66,17 @@ export default function Header() {
             <Heart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
           </Link>
           {/* Shopping Cart */}
+          <div>
           <Link to="/cart" className="relative">
             <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
             {/* item count ++ */}
-            {/* <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span> */}
+            {cartItemCount > 0 && ( // <-- 이 조건문과 아래 span 태그 추가
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {cartItemCount}
+                </span>
+            )}
           </Link>
+          </div>
           {/* Profile */}
           {isLoggedIn ? (
             <button

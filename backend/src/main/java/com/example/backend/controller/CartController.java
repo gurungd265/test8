@@ -7,17 +7,27 @@ import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
 
+import com.example.backend.util.CookieUtil;
 import com.example.backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.UUID;
+
+import static com.example.backend.util.CookieUtil.CART_SESSION_ID;
 
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
 public class CartController {
+
 
     /**
      * ADMIN, USER & ANONYMOUS (non-login) accessible
@@ -48,26 +58,51 @@ public class CartController {
     // 카트 조회
     @GetMapping
     public ResponseEntity<CartDto> getCart(
-            @RequestParam(required = false) String sessionId,
-            Principal principal
+            Principal principal,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         // principal : JwtAuthenticationFilter가 JWT 검증 후 SecurityContext에 세팅한 인증 정보
         // principal이 null 아니면 로그인한 이메일 반환, null이면 비로그인 상태
         String userEmail = (principal != null) ? principal.getName() : null;
-        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionId);
+        String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        if(userEmail==null && sessionIdFromCookie ==null){
+            String newSessionId = UUID.randomUUID().toString();
+            CookieUtil.addCookie(response, CART_SESSION_ID, newSessionId, 60 * 60 * 24 * 7);
+            CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, newSessionId);
+            return ResponseEntity.ok(cartDto);
+        }
+        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionIdFromCookie);
         return ResponseEntity.ok(cartDto);
     }
 
     // 카트에 상품 추가
     @PostMapping("/items")
     public ResponseEntity<CartItemDto> addProductToCart(
-            @RequestParam(required = false) String sessionId,
             @RequestParam Long productId,
             @RequestParam int quantity,
-            Principal principal
+            Principal principal,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        String userEmail = getUserEmail(principal);
-        CartItem cartItem = cartService.addProductToCart(userEmail, sessionId, productId, quantity);
+        String userEmail = null;
+        if (principal != null) {
+            userEmail = principal.getName();
+        }
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        if (userEmail == null && sessionIdFromCookie == null) {
+            sessionIdFromCookie = UUID.randomUUID().toString();
+            CookieUtil.addCookie(response, CART_SESSION_ID, sessionIdFromCookie, 60 * 60 * 24 * 7);
+        }
+
+        String finalSessionId = sessionIdFromCookie;
+        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity);
         CartItemDto dto = convertToDto(cartItem);
         return ResponseEntity.ok(dto);
     }
@@ -77,11 +112,14 @@ public class CartController {
     public ResponseEntity<CartItemDto> updateCartItem(
             @PathVariable Long cartItemId,
             @RequestParam int quantity,
-            @RequestParam(required = false) String sessionId,
-            Principal principal
+            Principal principal,
+            HttpServletRequest request
     ) {
         String userEmail = getUserEmail(principal);
-        CartItem updatedItem = cartService.updateCartItemQuantity(userEmail, sessionId, cartItemId, quantity);
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        CartItem updatedItem = cartService.updateCartItemQuantity(userEmail, sessionIdFromCookie, cartItemId, quantity);
         CartItemDto dto = convertToDto(updatedItem);
         return ResponseEntity.ok(dto);
     }
@@ -90,27 +128,46 @@ public class CartController {
     @DeleteMapping("/items/{cartItemId}")
     public ResponseEntity<Void> deleteCartItem(
             @PathVariable Long cartItemId,
-            @RequestParam(required = false) String sessionId,
-            Principal principal
+            Principal principal,
+            HttpServletRequest request
     ) {
         String userEmail = (principal != null) ? principal.getName() : null;
-        cartService.softDeleteCartItem(userEmail, sessionId, cartItemId);
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        cartService.softDeleteCartItem(userEmail, sessionIdFromCookie, cartItemId);
         return ResponseEntity.noContent().build();
     }
 
     // 카트 전체 삭제
     @DeleteMapping
     public ResponseEntity<Void> clearCart(
-            @RequestParam(required = false) String sessionId,
-            Principal principal
+            Principal principal,
+            HttpServletRequest request
     ) {
         String userEmail = (principal != null) ? principal.getName() : null;
-        cartService.softClearCart(userEmail, sessionId);
+        String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
+                        .map(jakarta.servlet.http.Cookie::getValue)
+                        .orElse(null);
+        cartService.softClearCart(userEmail, sessionIdFromCookie);
         return ResponseEntity.noContent().build();
     }
 
     // ==================================================== Order ====================================================
+    @GetMapping("/count")
+    public ResponseEntity<Integer> getCartItemCount(Principal principal, HttpServletRequest request) {
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionId = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        if(userEmail==null && sessionId==null){
+            return ResponseEntity.ok(0);
+        }
+        return ResponseEntity.ok(cartService.getTotalCartItemCount(userEmail, sessionId));
+    }
+
     @PostMapping("/order")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderDto> createOrder(Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(401).build(); // 비로그인 접근 차단
@@ -130,7 +187,8 @@ public class CartController {
                 item.getProduct().getId(),
                 item.getProduct().getName(),
                 item.getQuantity(),
-                item.getPriceAtAddition()
+                item.getPriceAtAddition(),
+                item.getProduct().getMainImageUrl()
         );
     }
     

@@ -48,7 +48,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5174")); // React/Vite 개발 서버 주소
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174", "http://127.0.0.1:5174")); // React/Vite 개발 서버 주소
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -75,9 +75,12 @@ public class SecurityConfig {
 //                        .requestMatchers("/api/users/me/**").authenticated()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/cart/items","/api/cart").permitAll()
+                        .requestMatchers("/api/cart/items/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/cart/merge").authenticated()
+                        .requestMatchers("/api/cart/count").permitAll()
                         .requestMatchers("/api/users/me/wishlists/**").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

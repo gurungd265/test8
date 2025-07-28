@@ -11,6 +11,7 @@ import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import {AuthProvider,useAuth} from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext.jsx';
 import ProfilePage from './pages/ProfilePage';
 
     const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
@@ -40,6 +41,7 @@ function AppContent() {
   return (
       <>
         {/* AuthContext */}
+      <CartProvider>
         <Header />
 
         {/* Routing Area */}
@@ -74,7 +76,8 @@ function AppContent() {
                   {/* 404 Not Found page */}
                   <Route path="*" element={<div>(404 Not Found)</div>} />
                 </Routes>
-            </main>
+          </main>
+          </CartProvider>
 
         {/* Footer */}
         {/* <Footer /> */}

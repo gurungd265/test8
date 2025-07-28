@@ -90,7 +90,7 @@ export default function CartPage() {
                         <div className="flex items-center gap-4">
                             <Link to={`/product/${item.productId}`}>
                                 <img
-                                    src={`https://via.placeholder.com/80?text=Product+${item.productId}`}　
+                                    src={item.productImageUrl}　
                                     alt={item.name}
                                     className="w-20 h-20 object-cover rounded"
                                 />
