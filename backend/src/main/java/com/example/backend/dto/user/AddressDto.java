@@ -1,16 +1,18 @@
 package com.example.backend.dto.user;
 
+import com.example.backend.entity.user.AddressType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class AddressDto {
 
-    private Long id; // 수정 시 필요
+    private Long id;
 
-    private String addressType; // "HOME", "WORK" 등 문자열로 받을 수 있음
+    private AddressType addressType; // enum
 
     @NotBlank(message = "Streetは必須です。")
     private String street;

@@ -1,12 +1,12 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.CartDto;
-import com.example.backend.dto.CartItemDto;
-import com.example.backend.dto.OrderDto;
-import com.example.backend.dto.OrderItemDto;
+import com.example.backend.dto.*;
+import com.example.backend.dto.user.AddressDto;
 import com.example.backend.entity.Order;
 import com.example.backend.entity.OrderItem;
 import com.example.backend.entity.OrderStatus;
+import com.example.backend.entity.Payment;
+import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import com.example.backend.repository.OrderRepository;
 import com.example.backend.repository.ProductRepository;
@@ -134,7 +134,19 @@ public class OrderService {
 
     // 편의 메소드 ======================================================================================================
 
-    // Entity -> DTO 변환
+    // OrderNumber 생성 메소드
+    public String generateUniqueOrderNumber() {
+        // 현재 시간 기준 YYYYMMDDHHMMSS 형식
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+        // 랜덤 UUID 앞 8자리 (충돌 확률 낮춤)
+        String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        // 예: 20250725153045-1A2B3C4D
+        return timestamp + "-" + randomPart;
+    }
+
+    // 주문 정보 Entity -> DTO
     private OrderDto convertToDto(Order order) {
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
                 .map(item -> new OrderItemDto(
@@ -147,29 +159,55 @@ public class OrderService {
                 ))
                 .toList();
 
+        List<PaymentResponseDto> paymentResponseDtos = order.getPayments().stream()
+                .map(this::paymentToDto)
+                .toList();
+
         return OrderDto.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus())
                 .totalAmount(order.getTotalAmount())
-                .paymentMethod(order.getPaymentMethod())
-                .shippingAddressId(order.getShippingAddressId())
-                .billingAddressId(order.getBillingAddressId())
+                .shippingAddress(order.getShippingAddress() != null ? addressToDto(order.getShippingAddress()) : null)
+                .billingAddress(order.getBillingAddress() != null ? addressToDto(order.getBillingAddress()) : null)
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .orderItems(orderItemDtos)
+                .payments(paymentResponseDtos)
                 .build();
     }
 
-    // OrderNumber 생성 메소드
-    public String generateUniqueOrderNumber() {
-        // 현재 시간 기준 YYYYMMDDHHMMSS 형식
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    // 주소 Entity -> Dto
+    private AddressDto addressToDto(Address address) {
+        if (address == null) {
+            return null;
+        }
+        return AddressDto.builder()
+                .id(address.getId())
+                .addressType(address.getAddressType())
+                .street(address.getStreet())
+                .city(address.getCity())
+                .state(address.getState())
+                .postalCode(address.getPostalCode())
+                .country(address.getCountry())
+                .isDefault(address.getIsDefault())
+                .build();
+    }
 
-        // 랜덤 UUID 앞 8자리 (충돌 확률 낮춤)
-        String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    // 결제 정보 Entity -> Dto
+    private PaymentResponseDto paymentToDto(Payment payment) {
+        if (payment == null) return null;
 
-        // 예: 20250725153045-1A2B3C4D
-        return timestamp + "-" + randomPart;
+        return PaymentResponseDto.builder()
+                .id(payment.getId())
+                .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
+                .amount(payment.getAmount())
+                .refundAmount(payment.getRefundAmount())
+                .paymentMethod(payment.getPaymentMethod())
+                .transactionId(payment.getTransactionId())
+                .status(payment.getStatus().name())
+                .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
+                .build();
     }
 }

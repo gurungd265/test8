@@ -1,5 +1,6 @@
 package com.example.backend.entity;
 
+import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,23 +37,22 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "order_number", unique = true, nullable = false)
+    @Column(name = "order_number", nullable = false)
     private String orderNumber;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     @Column(name = "total_amount")
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount; // 주문 전체에 대한 합계 금액
 
-    @Column(name = "payment_method")
-    private String paymentMethod;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shipping_address_id")
+    private Address shippingAddress; // 배송 주소
 
-    @Column(name = "shipping_address_id")
-    private Long shippingAddressId;
-
-    @Column(name = "billing_address_id")
-    private Long billingAddressId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "billing_address_id")
+    private Address billingAddress; // 청구 주소
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -65,8 +65,11 @@ public class Order {
     @Column(name = "deleted_at", nullable = true, updatable = true)
     private LocalDateTime deletedAt;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments = new ArrayList<>();
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     public void addOrderItem(OrderItem item) {
         if (orderItems == null) {

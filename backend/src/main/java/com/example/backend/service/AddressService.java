@@ -52,7 +52,7 @@ public class AddressService {
         address.setUser(user);
 
         if (dto.getAddressType() != null) {
-            address.setAddressType(AddressType.valueOf(dto.getAddressType()));
+            address.setAddressType(dto.getAddressType());
         }
 
         address.setStreet(dto.getStreet());
@@ -83,7 +83,7 @@ public class AddressService {
         }
 
         if (dto.getAddressType() != null) {
-            address.setAddressType(AddressType.valueOf(dto.getAddressType()));
+            address.setAddressType(dto.getAddressType());
         }
 
         address.setStreet(dto.getStreet());
@@ -135,7 +135,7 @@ public class AddressService {
     private AddressDto toDto(Address address) {
         return new AddressDto(
                 address.getId(),
-                address.getAddressType() != null ? address.getAddressType().name() : null,
+                address.getAddressType(),
                 address.getStreet(),
                 address.getCity(),
                 address.getState(),
