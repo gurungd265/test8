@@ -1,16 +1,25 @@
-import React from 'react';
-import {Menu, MapPin, Search, Heart, ShoppingCart, User, LogOut} from 'lucide-react';
-import {Link, useNavigate} from 'react-router-dom';
-import {useAuth} from '../contexts/AuthContext';
+import React from "react";
+import {
+  Menu,
+  MapPin,
+  Search,
+  Heart,
+  ShoppingCart,
+  User,
+  LogOut,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import logo from "../assets/Logo.png"
 
 export default function Header() {
-   const {isLoggedIn,user,logout}=useAuth();
-   const navigate = useNavigate();
+  const { isLoggedIn, user, logout } = useAuth();
+  const navigate = useNavigate();
 
-   const handleLogout = () =>{
-       logout();
-       navigate('/');
-   };
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <>
@@ -19,24 +28,24 @@ export default function Header() {
         <div className="flex items-center gap-4">
           <Menu className="lg:hidden cursor-pointer" />
           {/* Logo */}
-          <Link to="/">
-            <div className="flex items-center gap-4">
-                <img
-                    src="https://cal.co.jp/wordpress/wp-content/themes/temp_calrenew/img/logo.svg"
-                    alt="Logo"
-                    className="hidden lg:block h-8"
-                />
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <img
+                src={logo}
+                alt="Logo"
+                className="hidden lg:block h-8"
+              />
+            </Link>
             {/* Location */}
             <button className="flex items-center gap-1 text-sm text-gray-700">
-                <MapPin size="16" />
-                Tokyo
+              <MapPin size="16" />
+              Tokyo
             </button>
             {/* Catalog */}
             <button className="hidden lg:block text-sm font-semibold">
-                Catalog
+              Catalog
             </button>
           </div>
-        </Link>
         </div>
         <div className="flex items-center gap-4">
           {/* Search Section */}
@@ -56,25 +65,32 @@ export default function Header() {
           </Link>
           {/* Shopping Cart */}
           <Link to="/cart" className="relative">
-              <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
-              {/* item count ++ */}
-              {/* <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span> */}
+            <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
+            {/* item count ++ */}
+            {/* <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span> */}
           </Link>
           {/* Profile */}
-            {isLoggedIn ? (
-                <button onClick={handleLogout} className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-red-500 cursor-pointer">
-                    <LogOut className="hidden lg:block" />
-                    <span className="hidden lg:block">{user?.email ? user.email : 'Logout'}</span>
-{/*                     <User className="hidden lg:block cursor-pointer" /> */}
-                </button>
-            ) : (
-              <Link to="/login" className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-blue-500 cursor-pointer">
-                <User className="hidden lg:block" />
-                <span className="hidden lg:block">Login</span>
-{/*                 <User className="hidden lg:block cursor-pointer" /> */}
-              </Link>
-            )}
-
+          {isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-red-500 cursor-pointer"
+            >
+              <LogOut className="hidden lg:block" />
+              <span className="hidden lg:block">
+                {user?.email ? user.email : "Logout"}
+              </span>
+              {/*                     <User className="hidden lg:block cursor-pointer" /> */}
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-blue-500 cursor-pointer"
+            >
+              <User className="hidden lg:block" />
+              <span className="hidden lg:block">Login</span>
+              {/*                 <User className="hidden lg:block cursor-pointer" /> */}
+            </Link>
+          )}
         </div>
       </header>
     </>

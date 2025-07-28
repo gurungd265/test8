@@ -1,58 +1,61 @@
 import { Link } from "react-router-dom";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import wishlistApi from "../api/wishlist";
 import cartApi from "../api/cart";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function WishesPage() {
   const { isLoggedIn, loading: authLoading } = useAuth();
-  const [ wishes, setWishes ] = useState([]);
-  const [ loading, setLoading ] = useState(true);
-  const [ error, setError ] =useState(null);
+  const [wishes, setWishes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() =>{
-      const fetchWishlist = async() =>{
-          if(authLoading) return;
-          if(!isLoggedIn){
-            setError("ウィッシュリストを表示するにはログインしてください。");
-            setLoading(false);
-            return;
-          }
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (authLoading) return;
+      if (!isLoggedIn) {
+        setError("ウィッシュリストを表示するにはログインしてください。");
+        setLoading(false);
+        return;
+      }
 
-          try{
-            const data = await wishlistApi.getWishlistItems();
-            setWishes(data);
-          }catch(err){
-               console.error("ウィッシュリストデータを読み込めませんでした。", err);
-               setError("ウィッシュリストデータを読み込めませんでした。");
-          }finally{
-              setLoading(false);
-          }
-      };
+      try {
+        const data = await wishlistApi.getWishlistItems();
+        setWishes(data);
+      } catch (err) {
+        console.error("ウィッシュリストデータを読み込めませんでした。", err);
+        setError("ウィッシュリストデータを読み込めませんでした。");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchWishlist();
-  },[isLoggedIn, authLoading]);
+  }, [isLoggedIn, authLoading]);
 
   const handleRemove = (id) => {
-       const removeWishlistItem = async () => {
-           try {
-               await wishlistApi.removeWishlistItem(id);
-               setWishes(wishes.filter((item) => item.id !== id)); // 성공 시 UI에서 제거
-           } catch (err) {
-               console.error(`ウィッシュリストアイテムID ${id}の削除に失敗しました。`, err);
-               alert("ウィッシュリストからアイテムを削除できませんでした。"); // 사용자에게 알림
-           }
-       };
-      removeWishlistItem();
+    const removeWishlistItem = async () => {
+      try {
+        await wishlistApi.removeWishlistItem(id);
+        setWishes(wishes.filter((item) => item.id !== id)); // 성공 시 UI에서 제거
+      } catch (err) {
+        console.error(
+          `ウィッシュリストアイテムID ${id}の削除に失敗しました。`,
+          err
+        );
+        alert("ウィッシュリストからアイテムを削除できませんでした。"); // 사용자에게 알림
+      }
+    };
+    removeWishlistItem();
   };
 
   const handleAddToCart = async (productId, quantity = 1) => {
-      try {
-        await cartApi.addToCart(productId, quantity);
-        alert("カートに追加しました！");
-      } catch (error) {
-        console.error("カートへの追加に失敗しました。", error);
-        alert("カートへの追加に失敗しました。");
-      }
+    try {
+      await cartApi.addToCart(productId, quantity);
+      alert("カートに追加しました！");
+    } catch (error) {
+      console.error("カートへの追加に失敗しました。", error);
+      alert("カートへの追加に失敗しました。");
+    }
   };
 
   return (
@@ -60,9 +63,9 @@ export default function WishesPage() {
       <h1 className="text-2xl font-bold mb-4">マイリスト</h1>
 
       {loading ? (
-          <div className="text-center py-10">読み込み中...</div>
+        <div className="text-center py-10">読み込み中...</div>
       ) : error ? (
-          <div className="text-red-600 text-center py-10">{error}</div>
+        <div className="text-red-600 text-center py-10">{error}</div>
       ) : wishes.length === 0 ? (
         <div className="text-gray-600 text-center py-10">
           ウィッシュリストにアイテムがありません。

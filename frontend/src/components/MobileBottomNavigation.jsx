@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Menu, User, ShoppingCart, Heart, Search, MapPin } from "lucide-react";
+import { User, ShoppingCart, Search } from "lucide-react";
+import logo from "../assets/Logo.png"
 
 export default function MobileBottomNavigation() {
   return (
@@ -8,9 +9,9 @@ export default function MobileBottomNavigation() {
       <nav className="lg:hidden bg-white fixed bottom-0 w-full flex justify-around items-center py-2 shadow">
         <Link to={`/`}>
           <img
-            src="https://cal.co.jp/wordpress/wp-content/themes/temp_calrenew/img/logo.svg"
+            src={logo}
             alt="Logo"
-            className="h-6"
+            className="h-8"
           />
         </Link>
         <button>
