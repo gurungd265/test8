@@ -85,18 +85,6 @@ public class PaymentService {
                 .build();
     }
 
-    // 주문별 결제내역 조회
-    public List<PaymentResponseDto> getPaymentsByOrderId(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("注文が見つかりません。"));
-
-        List<Payment> payments = paymentRepository.findByOrder(order);
-
-        return payments.stream()
-                .map(PaymentResponseDto::fromEntity)
-                .collect(Collectors.toList());
-    }
-
     // 결제 취소
     @Transactional
     public PaymentResponseDto cancelPayment(String transactionId) {
@@ -161,6 +149,28 @@ public class PaymentService {
         // 필요 시 주문 상태도 업데이트
 
         return PaymentResponseDto.fromEntity(payment);
+    }
+
+    // 특정 주문별 결제내역 조회
+    public List<PaymentResponseDto> getPaymentsByOrderId(Long orderId, String userEmail) {
+        // 주문이 해당 유저의 주문인지 확인
+        Order order = orderRepository.findByIdAndUserEmail(orderId, userEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found or access denied"));
+
+        List<Payment> payments = paymentRepository.findByOrder(order);
+
+        return payments.stream()
+                .map(PaymentResponseDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // 결제상태별 결제내역 목록 조회
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status) {
+        List<Payment> payments = paymentRepository.findByStatus(status);
+        return payments.stream()
+                .map(PaymentResponseDto::fromEntity)
+                .collect(Collectors.toList());
     }
 
 }

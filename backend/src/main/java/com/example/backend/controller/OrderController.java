@@ -1,9 +1,15 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.OrderDto;
+import com.example.backend.dto.PaymentResponseDto;
+import com.example.backend.entity.OrderStatus;
 import com.example.backend.service.OrderService;
+import com.example.backend.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -15,14 +21,27 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
     /**
-     * ADMIN, USER & ANONYMOUS (non-login) accessible
-     *
-     * 주문 목록 조회	    GET	    /api/orders
-     * 주문 상세 조회	    GET	    /api/orders/{orderId}
-     * 주문 취소	        POST    /PUT/DELETE	/api/orders/{orderId}/cancel
+     * 주문 목록 조회            GET	    /api/orders
+     * 주문 상세 조회            GET	    /api/orders/{orderId}
+     * 주문 취소                DELETE	/api/orders/{orderId}/cancel
+     * 주문별 결제내역 조회       GET      /api/orders/{orderId}/payments
+     * 주문상태별 목록 조회       GET      /api/status/{status}
      */
+
+    // 주문 생성
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderDto> createOrder(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String userEmail = userDetails.getUsername();
+        OrderDto orderDto = orderService.createOrderFromCart(userEmail);
+        return ResponseEntity.status(201).body(orderDto);
+    }
 
     // 주문 목록 조회 (로그인 유저 기준)
     @GetMapping
@@ -39,7 +58,7 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDto> getOrder(@PathVariable Long orderId, Principal principal) {
         if (principal == null) {
-            return ResponseEntity.status(401).build(); // 인증 실패
+            return ResponseEntity.status(401).build();
         }
         String userEmail = principal.getName();
         OrderDto orderDto = orderService.getOrderByIdAndUserEmail(orderId, userEmail);
@@ -56,4 +75,27 @@ public class OrderController {
         orderService.cancelOrder(orderId, userEmail);
         return ResponseEntity.noContent().build();
     }
+
+    // 주문별 결제 내역 조회
+    @GetMapping("/{orderId}/payments")
+    public ResponseEntity<List<PaymentResponseDto>> getPaymentsByOrderId(
+            @PathVariable Long orderId, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String userEmail = principal.getName();
+        List<PaymentResponseDto> payments = paymentService.getPaymentsByOrderId(orderId, userEmail);
+        return ResponseEntity.ok(payments);
+    }
+
+    // 주문 상태별 목록 조회 (관리자 권한)
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<OrderDto>> getOrdersByStatus(
+            @PathVariable OrderStatus status
+    ) {
+        List<OrderDto> orders = orderService.getOrdersByStatus(status);
+        return ResponseEntity.ok(orders);
+    }
+
 }

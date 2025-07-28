@@ -14,18 +14,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         (deleted_at IS NULL 자동 필터링)
      */
 
-    // 특정 사용자의 이메일로 주문 리스트 조회
+    // 특정 사용자의 이메일로 주문 목록 조회
     List<Order> findByUserEmail(String userEmail);
 
     // 특정 ID와 사용자 이메일로 단건 주문 조회
     Optional<Order> findByIdAndUserEmail(Long id, String email);
 
-    // 주문 상태로 주문 리스트 조회
+    // 주문상태별 주문 목록 조회
     List<Order> findByStatus(OrderStatus status);
 
-    // 사용자 ID로 주문 리스트 조회
-    List<Order> findByUserId(Long userId);
-
-    //주문번호로 단건 주문 조회
+    // 주문번호별 단건 주문 조회
     Optional<Order> findByOrderNumber(String orderNumber);
 }
