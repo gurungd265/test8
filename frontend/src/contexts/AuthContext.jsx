@@ -104,10 +104,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('userEmail', userEmail || '');
 
       setToken(newToken);
+
       await validateToken();
-      console.log('DEBUG_AUTH: 로그인 성공 후 anonymousSessionId 확인 시작.');
+
+
       const anonymousSessionId = Cookies.get('sessionId');
-      console.log('DEBUG_AUTH: Cookies.get("sessionId") 결과:', anonymousSessionId);
       if (anonymousSessionId) {
           console.log('ログイン成功！既存の匿名セッションIDが見つかりました。カートの統合を試みます。');
           try {

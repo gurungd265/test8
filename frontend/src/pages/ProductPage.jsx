@@ -96,7 +96,7 @@ const handleAddToCart = async() => {
     }
     try {
         // 実際のショッピングカートAPI呼び出し
-        await cartApi.addProductToCart(product.id, quantity);
+        await cartApi.addToCart(product.id, quantity);
         alert(`${product.name} ${quantity}個がカートに追加されました！`);
         fetchCartCount();
         // 成功的に追加されると、ショッピングカートページに移動したり、ショッピングカートアイコンのアップデートなど

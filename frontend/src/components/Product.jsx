@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
+import React, { useContext } from 'react';
 import cartApi from "../api/cart";
+import {CartContext} from '../contexts/CartContext';
 import { Heart } from "lucide-react";
 import { useState } from "react";
 
@@ -11,19 +13,26 @@ export default function Product({ product }) {
       ? (images.find((img) => img.isPrimary) || images[0]).imageUrl
       : "https://via.placeholder.com/200/CCCCCC/FFFFFF?text=No+Image";
   //カートに商品を追加する臨時ハンドラー(cartApi連動は後で)
+  const { cartItemCount, setCartItemCount, fetchCartCount } = useContext(CartContext);
+
   const handleAddToCart = async (e) => {
     e.preventDefault(); // Linkタグへの移動防止
     if (stockQuantity <= 0) {
       alert("この商品は現在、在庫がありません。");
       return;
     }
+
+    const previousCartItemCount = cartItemCount;
+    setCartItemCount(prevCount => prevCount + 1);
     try {
       // 実際のcartApi.addToCart呼び出し（基本数量1個）
       await cartApi.addToCart(id, 1);
+      fetchCartCount();
       alert(`${name} をカートに追加しました！`);
       console.log(`カートに ${name} を追加しました。`);
     } catch (err) {
       console.error("カートに追加できませんでした。", err);
+      setCartItemCount(previousCartItemCount);
       if (err.response && err.response.status === 401) {
         alert("カートに追加するにはログインが必要です。");
       } else if (

@@ -6,6 +6,7 @@ import com.example.backend.dto.OrderDto;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
+import com.example.backend.entity.user.User;
 
 import com.example.backend.util.CookieUtil;
 import com.example.backend.service.OrderService;
@@ -20,6 +21,7 @@ import java.security.Principal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
+import com.example.backend.repository.UserRepository;
 
 import static com.example.backend.util.CookieUtil.CART_SESSION_ID;
 
@@ -43,6 +45,7 @@ public class CartController {
 
     private final CartService cartService;
     private final OrderService orderService;
+    private final UserRepository userRepository;
 
     //유저 카트 병합
     @PostMapping("/merge")
@@ -155,17 +158,30 @@ public class CartController {
 
     // ==================================================== Order ====================================================
     @GetMapping("/count")
-    public ResponseEntity<Integer> getCartItemCount(Principal principal, HttpServletRequest request) {
-        String userEmail = (principal != null) ? principal.getName() : null;
-        String sessionId = CookieUtil.getCookie(request, CART_SESSION_ID)
-                .map(jakarta.servlet.http.Cookie::getValue)
-                .orElse(null);
-        if(userEmail==null && sessionId==null){
-            return ResponseEntity.ok(0);
+    public ResponseEntity<Integer> getCartItemCount(
+            Principal principal,
+            HttpServletRequest request,
+            @RequestParam(value = "sessionId", required = false) String sessionIdParam
+    ) {
+        try{
+            if(principal!=null){
+                String userEmail = principal.getName();
+                User user = userRepository.findByEmail(userEmail)
+                        .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+                int count = cartService.getTotalCartItemCount(user);
+                return ResponseEntity.ok(count);
+            } else {
+                if (sessionIdParam == null || sessionIdParam.isEmpty()) {
+                    return ResponseEntity.ok(0);
+            }
+                int count = cartService.getTotalCartItemCount(null, sessionIdParam);
+                return ResponseEntity.ok(count);
+            }
+        } catch ( Exception e ){
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(0);
         }
-        return ResponseEntity.ok(cartService.getTotalCartItemCount(userEmail, sessionId));
     }
-
     @PostMapping("/order")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderDto> createOrder(Principal principal) {
@@ -176,6 +192,8 @@ public class CartController {
         OrderDto orderDto = orderService.createOrderFromCart(userEmail);
         return ResponseEntity.ok(orderDto);
     }
+
+
 
 
     // 편의 메소드 =====================================================================================================

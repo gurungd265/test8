@@ -1,12 +1,15 @@
-import { useState,useEffect } from "react";
+import { useState,useEffect,useContext } from "react";
 import { Link } from "react-router-dom";
 import cartApi from '../api/cart';
+import {CartContext} from '../contexts/CartContext';
 
 
 export default function CartPage() {
   const [cart, setCart] = useState(null);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState(null);
+
+  const { cartItemCount, setCartItemCount, fetchCartCount } = useContext(CartContext);
 
   useEffect(() => {
       const fetchCart = async () => {
@@ -32,15 +35,15 @@ export default function CartPage() {
   if (!cart || !cart.items) return <div className="p-6 text-center text-gray-500">カート情報がありません。</div>;
 
   const handleRemove = (id) => {
+      const previousCartItemCount = cartItemCount;
+      setCartItemCount(prevCount => Math.max(0, prevCount - 1));
       const removeCartItem = async (cartItemId) => {
           try {
               await cartApi.removeCartItem(cartItemId);
-                 setCart(prevCart => ({
-                     ...prevCart,
-                     items: prevCart.items.filter(item => item.id !== cartItemId)
-                 }));
+              fetchCartCount();
           } catch (err) {
               console.error('カートアイテム削除失敗:', err);
+              setCartItemCount(previousCartItemCount);
               alert('カートアイテムを削除できませんでした。');
               }
           };
@@ -90,14 +93,14 @@ export default function CartPage() {
                         <div className="flex items-center gap-4">
                             <Link to={`/product/${item.productId}`}>
                                 <img
-                                    src={item.productImageUrl}　
-                                    alt={item.name}
+                                    src={item.productImageUrl }　
+                                    alt={item.productName}
                                     className="w-20 h-20 object-cover rounded"
                                 />
                             </Link>
                             <div>
                                 <Link to={`/product/${item.productId}`}>
-                                    <h2 className="font-semibold">{item.name}</h2>
+                                    <h2 className="font-semibold">{item.productName}</h2>
                                     <p className="text-gray-500">
                                         {item.priceAtAddition.toLocaleString()}円
                                     </p>

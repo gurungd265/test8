@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
     }, [isLoggedIn, fetchCartCount]);
 
     return (
-        <CartContext.Provider value={{ cartItemCount, fetchCartCount }}>
+        <CartContext.Provider value={{ cartItemCount,setCartItemCount, fetchCartCount }}>
             {children}
         </CartContext.Provider>
     );

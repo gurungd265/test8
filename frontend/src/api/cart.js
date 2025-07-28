@@ -54,7 +54,6 @@ const cartApi = {
                     if (!sessionId) {
                         sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                         Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
-                        console.log()
                     }
                     url += `&sessionId=${sessionId}`;
                 }
@@ -132,7 +131,7 @@ const cartApi = {
         }
         try {
             const response = await api.get(url);
-            return response.data;
+            return response.data.items;
         } catch (error) {
             console.error('Failed to fetch cart item count:', error);
             return 0;
