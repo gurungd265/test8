@@ -1,5 +1,6 @@
-package com.example.backend.entity;
+package com.example.backend.entity.order;
 
+import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import jakarta.persistence.*;
@@ -66,9 +67,11 @@ public class Order {
     private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Payment> payments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
     public void addOrderItem(OrderItem item) {

@@ -1,7 +1,7 @@
 package com.example.backend.dto;
 
 import com.example.backend.dto.user.AddressDto;
-import com.example.backend.entity.OrderStatus;
+import com.example.backend.entity.order.OrderStatus;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

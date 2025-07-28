@@ -2,17 +2,19 @@ package com.example.backend.service;
 
 import com.example.backend.dto.*;
 import com.example.backend.dto.user.AddressDto;
-import com.example.backend.entity.Order;
-import com.example.backend.entity.OrderItem;
-import com.example.backend.entity.OrderStatus;
-import com.example.backend.entity.Payment;
+import com.example.backend.entity.order.Order;
+import com.example.backend.entity.order.OrderItem;
+import com.example.backend.entity.order.OrderStatus;
+import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import com.example.backend.repository.OrderRepository;
+import com.example.backend.repository.PaymentRepository;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +34,10 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
     private final CartService cartService;
 
-    // 주문 생성
+    // 주문 생성 관리
     @Transactional
     public OrderDto createOrderFromCart(String userEmail) {
         // 1. 유저 이메일로 카트 조회 (비회원 주문 불가)
@@ -60,6 +63,7 @@ public class OrderService {
         return convertToDto(order);
     }
 
+    // 장바구니로 주문 생성
     private Order buildOrderFromCart(CartDto cartDto, User user) {
         Order order = new Order();
         order.setUser(user);
@@ -104,6 +108,43 @@ public class OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("注文が存在しないか、アクセス権限がありません。"));
 
         return convertToDto(order);
+    }
+
+    // 주문 상태로 주문 리스트 조회
+    @Transactional(readOnly = true)
+    public List<OrderDto> getOrdersByStatus(OrderStatus status) {
+        List<Order> orders = orderRepository.findByStatus(status);
+        return orders.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    // 주문번호로 조회
+    @Transactional(readOnly = true)
+    public OrderDto getOrderByOrderNumber(String orderNumber) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new EntityNotFoundException("注文番号が見つかりません: " + orderNumber));
+        return convertToDto(order);
+    }
+
+    // 주문번호로 결제내역 조회
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDto> getPaymentsByOrderId(Long orderId, String userEmail) {
+        // 1. 주문 존재 및 사용자 권한 확인
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+
+        if (!order.getUser().getEmail().equals(userEmail)) {
+            throw new AccessDeniedException("No permission to access this order's payments.");
+        }
+
+        // 2. 결제 내역 조회
+        List<Payment> payments = paymentRepository.findByOrder(order);
+
+        // 3. DTO 변환 및 반환
+        return payments.stream()
+                .map(this::paymentToDto)
+                .collect(Collectors.toList());
     }
 
     // 주문 취소
@@ -203,7 +244,7 @@ public class OrderService {
                 .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
                 .amount(payment.getAmount())
                 .refundAmount(payment.getRefundAmount())
-                .paymentMethod(payment.getPaymentMethod())
+                .paymentMethod(payment.getPaymentMethod().name())
                 .transactionId(payment.getTransactionId())
                 .status(payment.getStatus().name())
                 .createdAt(payment.getCreatedAt())

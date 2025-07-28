@@ -1,5 +1,6 @@
-package com.example.backend.entity;
+package com.example.backend.entity.payment;
 
+import com.example.backend.entity.order.Order;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -44,8 +45,9 @@ public class Payment {
     /**
      * 복수결제 허용 시 별도 관리 테이블 필요 (ex: 카드 + 포인트 결제 -> 포인트 관리 테이블 필요)
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
-    private String paymentMethod; // 결제 수단 정보
+    private PaymentMethod paymentMethod; // 결제 수단 정보
 
     @Column(name = "transaction_id")
     private String transactionId;
