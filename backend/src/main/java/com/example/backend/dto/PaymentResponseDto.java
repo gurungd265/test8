@@ -26,7 +26,7 @@ public class PaymentResponseDto {       // 서버 -> 클라이언트로 데이�
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Payment Entity -> PaymentResponseDto 변환 메서드
+    // Payment Entity -> Dto 변환 메서드
     public static PaymentResponseDto fromEntity(Payment payment) {
         return PaymentResponseDto.builder()
                 .id(payment.getId())

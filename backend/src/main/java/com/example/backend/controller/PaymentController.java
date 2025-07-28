@@ -67,7 +67,9 @@ public class PaymentController {
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PaymentResponseDto>> getPaymentsByStatus(@PathVariable PaymentStatus status) {
+        log.info("Payment list request received for status: {}", status);
         List<PaymentResponseDto> payments = paymentService.getPaymentsByStatus(status);
+        log.info("Payment list response: {} records found for status: {}", payments.size(), status);
         return ResponseEntity.ok(payments);
     }
 
