@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.dto.user.AddressDto;
 import com.example.backend.entity.OrderStatus;
 import lombok.*;
 import java.math.BigDecimal;
@@ -13,16 +14,16 @@ import java.util.List;
 public class OrderDto {
 
     private Long id;
-    private Long userId;  // User 엔티티의 PK (혹은 email 등 필요하면 추가 가능)
+    private Long userId; // User 엔티티의 PK (혹은 email 등 필요하면 추가 가능)
     private String orderNumber;
-    private OrderStatus status;  // enum
+    private OrderStatus status; // enum
     private BigDecimal totalAmount;
-    private String paymentMethod;
-    private Long shippingAddressId;
-    private Long billingAddressId;
+    private AddressDto shippingAddress;
+    private AddressDto billingAddress;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     private List<OrderItemDto> orderItems;
+    private List<PaymentResponseDto> payments;
 
 }
