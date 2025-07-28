@@ -1,6 +1,6 @@
 package com.example.backend.dto;
 
-import com.example.backend.entity.Payment;
+import com.example.backend.entity.payment.Payment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

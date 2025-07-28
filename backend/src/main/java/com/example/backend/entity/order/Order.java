@@ -1,5 +1,6 @@
-package com.example.backend.entity;
+package com.example.backend.entity.order;
 
+import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import jakarta.persistence.*;

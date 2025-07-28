@@ -1,5 +1,6 @@
-package com.example.backend.entity;
+package com.example.backend.entity.order;
 
+import com.example.backend.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Where;

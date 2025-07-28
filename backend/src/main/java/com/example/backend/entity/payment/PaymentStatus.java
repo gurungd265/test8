@@ -1,4 +1,4 @@
-package com.example.backend.entity;
+package com.example.backend.entity.payment;
 
 public enum PaymentStatus {
     INITIATED,          // 결제 시도 시작

@@ -1,4 +1,4 @@
-package com.example.backend.entity;
+package com.example.backend.entity.payment;
 
 public enum PaymentMethod {
     CREDIT_CARD,

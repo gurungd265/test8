@@ -2,7 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.OrderDto;
 import com.example.backend.dto.PaymentResponseDto;
-import com.example.backend.entity.OrderStatus;
+import com.example.backend.entity.order.OrderStatus;
 import com.example.backend.service.OrderService;
 import com.example.backend.service.PaymentService;
 import lombok.RequiredArgsConstructor;

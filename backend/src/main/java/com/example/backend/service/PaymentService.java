@@ -1,7 +1,11 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.PaymentResponseDto;
-import com.example.backend.entity.*;
+import com.example.backend.entity.order.Order;
+import com.example.backend.entity.order.OrderStatus;
+import com.example.backend.entity.payment.Payment;
+import com.example.backend.entity.payment.PaymentMethod;
+import com.example.backend.entity.payment.PaymentStatus;
 import com.example.backend.repository.OrderRepository;
 import com.example.backend.repository.PaymentRepository;
 import jakarta.persistence.EntityNotFoundException;

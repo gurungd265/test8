@@ -2,10 +2,10 @@ package com.example.backend.service;
 
 import com.example.backend.dto.*;
 import com.example.backend.dto.user.AddressDto;
-import com.example.backend.entity.Order;
-import com.example.backend.entity.OrderItem;
-import com.example.backend.entity.OrderStatus;
-import com.example.backend.entity.Payment;
+import com.example.backend.entity.order.Order;
+import com.example.backend.entity.order.OrderItem;
+import com.example.backend.entity.order.OrderStatus;
+import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
 import com.example.backend.repository.OrderRepository;

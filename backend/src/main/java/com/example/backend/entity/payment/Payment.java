@@ -1,5 +1,6 @@
-package com.example.backend.entity;
+package com.example.backend.entity.payment;
 
+import com.example.backend.entity.order.Order;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.example.backend.entity;
+package com.example.backend.entity.order;
 
 public enum OrderStatus {
     PENDING,            // 승인 대기

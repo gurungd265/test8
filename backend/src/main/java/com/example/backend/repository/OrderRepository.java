@@ -1,7 +1,7 @@
 package com.example.backend.repository;
 
-import com.example.backend.entity.Order;
-import com.example.backend.entity.OrderStatus;
+import com.example.backend.entity.order.Order;
+import com.example.backend.entity.order.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

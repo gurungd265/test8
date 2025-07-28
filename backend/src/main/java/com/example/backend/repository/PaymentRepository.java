@@ -1,8 +1,8 @@
 package com.example.backend.repository;
 
-import com.example.backend.entity.Order;
-import com.example.backend.entity.Payment;
-import com.example.backend.entity.PaymentStatus;
+import com.example.backend.entity.order.Order;
+import com.example.backend.entity.payment.Payment;
+import com.example.backend.entity.payment.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
