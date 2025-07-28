@@ -1,7 +1,6 @@
 package com.example.backend.dto;
 
 import com.example.backend.entity.Payment;
-import com.example.backend.entity.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +19,7 @@ public class PaymentResponseDto {       // 서버 -> 클라이언트로 데이�
     private Long orderId;
     private BigDecimal amount;
     private BigDecimal refundAmount;
-    private String paymentMethod;       // 결제 수단 (카드, 페이팔 등)
+    private String paymentMethod;       // enum -> String
     private String transactionId;
     private String status;              // enum -> String
     private LocalDateTime createdAt;
@@ -33,9 +32,9 @@ public class PaymentResponseDto {       // 서버 -> 클라이언트로 데이�
                 .orderId(payment.getOrder().getId())
                 .amount(payment.getAmount())
                 .refundAmount(payment.getRefundAmount())
-                .paymentMethod(payment.getPaymentMethod())
+                .paymentMethod(payment.getPaymentMethod().name())
                 .transactionId(payment.getTransactionId())
-                .status(payment.getStatus().name())  // enum
+                .status(payment.getStatus().name())
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
                 .build();
