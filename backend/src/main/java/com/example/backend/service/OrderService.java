@@ -244,7 +244,7 @@ public class OrderService {
                 .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
                 .amount(payment.getAmount())
                 .refundAmount(payment.getRefundAmount())
-                .paymentMethod(payment.getPaymentMethod())
+                .paymentMethod(payment.getPaymentMethod().name())
                 .transactionId(payment.getTransactionId())
                 .status(payment.getStatus().name())
                 .createdAt(payment.getCreatedAt())
