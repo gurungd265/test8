@@ -65,9 +65,9 @@ export default function Product({ product }) {
                 {discountPrice !== null && discountPrice !== undefined ? (
                   <>
                     {/* 割引前の価格 */}
-                    <span className="line-through text-gray-500 text-base mr-2">{price.toLocaleString()}円</span>
+                    <div className="line-through text-gray-500 text-base mr-2">{price.toLocaleString()}円</div>
                     {/* 割引価格 */}
-                    <span className="text-purple-600">{displayPrice.toLocaleString()}円</span>
+                    <div className="text-purple-600">{displayPrice.toLocaleString()}円</div>
                   </>
                 ) : (
                   <span>{displayPrice.toLocaleString()}円</span>

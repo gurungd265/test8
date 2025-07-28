@@ -6,16 +6,20 @@ export default function MobileBottomNavigation() {
     <>
       {/* Mobile Bottom Navigation */}
       <nav className="lg:hidden bg-white fixed bottom-0 w-full flex justify-around items-center py-2 shadow">
-        <img
-          src="https://cal.co.jp/wordpress/wp-content/themes/temp_calrenew/img/logo.svg"
-          alt="Logo"
-          className="h-6"
-        />
+        <Link to={`/`}>
+          <img
+            src="https://cal.co.jp/wordpress/wp-content/themes/temp_calrenew/img/logo.svg"
+            alt="Logo"
+            className="h-6"
+          />
+        </Link>
         <button>
           <Search />
         </button>
         <button>
-          <ShoppingCart />
+          <Link to={`/cart`}>
+            <ShoppingCart />
+          </Link>
         </button>
         <button>
           <Link to={`/profile`}>
