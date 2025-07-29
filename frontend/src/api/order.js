@@ -1,9 +1,9 @@
 import api from './index';
 
 const orderApi = {
-    createOrder: async () => {
+    createOrder: async (orderPayload) => {
         try {
-            const response = await api.post('/api/orders');
+            const response = await api.post('/api/orders', orderPayload);  // orderPayload를 넘겨야 함
             return response.data;
         } catch (error) {
             console.error('注文の作成に失敗しました。', error);

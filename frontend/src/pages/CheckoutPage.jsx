@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-
+import { useLocation, useNavigate } from 'react-router-dom';
+import orderApi from '../api/order';
 import paymentsApi from '../api/payments';
+import cartApi from '../api/cart';
 
 export default function CheckoutPage() {
-    // 위치에서 상태 받아오기
     const location = useLocation();
-    const cart = location.state?.cart;
+    const navigate = useNavigate();
 
-    console.log('CheckoutPage cart:', cart);
-    console.log('cart.items:', cart.items);
+    const [cartItems, setCartItems] = useState([]);
+    const [subtotal, setSubtotal] = useState(0);
 
-    if (!cart) {
-        return <div>カートの情報がありません。</div>;
-    }
+    const [isOrdering, setIsOrdering] = useState(false);
+    const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Constants
     const JAPANESE_PREFECTURES = [
@@ -29,18 +29,7 @@ export default function CheckoutPage() {
         '鹿児島県', '沖縄県'
     ];
 
-    const DELIVERY_TIME_SLOTS = [
-        { value: 'morning', label: '午前中 (8-12時)' },
-        { value: 'afternoon', label: '14-16時' },
-        { value: 'evening', label: '16-18時' },
-        { value: 'night', label: '18-21時' }
-    ];
-
-    // Get cart items from location state or use empty array as fallback
-    const cartItems = location.state?.cartItems || [];
-    const subtotalFromCart = location.state?.subtotal || 0;
-
-    // State
+    // 주소 입력 상태
     const [formData, setFormData] = useState({
         name: '',
         nameKana: '',
@@ -56,16 +45,19 @@ export default function CheckoutPage() {
         deliveryTime: ''
     });
 
+    /**
+     * 배송일 생성
+     */
     const [deliveryDates, setDeliveryDates] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
 
-    // Calculate totals
-    const subtotal = subtotalFromCart || cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const shippingFee = 600;
-    const tax = Math.floor(subtotal * 0.1);
-    const total = subtotal + shippingFee + tax;
+    // 배송 날짜 자동 생성
+    const DELIVERY_TIME_SLOTS = [
+        { value: 'morning', label: '午前中 (8-12時)' },
+        { value: 'afternoon', label: '14-16時' },
+        { value: 'evening', label: '16-18時' },
+        { value: 'night', label: '18-21時' }
+    ];
 
-    // Generate delivery dates on mount
     useEffect(() => {
         const dates = [];
         const today = new Date();
@@ -85,6 +77,45 @@ export default function CheckoutPage() {
         setDeliveryDates(dates);
     }, []);
 
+    /**
+     * 장바구니 불러오기
+     */
+    // 1) location.state 에서 cartItems와 subtotal을 먼저 시도해서 받아옴
+    // 2) 없으면 API 호출로 장바구니 데이터 가져오기
+    useEffect(() => {
+        if (location.state?.cartItems && location.state?.subtotal !== undefined) {
+            setCartItems(location.state.cartItems);
+            setSubtotal(location.state.subtotal);
+        } else {
+            // location.state가 없으면 API 호출로 장바구니 불러오기
+            setIsLoading(true);
+            cartApi.getCartItems()
+                .then(data => {
+                    setCartItems(data.items || []);
+                    setSubtotal(data.subtotal || 0);
+                })
+                .catch(err => {
+                    console.error('장바구니 불러오기 실패:', err);
+                    setCartItems([]);
+                    setSubtotal(0);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        }
+    }, [location.state]);
+
+    // 장바구니가 비어있으면 메시지 띄우기
+    if (!isLoading && cartItems.length === 0) {
+        return <div>カートの情報がありません。</div>;
+    }
+
+    // 계산
+    const calculatedSubtotal = subtotal || cartItems.reduce((sum, item) => sum + (item.priceAtAddition * item.quantity), 0);
+    const shippingFee = 600;
+    const tax = Math.floor(calculatedSubtotal * 0.1);
+    const total = calculatedSubtotal + shippingFee + tax;
+
     // Handlers
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -92,49 +123,90 @@ export default function CheckoutPage() {
     };
 
     const handlePostalCodeLookup = async () => {
-        if (formData.postalCode.replace('-', '').length !== 7) return;
+        const postalCode = formData.postalCode.replace('-', '');
+        if (postalCode.length !== 7) return;
 
         setIsLoading(true);
+
         try {
-            // Mock API call
-            setTimeout(() => {
+            const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`);
+            const data = await response.json();
+
+            if (data.status === 200 && data.results) {
+                const result = data.results[0];
                 setFormData(prev => ({
                     ...prev,
-                    prefecture: '東京都',
-                    city: '渋谷区',
-                    address: '道玄坂1丁目'
+                    prefecture: result.address1,
+                    city: result.address2,
+                    address: result.address3
                 }));
-                setIsLoading(false);
-            }, 1000);
+            } else {
+                alert('住所が見つかりませんでした');
+            }
         } catch (error) {
-            setIsLoading(false);
             alert('住所の取得に失敗しました');
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    // 랜덤 트랜잭션 ID 생성 함수
+    function generateTransactionId() {
+        return 'txn_' + Math.random().toString(36).substr(2, 9);
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsOrdering(true);
+        setError(null);
+
         try {
-            // 결제 요청 데이터 만들기
-            const paymentRequest = {
-                orderId: generateOrderId(),  // 주문 ID 생성 함수 또는 실제 주문 ID
-                paymentMethod: formData.paymentMethod, // formData에 결제수단 정보가 있다면
-                amount: total,
-                transactionId: generateTransactionId(), // 고유 트랜잭션 ID 생성 함수
+            // 수정된 주문 생성 payload (DTO에 맞게)
+            const orderPayload = {
+                customer: {
+                    lastName: formData.name.split(' ')[0] || formData.name,       // 성: 예를 들어 "山田 太郎" -> "山田"
+                    firstName: formData.name.split(' ')[1] || '',                 // 이름: "太郎"
+                    lastNameKana: formData.nameKana.split(' ')[0] || formData.nameKana,  // 성 카나
+                    firstNameKana: formData.nameKana.split(' ')[1] || '',              // 이름 카나
+                    phone: formData.phone,
+                    email: formData.email,
+                },
+                delivery: {
+                    date: formData.deliveryDate,
+                    time: formData.deliveryTime,
+                    shippingAddress: {
+                        postalCode: formData.postalCode,
+                        prefecture: formData.prefecture,
+                        city: formData.city,
+                        address: formData.address,
+                        building: formData.building,
+                    },
+                    billingAddress: null, // 필요시 추가 가능
+                },
+                paymentMethod: formData.paymentMethod,
+                cartItems: cartItems,
             };
 
-            // 결제 API 호출
-            const paymentResponse = await paymentsApi.createPayment(paymentRequest);
+            const orderData = await orderApi.createOrder(orderPayload);
+            const orderId = orderData.id;
 
-            console.log('決済失敗:', paymentResponse);
+            const paymentRequest = {
+                orderId,
+                paymentMethod: formData.paymentMethod,
+                amount: total,
+                transactionId: generateTransactionId(),
+            };
+
+            await paymentsApi.createPayment(paymentRequest);
 
             alert('注文が確定しました！ 결제가 완료되었습니다.');
-
-            // 주문 및 결제 성공 후 추가 작업 (페이지 이동, 상태 초기화 등)
+            navigate('/order-success', { state: { orderId } });
 
         } catch (error) {
-            console.error('決済失敗:', error);
-            alert('決済に失敗しました。もう一度お試しください。');
+            console.error('決済 or 注文生成失敗:', error);
+            setError('決済処理に失敗しました。もう一度お試しください。');
+        } finally {
+            setIsOrdering(false);
         }
     };
 
@@ -149,30 +221,55 @@ export default function CheckoutPage() {
                         <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">お客様情報</h2>
 
                         <div className="mb-4">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">お名前（漢字）</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">お名前（漢字）</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    placeholder="姓"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    placeholder="名"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
                         </div>
+
                         <div className="mb-4">
-                            <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-1">お名前（フリガナ）</label>
-                            <input
-                                type="text"
-                                id="nameKana"
-                                name="nameKana"
-                                value={formData.nameKana}
-                                onChange={handleChange}
-                                required
-                                pattern="[\u30A1-\u30FC]+"
-                                title="全角カタカナで入力してください"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">お名前（カタカナ）</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    name="lastNameKana"
+                                    placeholder="セイ"
+                                    value={formData.lastNameKana}
+                                    onChange={handleChange}
+                                    required
+                                    pattern="[\u30A1-\u30FC]+"
+                                    title="全角カタカナで入力してください"
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <input
+                                    type="text"
+                                    name="firstNameKana"
+                                    placeholder="メイ"
+                                    value={formData.firstNameKana}
+                                    onChange={handleChange}
+                                    required
+                                    pattern="[\u30A1-\u30FC]+"
+                                    title="全角カタカナで入力してください"
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
                         </div>
 
                         <div className="mb-4">
@@ -446,15 +543,17 @@ export default function CheckoutPage() {
                                             <div className="flex-shrink-0">
                                                 <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
                                                     <img
-                                                        src={item.image}
-                                                        alt={item.name}
+                                                        src={item.productImageUrl}
+                                                        alt={item.productName}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="font-medium text-gray-800">{item.name}</h3>
-                                                <p className="text-sm text-gray-600">¥{item.price.toLocaleString()} × {item.quantity}</p>
+                                                <h3 className="font-medium text-gray-800">{item.productName}</h3>
+                                                <p className="text-sm text-gray-600">
+                                                    ¥{Number(item.priceAtAddition ?? 0).toLocaleString()} × {item.quantity}
+                                                </p>
                                             </div>
                                         </div>
                                     ))}
