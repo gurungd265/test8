@@ -8,6 +8,12 @@ public enum AddressType {
 
     @JsonCreator
     public static AddressType from(String value) {
-        return value == null ? null : AddressType.valueOf(value.toUpperCase());
+        if (value == null) return null;
+        try {
+            return AddressType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // 기본값 지정하거나 null 반환
+            return null;
+        }
     }
 }

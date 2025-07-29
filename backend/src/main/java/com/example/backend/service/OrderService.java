@@ -1,6 +1,9 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.*;
+import com.example.backend.dto.order.OrderRequestDto;
+import com.example.backend.dto.order.OrderResponseDto;
+import com.example.backend.dto.order.OrderItemDto;
 import com.example.backend.dto.user.AddressDto;
 import com.example.backend.entity.order.Order;
 import com.example.backend.entity.order.OrderItem;
@@ -37,64 +40,9 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
     private final CartService cartService;
 
-    // 주문 생성 관리
-    @Transactional
-    public OrderDto createOrderFromCart(String userEmail) {
-        // 1. 유저 이메일로 카트 조회 (비회원 주문 불가)
-        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, null);
-
-        if (cartDto.getItems().isEmpty()) {
-            throw new IllegalStateException("カートが空いています。");
-        }
-
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("ユーザーが存在しません。"));
-
-        // 2. 주문 빌드 및 재고 체크/차감
-        Order order = buildOrderFromCart(cartDto, user);
-
-        // 3. 주문 저장
-        orderRepository.save(order);
-
-        // 4. 주문 완료 후 카트 비우기 (soft delete)
-        cartService.softClearCart(userEmail, null);
-
-        // 5. 주문 DTO 변환 및 반환
-        return convertToDto(order);
-    }
-
-    // 장바구니로 주문 생성
-    private Order buildOrderFromCart(CartDto cartDto, User user) {
-        Order order = new Order();
-        order.setUser(user);
-        order.setOrderNumber(generateUniqueOrderNumber());
-        order.setStatus(OrderStatus.PENDING);
-        order.setTotalAmount(BigDecimal.ZERO);
-        order.setOrderItems(new ArrayList<>());
-
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (CartItemDto cartItemDto : cartDto.getItems()) {
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setProduct(productRepository.findById(cartItemDto.getProductId())
-                    .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。")));
-            orderItem.setProductName(cartItemDto.getProductName());
-            orderItem.setProductPrice(cartItemDto.getPriceAtAddition());
-            orderItem.setQuantity(cartItemDto.getQuantity());
-            orderItem.setSubtotal(cartItemDto.getPriceAtAddition().multiply(BigDecimal.valueOf(cartItemDto.getQuantity())));
-
-            order.addOrderItem(orderItem);
-
-            totalAmount = totalAmount.add(orderItem.getSubtotal());
-        }
-
-        order.setTotalAmount(totalAmount);
-        return order;
-    }
-
     // 현재 로그인한 유저의 전체 주문 목록 조회
     @Transactional(readOnly = true)
-    public List<OrderDto> getOrdersByUserEmail(String userEmail) {
+    public List<OrderResponseDto> getOrdersByUserEmail(String userEmail) {
         List<Order> orders = orderRepository.findByUserEmail(userEmail);
         return orders.stream()
                 .map(this::convertToDto)
@@ -103,7 +51,7 @@ public class OrderService {
 
     // 현재 로그인한 유저의 특정 주문 1건 조회 (상세페이지)
     @Transactional(readOnly = true)
-    public OrderDto getOrderByIdAndUserEmail(Long orderId, String userEmail) {
+    public OrderResponseDto getOrderByIdAndUserEmail(Long orderId, String userEmail) {
         Order order = orderRepository.findByIdAndUserEmail(orderId, userEmail)
                 .orElseThrow(() -> new EntityNotFoundException("注文が存在しないか、アクセス権限がありません。"));
 
@@ -112,7 +60,7 @@ public class OrderService {
 
     // 주문 상태로 주문 리스트 조회
     @Transactional(readOnly = true)
-    public List<OrderDto> getOrdersByStatus(OrderStatus status) {
+    public List<OrderResponseDto> getOrdersByStatus(OrderStatus status) {
         List<Order> orders = orderRepository.findByStatus(status);
         return orders.stream()
                 .map(this::convertToDto)
@@ -121,7 +69,7 @@ public class OrderService {
 
     // 주문번호로 조회
     @Transactional(readOnly = true)
-    public OrderDto getOrderByOrderNumber(String orderNumber) {
+    public OrderResponseDto getOrderByOrderNumber(String orderNumber) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new EntityNotFoundException("注文番号が見つかりません: " + orderNumber));
         return convertToDto(order);
@@ -173,22 +121,149 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    // 편의 메소드 ======================================================================================================
+    // 주문 생성 =======================================================================================================
 
-    // OrderNumber 생성 메소드
+    /**
+     * 상세페이지 주문 요청 DTO 기반 주문 생성
+     */
+    @Transactional
+    public OrderResponseDto createOrderFromRequest(String userEmail, OrderRequestDto requestDto) {
+        User user = getUserOrThrow(userEmail);
+        Order order = buildOrderFromRequest(requestDto, user);
+        orderRepository.save(order);
+        return convertToDto(order);
+    }
+
+    /**
+     * 장바구니에 담긴 상품들로부터 주문 생성
+     */
+    @Transactional
+    public OrderResponseDto createOrderFromCart(String userEmail) {
+        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, null);
+        if (cartDto.getItems().isEmpty()) throw new IllegalStateException("カートが空いています。");
+
+        User user = getUserOrThrow(userEmail);
+        Order order = buildOrderFromCart(cartDto, user);
+        orderRepository.save(order);
+        cartService.softClearCart(userEmail, null);
+        return convertToDto(order);
+    }
+
+    /**
+     * 주문 생성 기본 세팅 (공통)
+     */
+    private Order baseOrderSetup(User user) {
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderNumber(generateUniqueOrderNumber());
+        order.setStatus(OrderStatus.PENDING);
+        order.setCreatedAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+        return order;
+    }
+
+    /**
+     * 주문 요청 DTO 기반으로 주문 생성
+     */
+    private Order buildOrderFromRequest(OrderRequestDto dto, User user) {
+        Order order = baseOrderSetup(user);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (CartItemDto item : dto.getCartItems()) {
+            OrderItem orderItem = toOrderItem(item, order);
+            orderItems.add(orderItem);
+            total = total.add(orderItem.getSubtotal());
+        }
+
+        order.setOrderItems(orderItems);
+        order.setTotalAmount(total);
+
+        // 배송지 및 청구지 주소 처리
+        if (dto.getDelivery() != null) {
+            order.setShippingAddress(addressDtoToEntity(dto.getDelivery().getShippingAddress(), user));
+            order.setBillingAddress(addressDtoToEntity(dto.getDelivery().getBillingAddress(), user));
+        }
+
+        return order;
+    }
+
+    /**
+     * 장바구니 DTO 기반으로 주문 생성
+     */
+    private Order buildOrderFromCart(CartDto cartDto, User user) {
+        Order order = baseOrderSetup(user);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (CartItemDto item : cartDto.getItems()) {
+            OrderItem orderItem = toOrderItem(item, order);
+            orderItems.add(orderItem);
+            total = total.add(orderItem.getSubtotal());
+        }
+
+        order.setOrderItems(orderItems);
+        order.setTotalAmount(total);
+
+        return order;
+    }
+
+    // 편의 메소드 =======================================================================================================
+
+    /**
+     * CartItemDto -> OrderItem 변환
+     */
+    private OrderItem toOrderItem(CartItemDto item, Order order) {
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setProduct(productRepository.findById(item.getProductId())
+                .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。")));
+        orderItem.setProductName(item.getProductName());
+        orderItem.setProductPrice(item.getPriceAtAddition());
+        orderItem.setQuantity(item.getQuantity());
+        orderItem.setSubtotal(item.getPriceAtAddition().multiply(BigDecimal.valueOf(item.getQuantity())));
+        return orderItem;
+    }
+
+    /**
+     * AddressDto -> Address Entity 변환
+     */
+    private Address addressDtoToEntity(AddressDto dto, User user) {
+        Address address = new Address();
+        address.setUser(user);
+        address.setAddressType(dto.getAddressType());
+        address.setStreet(dto.getStreet());
+        address.setCity(dto.getCity());
+        address.setState(dto.getState());
+        address.setPostalCode(dto.getPostalCode());
+        address.setCountry(dto.getCountry());
+        address.setIsDefault(dto.getIsDefault());
+        return address;
+    }
+
+    /**
+     * User email 기반으로 User 조회 및 없으면 예외 발생
+     */
+    private User getUserOrThrow(String userEmail) {
+        return userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("ユーザーが存在しません。"));
+    }
+
+    /**
+     * 주문 번호 생성 메서드 (현재 시각 + UUID 기반)
+     */
     public String generateUniqueOrderNumber() {
-        // 현재 시간 기준 YYYYMMDDHHMMSS 형식
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-
-        // 랜덤 UUID 앞 8자리 (충돌 확률 낮춤)
         String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-        // 예: 20250725153045-1A2B3C4D
         return timestamp + "-" + randomPart;
     }
 
-    // 주문 정보 Entity -> DTO
-    private OrderDto convertToDto(Order order) {
+    /**
+     * Order Entity -> OrderResponseDto 변환
+     */
+    private OrderResponseDto convertToDto(Order order) {
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
                 .map(item -> new OrderItemDto(
                         item.getId(),
@@ -204,7 +279,7 @@ public class OrderService {
                 .map(this::paymentToDto)
                 .toList();
 
-        return OrderDto.builder()
+        return OrderResponseDto.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus())
@@ -218,11 +293,12 @@ public class OrderService {
                 .build();
     }
 
-    // 주소 Entity -> Dto
+    /**
+     * Address Entity -> AddressDto 변환
+     */
     private AddressDto addressToDto(Address address) {
-        if (address == null) {
-            return null;
-        }
+        if (address == null) return null;
+
         return AddressDto.builder()
                 .id(address.getId())
                 .addressType(address.getAddressType())
@@ -235,7 +311,9 @@ public class OrderService {
                 .build();
     }
 
-    // 결제 정보 Entity -> Dto
+    /**
+     * Payment Entity -> PaymentResponseDto 변환
+     */
     private PaymentResponseDto paymentToDto(Payment payment) {
         if (payment == null) return null;
 
