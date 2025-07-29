@@ -36,6 +36,7 @@ export default function CheckoutPage() {
         postalCode: '',
         prefecture: '',
         city: '',
+        addressType: '',
         address: '',
         building: '',
         phone: '',
@@ -230,6 +231,8 @@ export default function CheckoutPage() {
                                     value={formData.lastName}
                                     onChange={handleChange}
                                     required
+                                    pattern="[\u4E00-\u9FFF]+"
+                                    title="漢字で入力してください。"
                                     className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <input
@@ -239,6 +242,8 @@ export default function CheckoutPage() {
                                     value={formData.firstName}
                                     onChange={handleChange}
                                     required
+                                    pattern="[\u4E00-\u9FFF]+"
+                                    title="漢字で入力してください。"
                                     className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
@@ -315,7 +320,7 @@ export default function CheckoutPage() {
                                     value={formData.postalCode}
                                     onChange={handleChange}
                                     placeholder="123-4567"
-                                    pattern="\d{3}-\d{4}"
+                                    pattern="^\d{3}-?\d{4}$"
                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <button
@@ -397,10 +402,9 @@ export default function CheckoutPage() {
                                 name="deliveryDate"
                                 value={formData.deliveryDate}
                                 onChange={handleChange}
-                                required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">選択してください</option>
+                                <option value="">指定なし</option>
                                 {deliveryDates.map(date => (
                                     <option key={date.value} value={date.value}>{date.label}</option>
                                 ))}

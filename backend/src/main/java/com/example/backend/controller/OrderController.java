@@ -6,6 +6,7 @@ import com.example.backend.dto.PaymentResponseDto;
 import com.example.backend.entity.order.OrderStatus;
 import com.example.backend.service.OrderService;
 import com.example.backend.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -100,8 +101,10 @@ public class OrderController {
 
     // 1) 상세페이지 직접 주문 생성
     @PostMapping
-    public ResponseEntity<OrderResponseDto> createOrderFromRequest(Principal principal,
-                                                                   @RequestBody OrderRequestDto requestDto) {
+    public ResponseEntity<OrderResponseDto> createOrderFromRequest(
+            Principal principal,
+            @Valid @RequestBody OrderRequestDto requestDto
+    ) {
         log.info("Create order from request by user: {}", principal != null ? principal.getName() : "anonymous");
         if (principal == null) {
             return ResponseEntity.status(401).build();

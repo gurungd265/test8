@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 public class OrderCustomerDto {
 
     @NotBlank(message = "姓は必須です。")
-    @Pattern(regexp = "^[\\p{IsHan}]+$", message = "姓は漢字で入力してください。")
+    @Pattern(regexp = "^[\\p{IsHan}]+$", message = "漢字で入力してください")
     private String lastName; // 성
 
     @NotBlank(message = "名は必須です。")
-    @Pattern(regexp = "^[\\p{IsHan}]+$", message = "名は漢字で入力してください。")
+    @Pattern(regexp = "^[\\p{IsHan}]+$", message = "漢字で入力してください")
     private String firstName; // 이름
 
     @NotBlank(message = "姓カナは必須です。")
