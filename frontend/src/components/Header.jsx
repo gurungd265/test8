@@ -141,7 +141,7 @@ export default function Header() {
                             My Orders
                           </Link>
                           <Link
-                              to="/wishlist"
+                              to="/wishes"
                               className="block p-3 hover:bg-gray-100 rounded-lg"
                               onClick={toggleSidebar}
                           >
