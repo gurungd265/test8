@@ -119,7 +119,7 @@ public class ProductService {
 
     }
 
-    // ===================================== Cart + ProductImage =====================================
+    // ============================================== Cart + ProductImage ==============================================
     // 특정 카테고리 내 모든 상품 조회
     public Page<ProductDto> getProductsByCategory(Long categoryId, Pageable pageable) {
         return productRepository.findByCategoryIdWithImages(categoryId, pageable)

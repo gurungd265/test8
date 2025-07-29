@@ -6,7 +6,9 @@ import MobileBottomNavigation from './components/MobileBottomNavigation';
 
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
 import WishesPage from './pages/WishesPage';
+import FilteredProductPage from './pages/FilteredProductPage'
 import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -52,6 +54,7 @@ function AppContent() {
                 <Route path="/" element={<Products />} />
                 <Route path="/product/:id" element={<ProductPage />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/filtered-products" element={<FilteredProductPage />} />
                 {/* (Payment/Checkout) 機能はショッピングカート内のアクションか別途ページ
                     もし/checkoutページがあれば、次のように保護:
                     <Route path="/checkout" element={<ProtectedRoute requiresAuth={true} redirectPath="/login"><CheckoutPage /></ProtectedRoute>} />
@@ -68,6 +71,7 @@ function AppContent() {
                   <Route element={<ProtectedRoute requiresAuth={true} redirectPath="/login" />}>
                     <Route path="/wishes" element={<WishesPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}
                     {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
