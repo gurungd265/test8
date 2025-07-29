@@ -3,7 +3,9 @@ import React, { useContext } from 'react';
 import cartApi from "../api/cart";
 import {CartContext} from '../contexts/CartContext';
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useState,useEffect } from "react";
+import wishlistApi from '../api/wishlist';
+import {useAuth} from '../contexts/AuthContext';
 
 export default function Product({ product }) {
   const { id, name, price, description, discountPrice, stockQuantity, images } =
@@ -49,10 +51,54 @@ export default function Product({ product }) {
     }
   };
   const [wished, setWished] = useState(false); // マイリストに追加するための状態
-  const handleWishlist = () => {
-    e.preventDefault(); // Linkタグへの移動防止
-    setWished(!wished); // wishedの状態をトグル
-    alert(`${name}を${!wished ? "マイリストに追加しました" : "マイリストから削除しました"}！`);}
+  const {isLoggedIn,loading: authLoading} = useAuth();
+    useEffect(() => {
+      const checkWishStatus = async () => {
+        if (authLoading || !isLoggedIn) {
+          setWished(false);
+          return;
+        }
+        try {
+          const wishlistItems = await wishlistApi.getWishlistItems();
+          const isProductWished = wishlistItems.some(item => item.productId === id);
+          setWished(isProductWished);
+        } catch (err) {
+          console.error("ウィッシュリストの状態を確認できませんでした。", err);
+        }
+      };
+      checkWishStatus();
+    }, [id, isLoggedIn, authLoading]);
+
+    const handleWishlist = async(e) => {
+      e.preventDefault();
+      if (!isLoggedIn) {
+        alert("ウィッシュリスト操作にはログインが必要です。");
+        return;
+      }
+
+      const previousWished = wished;
+      setWished(!wished); // optimistic update
+
+      try {
+        if (!previousWished) {
+          await wishlistApi.addWishlistItem(id);
+          console.log(`${name}をウィッシュリストに追加しました。`);
+        } else {
+          await wishlistApi.removeWishlistItemByProductId(id);
+          console.log(`${name}をウィッシュリストから削除しました。`);
+        }
+      } catch (err) {
+        console.error("ウィッシュリスト操作に失敗しました。", err);
+        setWished(previousWished);
+        if (err.response && err.response.status === 400 && err.response.data.message) {
+          alert(`ウィッシュリスト操作中にエラーが発生しました: ${err.response.data.message}`);
+        } else if (err.response && err.response.status === 401) {
+          alert("ウィッシュリスト操作にはログインが必要です。");
+        } else {
+          alert("ウィッシュリスト操作中に不明なエラーが発生しました。");
+        }
+      }
+    };
 
   // 表示される価格(割引価格があれば割引価格、なければ原価)
   const displayPrice =

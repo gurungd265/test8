@@ -22,7 +22,16 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     // 특정 상품이 존재하는지 조회 (소프트 삭제 여부)
     List<Wishlist> findByProductId(Long productId);
 
+    // 특정 유저의 위시리스트 항목이 존재하는지 확인 (소프트 삭제되지 않은 것만)
+    boolean existsByUserAndProductAndDeletedAtIsNull(User user, Product product);
+
     // 특정 유저가 해당 특정 상품을 위시리스트에 추가했는지 체크
     boolean existsByUserAndProduct(User user, Product product);
+
+    // ⭐ 새로 추가할 쿼리 메소드: userId와 productId로 위시리스트 항목 조회
+    Optional<Wishlist> findByUserIdAndProductIdAndDeletedAtIsNull(Long userId, Long productId);
+
+    // 위시리스트 전체 조회 시 정렬을 위해 필요할 수 있음
+    List<Wishlist> findByUserIdAndDeletedAtIsNull(Long userId); // getWishlistByUser에서 사용될 수 있음
 
 }

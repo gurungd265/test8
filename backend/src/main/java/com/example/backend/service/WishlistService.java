@@ -12,9 +12,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.backend.dto.WishlistDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +28,9 @@ public class WishlistService {
     private final ProductImageRepository productImageRepository;
 
     // 위시리스트 목록 조회 (유저별)
+    @Transactional(readOnly = true)
     public List<WishlistDto> getWishlistByUser(Long userId) {
-        List<Wishlist> wishlists = wishlistRepository.findByUserId(userId);
+        List<Wishlist> wishlists = wishlistRepository.findByUserIdAndDeletedAtIsNull(userId);
         return wishlists.stream().map(this::toDto).toList();
     }
 
@@ -52,11 +55,16 @@ public class WishlistService {
 
     // 위시리스트에서 상품 소프트 삭제
     @Transactional
-    public void removeProductFromWishlist(Long wishlistId, Long userId) {
-        Wishlist wishlist = wishlistRepository.findByIdAndUserId(wishlistId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Wishlist item not found"));
-        wishlist.setDeletedAt(LocalDateTime.now());
-        wishlistRepository.save(wishlist);
+    public void removeProductFromWishlistByProductId(Long productId, Long userId) {
+        Optional<Wishlist> wishlistOptional = wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(userId, productId);
+
+        if (wishlistOptional.isPresent()) {
+            Wishlist wishlist = wishlistOptional.get();
+            wishlist.setDeletedAt(LocalDateTime.now());
+            wishlistRepository.save(wishlist);
+        } else {
+            throw new EntityNotFoundException("指定された商品がウィッシュリストに見つからないか、既に削除されています。");
+        }
     }
 
     private WishlistDto toDto(Wishlist wishlist) {

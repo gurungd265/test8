@@ -45,14 +45,14 @@ public class WishlistController {
     }
 
     // 현재 로그인한 사용자의 위시리스트에서 상품 소프트삭제
-    @DeleteMapping("/{wishlistId}")
-    public ResponseEntity<?> removeProductFromWishlist(
+    @DeleteMapping("/products/{productId}")
+    public ResponseEntity<?> removeProductFromWishlistByProductId(
             @AuthenticationPrincipal User user,
-            @PathVariable Long wishlistId) {
+            @PathVariable Long productId) {
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
-        wishlistService.removeProductFromWishlist(wishlistId, user.getId());
+        wishlistService.removeProductFromWishlistByProductId(productId, user.getId());
         return ResponseEntity.noContent().build();
     }
 }

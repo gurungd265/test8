@@ -32,20 +32,20 @@ export default function WishesPage() {
     fetchWishlist();
   }, [isLoggedIn, authLoading]);
 
-  const handleRemove = (id) => {
-    const removeWishlistItem = async () => {
+  const handleRemove = (productIdToRemove) => {
+    const removeWishlistItemAction = async () => {
       try {
-        await wishlistApi.removeWishlistItem(id);
-        setWishes(wishes.filter((item) => item.id !== id)); // 성공 시 UI에서 제거
+          await wishlistApi.removeWishlistItemByProductId(productIdToRemove);
+          setWishes(wishes.filter((item) => item.productId !== productIdToRemove));
       } catch (err) {
         console.error(
-          `ウィッシュリストアイテムID ${id}の削除に失敗しました。`,
+          `ウィッシュリストアイテムID ${productIdToRemove}の削除に失敗しました。`,
           err
         );
-        alert("ウィッシュリストからアイテムを削除できませんでした。"); // 사용자에게 알림
+        alert("ウィッシュリストからアイテムを削除できませんでした。");
       }
     };
-    removeWishlistItem();
+    removeWishlistItemAction();
   };
 
   const handleAddToCart = async (productId, quantity = 1) => {
@@ -94,7 +94,7 @@ export default function WishesPage() {
                 </span> */}
 
                 <button
-                  onClick={() => handleRemove(item.id)}
+                  onClick={() => handleRemove(item.productId)}
                   className="text-red-500 text-sm hover:underline"
                 >
                   削除
