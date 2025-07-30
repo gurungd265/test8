@@ -9,6 +9,8 @@ export default function CartPage() {
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState(null);
 
+  const [ selectedItems, setSelectedItems] = useState(new Set());
+
   const { cartItemCount, setCartItemCount, fetchCartCount } = useContext(CartContext);
 
   const navigate = useNavigate();
@@ -31,6 +33,8 @@ export default function CartPage() {
 
               setCart({ ...cartData, items: normalizedItems });
 
+              // 초기엔 모든 아이템 선택 상태로 해도 되고 빈 셋으로 해도 됨 (필요에 따라 변경)
+              setSelectedItems(new Set(normalizedItems.map(item => item.id)));
           } catch (err) {
               console.error('カートデータを読み込むことができませんでした。', err);
               setError('カートデータを読み込むことができませんでした。');
@@ -81,10 +85,10 @@ export default function CartPage() {
       updateQuantity();
   };
 
-
+    // 전체 상품 총합
     const total = cart.items.reduce((sum, item) => sum + item.discountPrice * item.quantity, 0);
 
-  // 체크아웃 버튼 클릭 시 결제 페이지로 이동하며 cart 데이터를 전달
+    // 전체 상품 주문 버튼
     const handleCheckout = () => {
         const subtotal = cart.items.reduce(
             (sum, item) => sum + item.priceAtAddition * item.quantity, 0
@@ -97,100 +101,169 @@ export default function CartPage() {
         });
     };
 
-  return (
-      <div className="max-w-6xl mx-auto p-6">
-          <h1 className="text-2xl font-bold mb-4">ショッピングカート</h1>
+    // 선택된 상품만 주문 버튼
+    const handleSelectedCheckout = () => {
+        const itemsToCheckout = cart.items.filter(item => selectedItems.has(item.id));
+        if (itemsToCheckout.length === 0) {
+            alert('注文する商品を選択してください。');
+            return;
+        }
+        const subtotal = itemsToCheckout.reduce(
+            (sum, item) => sum + item.priceAtAddition * item.quantity, 0
+        );
+        navigate('/checkout', {
+            state: {
+                cartItems: itemsToCheckout,
+                subtotal,
+            },
+        });
+    };
 
-          {cart.items.length === 0 ? (
-              <div className="text-gray-600 text-center py-10">
-                  カートは空です。
-              </div>
-          ) : (
-              <>
-              {/*  Product List */}
-              <div className="space-y-4">
-                  {cart.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between bg-white rounded shadow p-4"
-                      >
-                        <div className="flex items-center gap-4">
-                            <Link to={`/product/${item.productId}`}>
-                                <img
-                                    src={item.productImageUrl }　
-                                    alt={item.productName}
-                                    className="w-20 h-20 object-cover rounded"
-                                />
-                            </Link>
-                            <div>
-                                <Link to={`/product/${item.productId}`}>
-                                    <h2 className="font-semibold">{item.productName}</h2>
-                                    <p className="text-gray-500">
-                                        {(() => {
-                                            const displayPrice = item.discountPrice !== null && item.discountPrice !== undefined
-                                                ? item.discountPrice
-                                                : item.price;
+    // 전체 선택 / 전체 선택 해제 기능 (필요하면)
+    const toggleSelectAll = () => {
+        if (selectedItems.size === cart.items.length) {
+            setSelectedItems(new Set());
+        } else {
+            setSelectedItems(new Set(cart.items.map(item => item.id)));
+        }
+    };
 
-                                            if (item.discountPrice !== null && item.discountPrice !== undefined && item.discountPrice < item.price) {
-                                                return (
-                                                    <>
-                                                        <span className="line-through text-gray-400">{item.price.toLocaleString()}円</span>
-                                                        <span className="text-purple-700 ml-2">{displayPrice.toLocaleString()}円</span>
-                                                    </>
-                                                );
-                                            } else {
-                                                return <span>{item.price.toLocaleString()}円</span>;
-                                            }
-                                        })()}
+    return (
+        <div className="max-w-6xl mx-auto p-6">
+            <h1 className="text-2xl font-bold mb-4">ショッピングカート</h1>
+
+            {cart.items.length === 0 ? (
+                <div className="text-gray-600 text-center py-10">
+                    カートは空です。
+                </div>
+            ) : (
+                <>
+                    {/* 전체 선택 토글 버튼 */}
+                    <div className="mb-4">
+                        <label className="inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="form-checkbox"
+                                checked={selectedItems.size === cart.items.length}
+                                onChange={toggleSelectAll}
+                            />
+                            <span className="ml-2 text-sm font-normal text-gray-500 tracking-wide">
+                                全て選択
+                            </span>
+                        </label>
+                    </div>
+
+                    {/* Product List */}
+                    <div className="space-y-4">
+                        {cart.items.map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex items-center justify-between bg-white rounded shadow p-4"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* 체크박스 */}
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItems.has(item.id)}
+                                        onChange={() => {
+                                            setSelectedItems(prev => {
+                                                const newSet = new Set(prev);
+                                                if (newSet.has(item.id)) {
+                                                    newSet.delete(item.id);
+                                                } else {
+                                                    newSet.add(item.id);
+                                                }
+                                                return newSet;
+                                            });
+                                        }}
+                                        className="form-checkbox"
+                                    />
+                                    <Link to={`/product/${item.productId}`}>
+                                        <img
+                                            src={item.productImageUrl}
+                                            alt={item.productName}
+                                            className="w-20 h-20 object-cover rounded"
+                                        />
+                                    </Link>
+                                    <div>
+                                        <Link to={`/product/${item.productId}`}>
+                                            <h2 className="font-semibold">{item.productName}</h2>
+                                            <p className="text-gray-500">
+                                                {(() => {
+                                                    const displayPrice = item.discountPrice !== null && item.discountPrice !== undefined
+                                                        ? item.discountPrice
+                                                        : item.price;
+
+                                                    if (item.discountPrice !== null && item.discountPrice !== undefined && item.discountPrice < item.price) {
+                                                        return (
+                                                            <>
+                                                                <span className="line-through text-gray-400">{item.price.toLocaleString()}円</span>
+                                                                <span className="text-purple-700 ml-2">{displayPrice.toLocaleString()}円</span>
+                                                            </>
+                                                        );
+                                                    } else {
+                                                        return <span>{item.price.toLocaleString()}円</span>;
+                                                    }
+                                                })()}
+                                            </p>
+                                        </Link>
+                                        {/*Quantity Controls*/}
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleQuantityChange(item.id, item.quantity, -1)}
+                                                className="h-10 w-10 px-2 py-1 border rounded"
+                                            >
+                                                -
+                                            </button>
+                                            <span>{item.quantity}</span>
+                                            <button
+                                                onClick={() => handleQuantityChange(item.id, item.quantity, 1)}
+                                                className="h-10 w-10 px-2 py-1 border rounded"
+                                            >
+                                                ＋
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold">
+                                        {(item.priceAtAddition * item.quantity).toLocaleString()}円
                                     </p>
-                                </Link>
-                                {/*Quantity Controls*/}
-                                <div className="mt-2 flex items-center gap-2">
                                     <button
-                                        onClick={() => handleQuantityChange(item.id,item.quantity, -1)}
-                                        className="h-10 w-10 px-2 py-1 border rounded"
+                                        onClick={() => handleRemove(item.id)}
+                                        className="text-red-500 text-sm hover:underline mt-2"
                                     >
-                                        -
-                                    </button>
-                                    <span>{item.quantity}</span>
-                                    <button
-                                        onClick={() => handleQuantityChange(item.id,item.quantity, 1)}
-                                        className="h-10 w-10 px-2 py-1 border rounded"
-                                    >
-                                        ＋
+                                        削除
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="font-bold">
-                                {(item.priceAtAddition * item.quantity).toLocaleString()}円
-                            </p>
-                            <button
-                                onClick={() => handleRemove(item.id)}
-                                className="text-red-500 text-sm hover:underline mt-2"
-                            >
-                                削除
-                            </button>
-                        </div>
-                      </div>
-                  ))}
-              </div>
+                        ))}
+                    </div>
 
-              {/*Summary*/}
-              <div className="mt-8 bg-white rounded shadow p-4 text-right">
-                  <h3 className="text-lg font-semibold mb-2">
-                      Total: {total.toLocaleString()}円
-                  </h3>
-                  <button
-                      className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700"
-                      onClick={handleCheckout}  // 여기에 onClick 넣음
-                  >
-                      チェックアウトに進む
-                  </button>
-              </div>
-            </>
-          )}
-      </div>
-  );
+                    {/* Summary */}
+                    <div className="mt-8 bg-white rounded shadow p-4 text-right">
+                        <h3 className="text-lg font-semibold mb-2">
+                            Total: {total.toLocaleString()}円
+                        </h3>
+
+                        {/* 선택 상품 주문 버튼 */}
+                        <button
+                            className="bg-white border border-gray-400 text-gray-800 px-6 py-2 rounded hover:bg-gray-100"
+                            onClick={handleSelectedCheckout}
+                        >
+                            選択商品を注文する
+                        </button>
+
+                        {/* 전체 상품 주문 버튼 */}
+                        <button
+                            className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 ml-4"
+                            onClick={handleCheckout}
+                        >
+                            全商品を注文する
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
 }
