@@ -1,6 +1,7 @@
 package com.example.backend.dto.order;
 
 import com.example.backend.dto.user.AddressDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
@@ -16,6 +17,9 @@ public class DeliveryRequestDto {
     @NotEmpty(message = "配送時間は必須項目です。")
     private String time;
 
+    @Valid
     private AddressDto shippingAddress;
+
+    @Valid
     private AddressDto billingAddress;
 }

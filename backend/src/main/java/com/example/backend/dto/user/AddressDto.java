@@ -14,17 +14,17 @@ public class AddressDto {
 
     private AddressType addressType; // enum
 
-    @NotBlank(message = "Streetは必須です。")
-    private String street;
-
-    @NotBlank(message = "Cityは必須です。")
-    private String city;
-
-    @NotBlank(message = "Stateは必須です。")
-    private String state;
-
     @NotBlank(message = "Postal codeは必須です。")
     private String postalCode;
+
+    @NotBlank(message = "Streetは必須です。")
+    private String state; // 都道府県
+
+    @NotBlank(message = "Cityは必須です。")
+    private String city; // 市区町村
+
+    @NotBlank(message = "Stateは必須です。")
+    private String street; // 番地、ビル、部屋番号
 
     @NotBlank(message = "Countryは必須です。")
     @Builder.Default

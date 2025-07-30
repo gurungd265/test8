@@ -37,15 +37,15 @@ public class Address {
 
     @NotBlank
     @Column(nullable = false)
-    private String street;
+    private String state; // 都道府県
 
     @NotBlank
     @Column(nullable = false)
-    private String city;
+    private String city; // 市区町村
 
     @NotBlank
     @Column(nullable = false)
-    private String state;
+    private String street; // 番地、ビル、部屋番号
 
     @NotBlank
     @Column(name = "postal_code", nullable = false)
