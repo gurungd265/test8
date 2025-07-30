@@ -1,165 +1,270 @@
-import { useState, useEffect } from "react";
-// import authApi from "../api/auth";
-// import userApi from "../api/user";
-// import { useAuth } from "../contexts/AuthContext";
+import React, { useState, useEffect, useCallback } from "react";
+import userApi from "../api/user";
+import authApi from "../api/auth";
+import { useAuth } from "../contexts/AuthContext";
+
+import ProfileInfoSection from "../components/Profile/ProfileInfoSection";
+import AddressSection from "../components/Profile/AddressSection";
+import PasswordConfirmationModal from "../components/Profile/PasswordConfirmationModal";
 
 export default function ProfilePage() {
-    const initialUser = {
-        firstName: "John", //
-        lastName: "Doe",   //
-        firstNameKana: "ジョン", // 名 (カタカナ)
-        lastNameKana: "ドゥ",   // 姓 (カタカナ)
-        email: "john@mail.com",
-        phone: "+1234567890",
-        postalCode: "150-0043",
-        prefecture: "東京都",
-        city: "渋谷区",
-        streetAddress: "道玄坂1-2-3",
-        // buildingName: "ABCビルディング101",
+    const initialUserProfile = {
+        firstName: "",
+        lastName: "",
+        firstNameKana: "", // フロントエンド専用
+        lastNameKana: "",  // フロントエンド専用
+        email: "",
+        phoneNumber: "",
     };
 
-    const [user, setUser] = useState(initialUser);
-    const [editedUser, setEditedUser] = useState(initialUser);
-    const [hasChanges, setHasChanges] = useState(false);
-    // const { isLoggedIn, logout } = useAuth();
-    const [addressSearchError, setAddressSearchError] = useState(null);
+    const initialAddress = {
+        id: null,
+        postalCode: "",
+        prefecture: "", // AddressDto 'state' マッピング
+        city: "",
+        streetAddress: "", // AddressDto 'street' マッピング
+        isDefault: false,
+    };
 
+    const { isLoggedIn, logout, loading: authLoading } = useAuth();
+
+    const [userProfile, setUserProfile] = useState(initialUserProfile);
+    const [editedUserProfile, setEditedUserProfile] = useState(initialUserProfile);
+    const [userProfileHasChanges, setUserProfileHasChanges] = useState(false);
+
+    const [addresses, setAddresses] = useState([]);
+    const [editedAddress, setEditedAddress] = useState(initialAddress);
+    const [addressHasChanges, setAddressHasChanges] = useState(false);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+
+    const [loadingData, setLoadingData] = useState(true);
+    const [error, setError] = useState(null);
+
+    const [addressSearchError, setAddressSearchError] = useState(null);
 
     const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
     const [passwordInput, setPasswordInput] = useState("");
     const [passwordError, setPasswordError] = useState(null);
+    const [confirmingPassword, setConfirmingPassword] = useState(false);
 
+    const fetchUserData = useCallback(async () => {
+        if (!isLoggedIn) {
+            setError("プロフィールを表示するにはログインしてください。");
+            setLoadingData(false);
+            return;
+        }
 
-    useEffect(() => {
-        const isChanged = Object.keys(user).some(
-            (key) => user[key] !== editedUser[key]
-        );
-        setHasChanges(isChanged);
-    }, [editedUser, user]);
-
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setEditedUser((prev) => ({ ...prev, [name]: value }));
-    };
-
-    // 저장 버튼 클릭 핸들러
-    const handleSave = async () => {
-        // 실제 백엔드 연동 시:
-        // try {
-        //     // userApi.updateUserProfile(editedUser); // 백엔드로 업데이트 요청
-        //     // setUser(editedUser); // 성공 시 현재 사용자 정보 업데이트
-        //     // setHasChanges(false);
-        //     alert("変更を保存しました！");
-        // } catch (error) {
-        //     console.error("プロフィールの保存に失敗しました。", error);
-        //     alert("プロフィールの保存に失敗しました。");
-        // }
-
-
-        setUser(editedUser);
-        setHasChanges(false);
-        alert("変更を保存しました！");
-    };
-
-    const handleLogout = () => {
-        // 실제 백엔드 연동 시:
-        // logout(); // AuthContext의 로그아웃 함수 호출
-        alert("ログアウトしました");
-        // 로그인 페이지 등으로 리디렉션 (예: navigate('/login'))
-    };
-
-
-    const handleAddressSearch = async () => {
-        const zipcode = editedUser.postalCode.replace(/-/g, '');
-        setAddressSearchError(null);
-
-        if (zipcode.length !== 7 || !/^\d+$/.test(zipcode)) {
-            setAddressSearchError("有効な7桁の郵便番号を入力してください。");
+        if (!isPasswordConfirmed) {
+            setLoadingData(false);
             return;
         }
 
         try {
-            const response = await fetch(`https://zipcloud.jp/api/search?zipcode=${zipcode}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            setLoadingData(true);
+            const profileData = await userApi.getUserProfile();
+            const addressList = await userApi.getUserAddresses();
 
-            const data = await response.json();
+            setUserProfile(profileData);
+            setEditedUserProfile({
+                ...profileData,
+                firstNameKana: "",
+                lastNameKana: "",
+            });
+            setAddresses(addressList);
 
-            if (data.status === 200 && data.results) {
-                const result = data.results[0];
-                setEditedUser((prev) => ({
-                    ...prev,
-                    prefecture: result.address1, // 都道府県
-                    city: result.address2,       // 市区町村
-                    streetAddress: result.address3, // 町域
-                }));
-            } else if (data.status === 400) {
-                setAddressSearchError("無効な郵便番号です。");
+            const defaultAddress = addressList.find(addr => addr.isDefault) || addressList[0];
+            if (defaultAddress) {
+                setEditedAddress({
+                    id: defaultAddress.id,
+                    postalCode: defaultAddress.postalCode || "",
+                    prefecture: defaultAddress.state || "",
+                    city: defaultAddress.city || "",
+                    streetAddress: defaultAddress.street || "",
+                    isDefault: defaultAddress.isDefault ?? false,
+                });
             } else {
-                setAddressSearchError("住所の検索に失敗しました。もう一度お試しください。");
+                setEditedAddress(initialAddress);
             }
+
+            setError(null);
+        } catch (err) {
+            console.error("Failed to load user data:", err);
+            setError("データの読み込みに失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    }, [isLoggedIn, isPasswordConfirmed]);
+
+    useEffect(() => {
+        if (!authLoading) {
+            fetchUserData();
+        }
+    }, [authLoading, fetchUserData]);
+
+    useEffect(() => {
+        const profileChanged = Object.keys(userProfile).some(
+            (key) => userProfile[key] !== editedUserProfile[key]
+        );
+        setUserProfileHasChanges(profileChanged);
+    }, [editedUserProfile, userProfile]);
+
+    useEffect(() => {
+        const currentDefaultAddress = addresses.find(addr => addr.isDefault) || initialAddress;
+        const addressChanged = Object.keys(initialAddress).some(
+            (key) => {
+                if (key === 'id') return false;
+                if (key === 'isDefault') return editedAddress.isDefault !== currentDefaultAddress.isDefault;
+
+                return currentDefaultAddress[key] !== editedAddress[key];
+            }
+        );
+        setAddressHasChanges(addressChanged || (editedAddress.id === null && (editedAddress.postalCode || editedAddress.streetAddress)));
+    }, [editedAddress, addresses, initialAddress]);
+
+
+    const handleProfileChange = (e) => {
+        const { name, value } = e.target;
+        setEditedUserProfile((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleProfileSave = async () => {
+        try {
+            setLoadingData(true);
+            const updatedProfile = await userApi.updateUserProfile(editedUserProfile);
+            setUserProfile(updatedProfile);
+            setUserProfileHasChanges(false);
+            setError(null);
+            alert("プロフィール情報を保存しました！");
+        } catch (error) {
+            console.error("プロフィールの保存に失敗しました。", error);
+            setError("プロフィールの保存に失敗しました。");
+            alert("プロフィールの保存に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleAddressChange = (e) => {
+        const { name, value } = e.target;
+        setEditedAddress((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddressSave = async () => {
+        try {
+            setLoadingData(true);
+            await userApi.saveUserAddress(editedAddress);
+
+            await fetchUserData();
+
+            setAddressHasChanges(false);
+            setIsEditingAddress(false);
+            setEditedAddress(initialAddress);
+            setError(null);
+            alert("住所情報を保存しました！");
+        } catch (error) {
+            console.error("住所の保存に失敗しました。", error);
+            setError("住所の保存に失敗しました。");
+            alert("住所の保存に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleSetDefaultAddress = async (addressId) => {
+        try {
+            setLoadingData(true);
+            await userApi.setDefaultAddress(addressId);
+            await fetchUserData();
+            alert("デフォルト住所を設定しました。");
+        } catch (error) {
+            console.error("デフォルト住所の設定に失敗しました。", error);
+            setError("デフォルト住所の設定に失敗しました。");
+            alert("デフォルト住所の設定に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleAddressSearch = async (zipcode) => {
+        setAddressSearchError(null);
+        try {
+            const addressData = await userApi.searchAddressByZipcode(zipcode);
+            setEditedAddress((prev) => ({
+                ...prev,
+                prefecture: addressData.prefecture,
+                city: addressData.city,
+                streetAddress: addressData.streetAddress || "",
+            }));
         } catch (error) {
             console.error("郵便番号検索エラー:", error);
-            setAddressSearchError("住所の検索中にエラーが発生しました。ネットワーク接続を確認してください。");
+            setAddressSearchError(error.message || "住所の検索に失敗しました。");
         }
     };
 
-    // ⭐ 추가: 비밀번호 확인 핸들러
+    const startEditingAddress = (addressToEdit = initialAddress) => {
+        setEditedAddress({
+            id: addressToEdit.id,
+            postalCode: addressToEdit.postalCode || "",
+            prefecture: addressToEdit.state || "",
+            city: addressToEdit.city || "",
+            streetAddress: addressToEdit.street || "",
+            isDefault: addressToEdit.isDefault ?? false,
+        });
+        setIsEditingAddress(true);
+        setAddressSearchError(null);
+    };
+
+    const cancelEditingAddress = () => {
+        setIsEditingAddress(false);
+        setEditedAddress(initialAddress);
+        setAddressSearchError(null);
+    };
+
     const handlePasswordConfirm = async () => {
         setPasswordError(null);
-        // 실제 백엔드 연동 시:
-        // try {
-        //     // const response = await authApi.confirmPassword(passwordInput);
-        //     // if (response.success) { // 백엔드 응답에 따라 조건 변경
-        //     //     setIsPasswordConfirmed(true);
-        //     // } else {
-        //     //     setPasswordError("パスワードが正しくありません。");
-        //     // }
-        // } catch (error) {
-        //     console.error("パスワード確認エラー:", error);
-        //     setPasswordError("パスワード確認中にエラーが発生しました。");
-        // }
+        setConfirmingPassword(true);
 
-        // 임시 로직: 비밀번호가 "1234"일 경우 성공
-        if (passwordInput === "1234") {
-            setIsPasswordConfirmed(true);
-            setPasswordInput(""); // 비밀번호 입력 필드 초기화
-        } else {
-            setPasswordError("パスワードが正しくありません。");
+        try {
+            const response = await userApi.confirmPassword(passwordInput);
+            if (response.valid) {
+                setIsPasswordConfirmed(true);
+                setPasswordInput("");
+            } else {
+                setPasswordError("パスワードが正しくありません。");
+            }
+        } catch (error) {
+            console.error("パスワード確認エラー:", error);
+            if (error.response && error.response.status === 401) {
+                setPasswordError("パスワードが正しくありません。");
+            } else {
+                setPasswordError("パスワード確認中にエラーが発生しました。ネットワーク接続を確認してください。");
+            }
+        } finally {
+            setConfirmingPassword(false);
         }
     };
 
-    // ⭐ 비밀번호가 확인되지 않았다면 비밀번호 입력 폼을 렌더링
+    const handleLogout = () => {
+        logout();
+    };
+
+    if (loadingData || authLoading) {
+        return (
+            <div className="max-w-xl mx-auto p-6 text-center text-gray-700">
+                <p>プロファイルと住所情報を読み込み中...</p>
+            </div>
+        );
+    }
+
     if (!isPasswordConfirmed) {
         return (
-            <div className="max-w-md mx-auto p-6 mt-10 bg-white rounded shadow">
-                <h2 className="text-xl font-bold mb-4 text-center">プロフィールの確認</h2>
-                <p className="text-gray-600 mb-4 text-center">
-                    プロフィール情報を変更するには、パスワードを入力してください。
-                </p>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700" htmlFor="confirmPassword">パスワード</label>
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                        placeholder="パスワードを入力してください"
-                    />
-                    {passwordError && (
-                        <p className="text-red-500 text-sm mt-1">{passwordError}</p>
-                    )}
-                </div>
-                <button
-                    onClick={handlePasswordConfirm}
-                    className="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
-                >
-                    確認
-                </button>
-            </div>
+            <PasswordConfirmationModal
+                passwordInput={passwordInput}
+                setPasswordInput={setPasswordInput}
+                handlePasswordConfirm={handlePasswordConfirm}
+                passwordError={passwordError}
+                confirmingPassword={confirmingPassword}
+            />
         );
     }
 
@@ -168,168 +273,39 @@ export default function ProfilePage() {
         <div className="max-w-xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-6">マイプロフィール</h1>
 
-            <div className="bg-white rounded shadow p-6 space-y-4">
-                {/* 氏名 (英字) */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">名 (英字)</label>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={editedUser.firstName}
-                            onChange={handleChange}
-                            className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">姓 (英字)</label>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={editedUser.lastName}
-                            onChange={handleChange}
-                            className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                        />
-                    </div>
-                </div>
+            {error && (
+                <p className="text-red-500 text-center mb-4">{error}</p>
+            )}
 
-                {/* 氏名 (カタカナ) */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">名 (カタカナ)</label>
-                        <input
-                            type="text"
-                            name="firstNameKana"
-                            value={editedUser.firstNameKana}
-                            onChange={handleChange}
-                            className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                            placeholder="例: ジョン"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">姓 (カタカナ)</label>
-                        <input
-                            type="text"
-                            name="lastNameKana"
-                            value={editedUser.lastNameKana}
-                            onChange={handleChange}
-                            className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                            placeholder="例: ドゥ"
-                        />
-                    </div>
-                </div>
+            <ProfileInfoSection
+                userProfile={userProfile}
+                editedUserProfile={editedUserProfile}
+                handleProfileChange={handleProfileChange}
+                handleProfileSave={handleProfileSave}
+                userProfileHasChanges={userProfileHasChanges}
+            />
 
-                {/* メールアドレス */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">メールアドレス</label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={editedUser.email}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                    />
-                </div>
+            <AddressSection
+                addresses={addresses}
+                editedAddress={editedAddress}
+                handleAddressChange={handleAddressChange}
+                handleAddressSave={handleAddressSave}
+                handleAddressSearch={handleAddressSearch}
+                addressSearchError={addressSearchError}
+                isEditingAddress={isEditingAddress}
+                startEditingAddress={startEditingAddress}
+                cancelEditingAddress={cancelEditingAddress}
+                handleSetDefaultAddress={handleSetDefaultAddress}
+                addressHasChanges={addressHasChanges}
+            />
 
-                {/* 電話番号 */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">電話番号</label>
-                    <input
-                        type="tel"
-                        name="phone"
-                        value={editedUser.phone}
-                        placeholder="080-000-0000"
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                    />
-                </div>
-
-                {/* 住所 (日本式) */}
-                <div className="space-y-4 pt-4 border-t border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-800">お届け先住所</h2>
-                        <div className="flex items-end gap-2">
-                            <div className="flex-grow">
-                                <label className="block text-sm font-medium text-gray-700" htmlFor="postalCode">郵便番号 (必須)</label>
-                                <input
-                                    type="text"
-                                    id="postalCode"
-                                    name="postalCode"
-                                    value={editedUser.postalCode}
-                                    onChange={handleChange}
-                                    className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                                    placeholder="例: 150-0043"
-                                    maxLength="8"
-                                    required
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleAddressSearch}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                                >
-                                検索
-                            </button>
-                        </div>
-                            {addressSearchError && ( // アドレス検索エラーメッセージ表示
-                            <p className="text-red-500 text-sm mt-1">{addressSearchError}</p>
-                            )}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">都道府県 (必須)</label>
-                                <input
-                                    type="text"
-                                    name="prefecture"
-                                    value={editedUser.prefecture}
-                                    onChange={handleChange}
-                                    className="w-full mt-1 border rounded px-3 py-2 bg-gray-50 focus:ring-purple-500 focus:border-purple-500"
-                                    placeholder="例: 東京都"
-                                    readOnly
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">市区町村 (必須)</label>
-                                    <input
-                                        type="text"
-                                        name="city"
-                                        value={editedUser.city}
-                                        onChange={handleChange}
-                                        className="w-full mt-1 border rounded px-3 py-2 bg-gray-50 focus:ring-purple-500 focus:border-purple-500"
-                                        placeholder="例: 渋谷区"
-                                        readOnly
-                                        required
-                                    />
-                            </div>
-                            {/* streetAddress */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">番地・建物名など (必須)</label>
-                                <input
-                                    type="text"
-                                    name="streetAddress"
-                                    value={editedUser.streetAddress}
-                                    onChange={handleChange}
-                                    className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                                    placeholder="例: 道玄坂1-2-3 ABCビルディング101"
-                                    required
-                                />
-                            </div>
-                </div>
-                {/* Button */}
-                <div className="flex justify-between mt-6">
-                    {hasChanges && (
-                        <button
-                            onClick={handleSave}
-                            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
-                        >
-                            変更を保存する
-                        </button>
-                    )}
-                    <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 ml-auto focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                    >
-                        ログアウト
-                    </button>
-                </div>
+            <div className="flex justify-end mt-6">
+                <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                >
+                    ログアウト
+                </button>
             </div>
         </div>
     );

@@ -24,8 +24,8 @@ public class AddressController {
     }
 
     // 내 주소 생성
-    @PostMapping
-    public ResponseEntity<AddressDto> createAddress(@Valid @RequestBody AddressDto dto) {
+
+    @PostMapping public ResponseEntity<AddressDto> createAddress(@Valid @RequestBody AddressDto dto) {
         AddressDto created = addressService.createAddress(dto);
         return ResponseEntity.ok(created);
     }
@@ -45,5 +45,12 @@ public class AddressController {
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
         addressService.softDeleteAddress(id);
         return ResponseEntity.noContent().build();
+    }
+
+    //주소 설정 엔드 포인트.
+    @PutMapping("/{id}/default")
+    public ResponseEntity<AddressDto> setDefaultAddress(@PathVariable Long id){
+        AddressDto updatedAddress = addressService.setDefaultAddress(id);
+        return ResponseEntity.ok(updatedAddress);
     }
 }

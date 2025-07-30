@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import api from '../api';
 import authApi from '../api/auth';
 import cartApi from '../api/cart';
+import userApi from '../api/user';
 import Cookies from 'js-cookie';
 import {jwtDecode} from 'jwt-decode';
 
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       api.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
-      const userData = await authApi.validateToken();
+      const userData = await userApi.getUserProfile();
 
       if (userData && userData.email) {
         setUser(userData);

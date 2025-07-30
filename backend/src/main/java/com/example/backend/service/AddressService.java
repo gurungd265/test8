@@ -117,6 +117,23 @@ public class AddressService {
         addressRepository.save(address);
     }
 
+    @Transactional
+    public AddressDto setDefaultAddress(Long addressId){
+        User currentUser =getCurrentUser();
+
+        Address newDefaultAddress=addressRepository.findById(addressId)
+                .orElseThrow(() -> new EntityNotFoundException("デフォルトに設定する住所が見つかりません。"));
+        if(!newDefaultAddress.getUser().getId().equals(currentUser.getId())){
+            throw new RuntimeException("権限がありません。");
+        }
+
+        clearOldDefault(currentUser, newDefaultAddress.getId());
+
+        newDefaultAddress.setIsDefault(true);
+        Address saveAddress =addressRepository.save(newDefaultAddress);
+        return toDto(saveAddress);
+    }
+
     // 편의 메소드 =====================================================================================================
 
     // 기본 주소 초기화 (isDefault를 false로 변경)

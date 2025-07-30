@@ -27,18 +27,6 @@ const authApi = {
         localStorage.removeItem('tokenType');
         localStorage.removeItem('userEmail');
     },
-
-    // トークン有効性検査
-    // /api/auth/validate-token or /api/auth/me
-    validateToken: async () => {
-        try {
-            // このエンドポイントはAuthorizationヘッダのトークンを自動的に検証しなければなりません。
-            const response = await api.get('/api/users/me');
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
-    }
 };
 
 export default authApi;
