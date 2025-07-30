@@ -28,14 +28,14 @@ public class OrderRequestDto { // 클라이언트 -> 서버 요청 DTO. 클라�
     private List<@Valid CartItemDto> cartItems;
 
     @Min(0)
-    private int subtotal;
+    private Integer subtotal;
 
     @Min(0)
-    private int shippingFee;
+    private Integer shippingFee;
 
     @Min(0)
-    private int tax;
+    private Integer tax;
 
     @Min(0)
-    private int total;
+    private Integer totalAmount; // subtotal + shippingFee + tax
 }

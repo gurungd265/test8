@@ -44,8 +44,17 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
-    @Column(name = "total_amount")
-    private BigDecimal totalAmount; // 주문 전체에 대한 합계 금액
+    @Column(nullable = false)
+    private BigDecimal subtotal;
+
+    @Column(nullable = false)
+    private BigDecimal shippingFee;
+
+    @Column(nullable = false)
+    private BigDecimal tax;
+
+    @Column(nullable = false)
+    private BigDecimal totalAmount; // subtotal + shippingFee + tax
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shipping_address_id")

@@ -15,8 +15,27 @@ export default function CheckoutPage() {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Constants
-    const JAPANESE_PREFECTURES = [
+    // 주소 입력 상태
+    const [formData, setFormData] = useState({
+        lastName: '',       // 姓
+        firstName: '',      // 名
+        lastNameKana: '',
+        firstNameKana: '',
+        postalCode: '',
+        state: '',          // 都道府県
+        city: '',           // 市区町村
+        street: '',         // 番地, ビル, 部屋番号
+        phone: '',
+        email: '',
+        paymentMethod: 'credit_card',
+        deliveryDate: '',
+        deliveryTime: ''
+    });
+
+    /**
+     * 주소 도도부현 자동 생성
+     */
+    const JAPANESE_STATE = [
         '北海道', '青森県', '岩手県', '宮城県', '秋田県',
         '山形県', '福島県', '茨城県', '栃木県', '群馬県',
         '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県',
@@ -28,23 +47,6 @@ export default function CheckoutPage() {
         '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県',
         '鹿児島県', '沖縄県'
     ];
-
-    // 주소 입력 상태
-    const [formData, setFormData] = useState({
-        name: '',
-        nameKana: '',
-        postalCode: '',
-        prefecture: '',
-        city: '',
-        addressType: '',
-        address: '',
-        building: '',
-        phone: '',
-        email: '',
-        paymentMethod: 'credit_card',
-        deliveryDate: '',
-        deliveryTime: ''
-    });
 
     /**
      * 배송일 생성
@@ -111,13 +113,15 @@ export default function CheckoutPage() {
         return <div>カートの情報がありません。</div>;
     }
 
-    // 계산
+    // 총 주문 금액 계산
     const calculatedSubtotal = subtotal || cartItems.reduce((sum, item) => sum + (item.priceAtAddition * item.quantity), 0);
     const shippingFee = 600;
     const tax = Math.floor(calculatedSubtotal * 0.1);
-    const total = calculatedSubtotal + shippingFee + tax;
+    const totalAmount = calculatedSubtotal + shippingFee + tax;
 
-    // Handlers
+    /**
+     * Handlers
+     */
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -151,7 +155,7 @@ export default function CheckoutPage() {
         }
     };
 
-    // 랜덤 트랜잭션 ID 생성 함수
+    // 랜덤 트랜잭션 ID 생성
     function generateTransactionId() {
         return 'txn_' + Math.random().toString(36).substr(2, 9);
     }
@@ -162,13 +166,13 @@ export default function CheckoutPage() {
         setError(null);
 
         try {
-            // 수정된 주문 생성 payload (DTO에 맞게)
+            // DTO에 맞게 주문 생성
             const orderPayload = {
                 customer: {
-                    lastName: formData.name.split(' ')[0] || formData.name,       // 성: 예를 들어 "山田 太郎" -> "山田"
-                    firstName: formData.name.split(' ')[1] || '',                 // 이름: "太郎"
-                    lastNameKana: formData.nameKana.split(' ')[0] || formData.nameKana,  // 성 카나
-                    firstNameKana: formData.nameKana.split(' ')[1] || '',              // 이름 카나
+                    lastName: formData.lastName,
+                    firstName: formData.firstName,
+                    lastNameKana: formData.lastNameKana,
+                    firstNameKana: formData.firstNameKana,
                     phone: formData.phone,
                     email: formData.email,
                 },
@@ -176,11 +180,13 @@ export default function CheckoutPage() {
                     date: formData.deliveryDate,
                     time: formData.deliveryTime,
                     shippingAddress: {
+                        // addresstype 생략
                         postalCode: formData.postalCode,
-                        prefecture: formData.prefecture,
-                        city: formData.city,
-                        address: formData.address,
-                        building: formData.building,
+                        state: formData.state,   // 도도부현
+                        city: formData.city,     // 시구군
+                        street: formData.street, // 상세주소 (번지+빌딩명+방번호 등)
+                        country: "JAPAN",
+                        isDefault: false,
                     },
                     billingAddress: null, // 필요시 추가 가능
                 },
@@ -200,7 +206,7 @@ export default function CheckoutPage() {
 
             await paymentsApi.createPayment(paymentRequest);
 
-            alert('注文が確定しました！ 결제가 완료되었습니다.');
+            alert('注文が確定しました！');
             navigate('/order-success', { state: { orderId } });
 
         } catch (error) {
@@ -335,17 +341,17 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-1">都道府県</label>
+                            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">都道府県</label>
                             <select
-                                id="prefecture"
-                                name="prefecture"
-                                value={formData.prefecture}
+                                id="state"
+                                name="state"
+                                value={formData.state}
                                 onChange={handleChange}
                                 required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">選択してください</option>
-                                {JAPANESE_PREFECTURES.map(pref => (
+                                {JAPANESE_STATE.map(pref => (
                                     <option key={pref} value={pref}>{pref}</option>
                                 ))}
                             </select>
@@ -365,27 +371,15 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">番地</label>
+                            <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">番地（ビル名, 部屋番号）</label>
                             <input
                                 type="text"
-                                id="address"
-                                name="address"
-                                value={formData.address}
+                                id="street"
+                                name="street"
+                                value={formData.street}
                                 onChange={handleChange}
+                                placeholder="例：1-2-3 ABCビル 101号"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label htmlFor="building" className="block text-sm font-medium text-gray-700 mb-1">建物名・部屋番号</label>
-                            <input
-                                type="text"
-                                id="building"
-                                name="building"
-                                value={formData.building}
-                                onChange={handleChange}
-                                placeholder="マンション・アパート名など"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -578,7 +572,7 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex justify-between border-t pt-2 mt-2">
                                         <span className="font-semibold text-gray-800">合計</span>
-                                        <span className="font-bold text-gray-900">¥{total.toLocaleString()}</span>
+                                        <span className="font-bold text-gray-900">¥{totalAmount.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </>

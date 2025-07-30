@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -18,5 +19,9 @@ public class WishlistDto {
 
     private String productName;
     private String productImageUrl;
+
+    private BigDecimal price;
+    private BigDecimal discountPrice;
+
     private LocalDateTime createdAt;
 }

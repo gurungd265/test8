@@ -18,7 +18,7 @@ public class OrderResponseDto { // 조회용 DTO. 서버에서 클라이언트(�
     private Long userId; // User 엔티티의 PK (혹은 email 등 필요하면 추가 가능)
     private String orderNumber;
     private OrderStatus status; // enum
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount; // <OrderRequsetDto> subtotal + tax + shippingFee
     private AddressDto shippingAddress;
     private AddressDto billingAddress;
     private LocalDateTime createdAt;
