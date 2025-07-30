@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import ProfileInfoSection from "../components/Profile/ProfileInfoSection";
 import AddressSection from "../components/Profile/AddressSection";
 import PasswordConfirmationModal from "../components/Profile/PasswordConfirmationModal";
+import DeleteConfirmationModal from "../components/profile/DeleteConfirmationModal";
 
 export default function ProfilePage() {
     const initialUserProfile = {
@@ -46,6 +47,9 @@ export default function ProfilePage() {
     const [passwordInput, setPasswordInput] = useState("");
     const [passwordError, setPasswordError] = useState(null);
     const [confirmingPassword, setConfirmingPassword] = useState(false);
+
+    const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+    const [addressToDeleteId, setAddressToDeleteId] = useState(null);
 
     const fetchUserData = useCallback(async () => {
         if (!isLoggedIn) {
@@ -220,6 +224,37 @@ export default function ProfilePage() {
         setAddressSearchError(null);
     };
 
+    //delete modal
+    const confirmDeleteAddress = (id) => {
+        setAddressToDeleteId(id);
+        setShowDeleteConfirmationModal(true);
+    };
+
+    const cancelDeleteAddress = () => {
+        setAddressToDeleteId(null);
+        setShowDeleteConfirmationModal(false);
+        setError(null);
+    };
+
+    const executeDeleteAddress = async () => {
+        if (!addressToDeleteId) return;
+
+        try {
+            setLoadingData(true);
+            await userApi.deleteUserAddress(addressToDeleteId);
+            await fetchUserData();
+            alert("住所を削除しました。");
+            cancelDeleteAddress();
+        } catch (error) {
+            console.error("住所の削除に失敗しました。", error);
+            setError("住所の削除に失敗しました。");
+            alert("住所の削除に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    // password confirm
     const handlePasswordConfirm = async () => {
         setPasswordError(null);
         setConfirmingPassword(true);
@@ -297,6 +332,7 @@ export default function ProfilePage() {
                 cancelEditingAddress={cancelEditingAddress}
                 handleSetDefaultAddress={handleSetDefaultAddress}
                 addressHasChanges={addressHasChanges}
+                onDeleteAddress={confirmDeleteAddress}
             />
 
             <div className="flex justify-end mt-6">
@@ -307,6 +343,13 @@ export default function ProfilePage() {
                     ログアウト
                 </button>
             </div>
+            {/* 削除確認モーダルレンダリング  */}
+            <DeleteConfirmationModal
+                show={showDeleteConfirmationModal}
+                onConfirm={executeDeleteAddress}
+                onCancel={cancelDeleteAddress}
+                message="この住所を本当に削除してもよろしいですか？この操作は元に戻せません。"
+            />
         </div>
     );
 }

@@ -153,10 +153,10 @@ public class AddressService {
         return new AddressDto(
                 address.getId(),
                 address.getAddressType(),
-                address.getStreet(),
-                address.getCity(),
-                address.getState(),
                 address.getPostalCode(),
+                address.getState(),
+                address.getCity(),
+                address.getStreet(),
                 address.getCountry(),
                 address.getIsDefault()
         );

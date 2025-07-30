@@ -12,6 +12,7 @@ export default function AddressSection({
     cancelEditingAddress,
     handleSetDefaultAddress,
     addressHasChanges,
+    onDeleteAddress,
 }) {
     return (
         <div className="bg-white rounded shadow p-6 space-y-4">
@@ -45,6 +46,13 @@ export default function AddressSection({
                                 デフォルトに設定
                             </button>
                         )}
+                        {/* 削除ボタン  */}
+                            <button
+                                onClick={() => onDeleteAddress(addr.id)}
+                                className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            >
+                                削除
+                            </button>
                     </div>
                 </div>
             ))}
@@ -72,14 +80,14 @@ export default function AddressSection({
                                 value={editedAddress.postalCode ?? ""}
                                 onChange={handleAddressChange}
                                 className="w-full mt-1 border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="例: 1500043"
+                                placeholder="例: 1500043, 123-4567"
                                 maxLength="8"
                                 required
                             />
                         </div>
                         <button
                             type="button"
-                            onClick={() => handleAddressSearch(editedAddress.postalCode.replace(/-/g, ''))} // 인자로 우편번호 전달
+                            onClick={() => handleAddressSearch(editedAddress.postalCode.replace(/-/g, ''))}
                             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             検索

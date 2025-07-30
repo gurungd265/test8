@@ -83,37 +83,49 @@ const userApi = {
             }
         },
 
-    searchAddressByZipcode: async (zipcode) => {
-        if (!zipcode || zipcode.length !== 7 || !/^\d+$/.test(zipcode)) {
-            throw new Error("有効な7桁の郵便番号を入力してください。");
-        }
-
-        try {
-            const response = await axios.get(`https://api.zipaddress.net/?zipcode=${zipcode}`);
-
-            if (response.data.code === 200 && response.data.code) {
-                const addressData = response.data.data;
-                return {
-                    prefecture: addressData.pref,    // 都道府県
-                    city: addressData.city,          // 市区町村
-                    streetAddress: addressData.town, // 町域
-                };
-            } else if (response.data.code === 400) {
-                throw new Error("無効な郵便番号です。");
-            } else {
-                throw new Error("住所の検索に失敗しました。もう一度お試しください。");
+        searchAddressByZipcode: async (zipcode) => {
+            if (!zipcode || zipcode.length !== 7 || !/^\d+$/.test(zipcode)) {
+                throw new Error("有効な7桁の郵便番号を入力してください。");
             }
-        } catch (error) {
-            console.error("郵便番号検索エラー:", error);
-            if (error.response && error.response.data && error.response.data.message) {
-                 throw new Error(error.response.data.message);
-            } else if (error.message) {
-                 throw error;
-            } else {
-                throw new Error("住所の検索中にエラーが発生しました。ネットワーク接続を確認してください。");
+
+            try {
+                const response = await axios.get(`https://api.zipaddress.net/?zipcode=${zipcode}`);
+
+                if (response.data.code === 200 && response.data.code) {
+                    const addressData = response.data.data;
+                    return {
+                        prefecture: addressData.pref,    // 都道府県
+                        city: addressData.city,          // 市区町村
+                        streetAddress: addressData.town, // 町域
+                    };
+                } else if (response.data.code === 400) {
+                    throw new Error("無効な郵便番号です。");
+                } else {
+                    throw new Error("住所の検索に失敗しました。もう一度お試しください。");
+                }
+            } catch (error) {
+                console.error("郵便番号検索エラー:", error);
+                if (error.response && error.response.data && error.response.data.message) {
+                     throw new Error(error.response.data.message);
+                } else if (error.message) {
+                     throw error;
+                } else {
+                    throw new Error("住所の検索中にエラーが発生しました。ネットワーク接続を確認してください。");
+                }
             }
-        }
-    },
-};
+        },
+
+        deleteUserAddress: async (addressId) => {
+                console.log(`DEBUG userApi: DELETE /api/addresses/${addressId} 呼び出し`);
+                try {
+                    const response = await api.delete(`/api/addresses/${addressId}`);
+                    console.log("DEBUG userApi: 住所削除API呼び出し成功、応答:", response.data);
+                    return response.data;
+                } catch (error) {
+                    console.error("DEBUG userApi: 住所削除APIエラー:", error);
+                    throw error;
+                }
+            },
+    };
 
 export default userApi;
