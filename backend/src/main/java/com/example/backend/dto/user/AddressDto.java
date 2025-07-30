@@ -27,7 +27,9 @@ public class AddressDto {
     private String postalCode;
 
     @NotBlank(message = "Countryは必須です。")
-    private String country;
+    @Builder.Default
+    private String country = "JAPAN";
 
-    private Boolean isDefault;
+    @Builder.Default
+    private Boolean isDefault = false;
 }
