@@ -37,5 +37,5 @@ public class OrderRequestDto { // 클라이언트 -> 서버 요청 DTO. 클라�
     private int tax;
 
     @Min(0)
-    private int total;
+    private int totalAmount;
 }

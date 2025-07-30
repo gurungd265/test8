@@ -77,10 +77,14 @@ export default function CartPage() {
 
   // 체크아웃 버튼 클릭 시 결제 페이지로 이동하며 cart 데이터를 전달
     const handleCheckout = () => {
+        const subtotal = cart.items.reduce(
+            (sum, item) => sum + item.priceAtAddition * item.quantity, 0
+        );
         navigate('/checkout', {
             state: {
-                cart: cart  // 전체 cart 객체를 그대로 넘김
-            }
+                cartItems: cart.items,
+                subtotal,
+            },
         });
     };
 

@@ -15,20 +15,6 @@ export default function CheckoutPage() {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Constants
-    const JAPANESE_STATE = [
-        '北海道', '青森県', '岩手県', '宮城県', '秋田県',
-        '山形県', '福島県', '茨城県', '栃木県', '群馬県',
-        '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県',
-        '富山県', '石川県', '福井県', '山梨県', '長野県',
-        '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県',
-        '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県',
-        '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-        '徳島県', '香川県', '愛媛県', '高知県', '福岡県',
-        '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県',
-        '鹿児島県', '沖縄県'
-    ];
-
     // 주소 입력 상태
     const [formData, setFormData] = useState({
         lastName: '',       // 姓
@@ -45,6 +31,22 @@ export default function CheckoutPage() {
         deliveryDate: '',
         deliveryTime: ''
     });
+
+    /**
+     * 주소 도도부현 자동 생성
+     */
+    const JAPANESE_STATE = [
+        '北海道', '青森県', '岩手県', '宮城県', '秋田県',
+        '山形県', '福島県', '茨城県', '栃木県', '群馬県',
+        '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県',
+        '富山県', '石川県', '福井県', '山梨県', '長野県',
+        '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県',
+        '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県',
+        '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+        '徳島県', '香川県', '愛媛県', '高知県', '福岡県',
+        '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県',
+        '鹿児島県', '沖縄県'
+    ];
 
     /**
      * 배송일 생성
@@ -111,13 +113,15 @@ export default function CheckoutPage() {
         return <div>カートの情報がありません。</div>;
     }
 
-    // 계산
+    // 총 주문 금액 계산
     const calculatedSubtotal = subtotal || cartItems.reduce((sum, item) => sum + (item.priceAtAddition * item.quantity), 0);
     const shippingFee = 600;
     const tax = Math.floor(calculatedSubtotal * 0.1);
-    const total = calculatedSubtotal + shippingFee + tax;
+    const totalAmount = calculatedSubtotal + shippingFee + tax;
 
-    // Handlers
+    /**
+     * Handlers
+     */
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -151,7 +155,7 @@ export default function CheckoutPage() {
         }
     };
 
-    // 랜덤 트랜잭션 ID 생성 함수
+    // 랜덤 트랜잭션 ID 생성
     function generateTransactionId() {
         return 'txn_' + Math.random().toString(36).substr(2, 9);
     }
@@ -162,7 +166,7 @@ export default function CheckoutPage() {
         setError(null);
 
         try {
-            // 수정된 주문 생성 payload (DTO에 맞게)
+            // DTO에 맞게 주문 생성
             const orderPayload = {
                 customer: {
                     lastName: formData.lastName,
@@ -202,7 +206,7 @@ export default function CheckoutPage() {
 
             await paymentsApi.createPayment(paymentRequest);
 
-            alert('注文が確定しました！ 결제가 완료되었습니다.');
+            alert('注文が確定しました！');
             navigate('/order-success', { state: { orderId } });
 
         } catch (error) {
@@ -568,7 +572,7 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex justify-between border-t pt-2 mt-2">
                                         <span className="font-semibold text-gray-800">合計</span>
-                                        <span className="font-bold text-gray-900">¥{total.toLocaleString()}</span>
+                                        <span className="font-bold text-gray-900">¥{totalAmount.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </>
