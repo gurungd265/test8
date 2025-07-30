@@ -1,6 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.*;
+import com.example.backend.dto.order.DeliveryRequestDto;
 import com.example.backend.dto.order.OrderRequestDto;
 import com.example.backend.dto.order.OrderResponseDto;
 import com.example.backend.dto.order.OrderItemDto;
@@ -124,18 +125,89 @@ public class OrderService {
     // 주문 생성 =======================================================================================================
 
     /**
-     * 상세페이지 주문 요청 DTO 기반 주문 생성
+     * 공통 메소드
+     */
+
+    //주문 생성 기본 세팅
+    private Order baseOrderSetup(User user) {
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderNumber(generateUniqueOrderNumber());
+        order.setStatus(OrderStatus.PENDING);
+        order.setCreatedAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+        return order;
+    }
+
+    // 주문 번호 생성 메서드 (현재 시각 + UUID 기반)
+    public String generateUniqueOrderNumber() {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return timestamp + "-" + randomPart;
+    }
+
+    // User 조회 (User email 기반, 없으면 예외 발생
+    private User getUserOrThrow(String userEmail) {
+        return userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("ユーザーが存在しません。"));
+    }
+
+    // 배송비 정책
+    private BigDecimal calculateShippingFee(DeliveryRequestDto delivery) {
+        return BigDecimal.valueOf(600);
+    }
+
+    /**
+     * 상세페이지 기반 주문 생성
      */
     @Transactional
     public OrderResponseDto createOrderFromRequest(String userEmail, OrderRequestDto requestDto) {
         User user = getUserOrThrow(userEmail);
+
         Order order = buildOrderFromRequest(requestDto, user);
         orderRepository.save(order);
+
         return convertToDto(order);
     }
 
+    private Order buildOrderFromRequest(OrderRequestDto dto, User user) {
+        Order order = baseOrderSetup(user);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (CartItemDto item : dto.getCartItems()) {
+            OrderItem orderItem = toOrderItem(item, order);
+            orderItems.add(orderItem);
+            subtotal = subtotal.add(orderItem.getSubtotal());
+        }
+
+        // 배송비 계산
+        BigDecimal shippingFee = calculateShippingFee(dto.getDelivery());
+
+        // 세금 10% 계산 (버림 처리)
+        BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.1)).setScale(0, BigDecimal.ROUND_FLOOR);
+
+        // 총 금액 = 소계 + 배송비 + 세금
+        BigDecimal totalAmount = subtotal.add(shippingFee).add(tax);
+
+        order.setOrderItems(orderItems);
+        order.setSubtotal(subtotal);
+        order.setShippingFee(shippingFee);
+        order.setTax(tax);
+        order.setTotalAmount(totalAmount);
+
+        // 배송지 및 청구지 주소 처리
+        if (dto.getDelivery() != null) {
+            order.setShippingAddress(addressDtoToEntity(dto.getDelivery().getShippingAddress(), user));
+            order.setBillingAddress(addressDtoToEntity(dto.getDelivery().getBillingAddress(), user));
+        }
+
+        return order;
+    }
+
     /**
-     * 장바구니에 담긴 상품들로부터 주문 생성
+     * 장바구니 기반 주문 생성
      */
     @Transactional
     public OrderResponseDto createOrderFromCart(String userEmail) {
@@ -149,72 +221,42 @@ public class OrderService {
         return convertToDto(order);
     }
 
-    /**
-     * 주문 생성 기본 세팅 (공통)
-     */
-    private Order baseOrderSetup(User user) {
-        Order order = new Order();
-        order.setUser(user);
-        order.setOrderNumber(generateUniqueOrderNumber());
-        order.setStatus(OrderStatus.PENDING);
-        order.setCreatedAt(LocalDateTime.now());
-        order.setUpdatedAt(LocalDateTime.now());
-        return order;
-    }
-
-    /**
-     * 주문 요청 DTO 기반으로 주문 생성
-     */
-    private Order buildOrderFromRequest(OrderRequestDto dto, User user) {
-        Order order = baseOrderSetup(user);
-
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (CartItemDto item : dto.getCartItems()) {
-            OrderItem orderItem = toOrderItem(item, order);
-            orderItems.add(orderItem);
-            total = total.add(orderItem.getSubtotal());
-        }
-
-        order.setOrderItems(orderItems);
-        order.setTotalAmount(total);
-
-        // 배송지 및 청구지 주소 처리
-        if (dto.getDelivery() != null) {
-            order.setShippingAddress(addressDtoToEntity(dto.getDelivery().getShippingAddress(), user));
-            order.setBillingAddress(addressDtoToEntity(dto.getDelivery().getBillingAddress(), user));
-        }
-
-        return order;
-    }
-
-    /**
-     * 장바구니 DTO 기반으로 주문 생성
-     */
     private Order buildOrderFromCart(CartDto cartDto, User user) {
         Order order = baseOrderSetup(user);
 
         List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
 
         for (CartItemDto item : cartDto.getItems()) {
             OrderItem orderItem = toOrderItem(item, order);
             orderItems.add(orderItem);
-            total = total.add(orderItem.getSubtotal());
+            subtotal = subtotal.add(orderItem.getSubtotal());
         }
 
+        // 배송비 계산 (필요시 user의 주소 등 고려)
+        BigDecimal shippingFee = calculateShippingFee(null);
+
+        // 세금 계산 (예: 10% 세금, 버림 처리)
+        BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.1)).setScale(0, BigDecimal.ROUND_FLOOR);
+
+        BigDecimal totalAmount = subtotal.add(shippingFee).add(tax);
+
         order.setOrderItems(orderItems);
-        order.setTotalAmount(total);
+        order.setSubtotal(subtotal);
+        order.setShippingFee(shippingFee);
+        order.setTax(tax);
+        order.setTotalAmount(totalAmount);
 
         return order;
     }
 
-    // 편의 메소드 =======================================================================================================
+    // 주문 생성 끝 ====================================================================================================
 
     /**
-     * CartItemDto -> OrderItem 변환
+     * 변환 헬퍼 메소드
      */
+
+    // CartItemDto -> OrderItem
     private OrderItem toOrderItem(CartItemDto item, Order order) {
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
@@ -227,42 +269,7 @@ public class OrderService {
         return orderItem;
     }
 
-    /**
-     * AddressDto -> Address Entity 변환
-     */
-    private Address addressDtoToEntity(AddressDto dto, User user) {
-        Address address = new Address();
-        address.setUser(user);
-        address.setAddressType(dto.getAddressType());
-        address.setStreet(dto.getStreet());
-        address.setCity(dto.getCity());
-        address.setState(dto.getState());
-        address.setPostalCode(dto.getPostalCode());
-        address.setCountry(dto.getCountry());
-        address.setIsDefault(dto.getIsDefault());
-        return address;
-    }
-
-    /**
-     * User email 기반으로 User 조회 및 없으면 예외 발생
-     */
-    private User getUserOrThrow(String userEmail) {
-        return userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("ユーザーが存在しません。"));
-    }
-
-    /**
-     * 주문 번호 생성 메서드 (현재 시각 + UUID 기반)
-     */
-    public String generateUniqueOrderNumber() {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        return timestamp + "-" + randomPart;
-    }
-
-    /**
-     * Order Entity -> OrderResponseDto 변환
-     */
+    // Order Entity -> OrderResponseDto
     private OrderResponseDto convertToDto(Order order) {
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
                 .map(item -> new OrderItemDto(
@@ -293,9 +300,7 @@ public class OrderService {
                 .build();
     }
 
-    /**
-     * Address Entity -> AddressDto 변환
-     */
+    // Address Entity -> AddressDto
     private AddressDto addressToDto(Address address) {
         if (address == null) return null;
 
@@ -311,9 +316,21 @@ public class OrderService {
                 .build();
     }
 
-    /**
-     * Payment Entity -> PaymentResponseDto 변환
-     */
+    // AddressDto -> Address Entity
+    private Address addressDtoToEntity(AddressDto dto, User user) {
+        Address address = new Address();
+        address.setUser(user);
+        address.setAddressType(dto.getAddressType());
+        address.setStreet(dto.getStreet());
+        address.setCity(dto.getCity());
+        address.setState(dto.getState());
+        address.setPostalCode(dto.getPostalCode());
+        address.setCountry(dto.getCountry());
+        address.setIsDefault(dto.getIsDefault());
+        return address;
+    }
+
+    // Payment Entity -> PaymentResponseDto
     private PaymentResponseDto paymentToDto(Payment payment) {
         if (payment == null) return null;
 
