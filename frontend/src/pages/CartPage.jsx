@@ -20,7 +20,16 @@ export default function CartPage() {
               setError(null);
 
               const cartData = await cartApi.getCartItems();
-              setCart(cartData);
+
+              const normalizedItems = cartData.items.map(item => ({
+                  ...item,
+                  price: item.productPrice ? Number(item.productPrice) : 0,
+                  discountPrice: item.priceAtAddition !== null && item.priceAtAddition !== undefined
+                      ? Number(item.priceAtAddition)
+                      : Number(item.productPrice || 0),
+              }));
+
+              setCart({ ...cartData, items: normalizedItems });
 
           } catch (err) {
               console.error('カートデータを読み込むことができませんでした。', err);
@@ -61,9 +70,9 @@ export default function CartPage() {
               setCart(prevCart => ({
                   ...prevCart,
                   items: prevCart.items.map(item =>
-                      item.id === cartItemId ? updatedItem : item // update item
+                      item.id === cartItemId ? { ...item, quantity: newQuantity } : item
                   )
-              }));
+              }))
           } catch (err) {
               console.error('数量変更失敗:', err);
               alert('数量を変更できませんでした。');
@@ -73,7 +82,7 @@ export default function CartPage() {
   };
 
 
-  const total = cart.items.reduce((sum, item) => sum + item.priceAtAddition * item.quantity, 0);
+    const total = cart.items.reduce((sum, item) => sum + item.discountPrice * item.quantity, 0);
 
   // 체크아웃 버튼 클릭 시 결제 페이지로 이동하며 cart 데이터를 전달
     const handleCheckout = () => {
@@ -117,7 +126,22 @@ export default function CartPage() {
                                 <Link to={`/product/${item.productId}`}>
                                     <h2 className="font-semibold">{item.productName}</h2>
                                     <p className="text-gray-500">
-                                        {item.priceAtAddition.toLocaleString()}円
+                                        {(() => {
+                                            const displayPrice = item.discountPrice !== null && item.discountPrice !== undefined
+                                                ? item.discountPrice
+                                                : item.price;
+
+                                            if (item.discountPrice !== null && item.discountPrice !== undefined && item.discountPrice < item.price) {
+                                                return (
+                                                    <>
+                                                        <span className="line-through text-gray-400">{item.price.toLocaleString()}円</span>
+                                                        <span className="text-purple-700 ml-2">{displayPrice.toLocaleString()}円</span>
+                                                    </>
+                                                );
+                                            } else {
+                                                return <span>{item.price.toLocaleString()}円</span>;
+                                            }
+                                        })()}
                                     </p>
                                 </Link>
                                 {/*Quantity Controls*/}

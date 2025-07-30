@@ -196,14 +196,15 @@ public class CartController {
 
     // CartItem -> DTO 변환
     private CartItemDto convertToDto(CartItem item) {
-        return new CartItemDto(
-                item.getId(),
-                item.getProduct().getId(),
-                item.getProduct().getName(),
-                item.getQuantity(),
-                item.getPriceAtAddition(),
-                item.getProduct().getMainImageUrl()
-        );
+        return CartItemDto.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .productPrice(item.getProduct().getPrice())            //정가
+                .priceAtAddition(item.getProduct().getDiscountPrice()) //할인가
+                .productImageUrl(item.getProduct().getMainImageUrl())
+                .quantity(item.getQuantity())
+                .build();
     }
     
     // 사용자 이메일 추출

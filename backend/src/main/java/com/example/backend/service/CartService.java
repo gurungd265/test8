@@ -66,17 +66,17 @@ public class CartService {
         }
 
         CartItem cartItem;
-        if (existingItemOpt.isPresent()) { // 기존 아이템 수량 업데이트
-            cartItem = existingItemOpt.get();
-            cartItem.setQuantity(newQuantity);
-        } else { // 신규 아이템 생성 및 추가
-            cartItem = new CartItem();
-            cartItem.setCart(cart);
-            cartItem.setProduct(product);
-            cartItem.setQuantity(quantity);
-            cartItem.setPriceAtAddition(BigDecimal.valueOf(product.getPrice()));
-            cart.addCartItem(cartItem);
-        }
+         if (existingItemOpt.isPresent()) {
+             cartItem = existingItemOpt.get();
+             cartItem.setQuantity(newQuantity);
+         } else {
+             cartItem = new CartItem();
+             cartItem.setCart(cart);
+             cartItem.setProduct(product);
+             cartItem.setQuantity(quantity);
+             cartItem.setPriceAtAddition(product.getDiscountPrice()); // ✔ 할인 가격 저장
+             cart.addCartItem(cartItem);
+         }
 
         // 변경사항 저장
         cartItemRepository.save(cartItem);
@@ -264,9 +264,10 @@ public class CartService {
                         item.getId(),
                         item.getProduct().getId(),
                         item.getProduct().getName(),
-                        item.getQuantity(),
-                        item.getPriceAtAddition(),
-                        item.getProduct().getMainImageUrl()
+                        item.getProduct().getPrice(),           // 정가
+                        item.getPriceAtAddition(),              // 할인가 (카트 담긴 시점)
+                        item.getProduct().getMainImageUrl(),
+                        item.getQuantity()
                 ))
                 .toList();
 
