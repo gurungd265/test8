@@ -73,6 +73,8 @@ public class WishlistService {
         dto.setProductId(wishlist.getProduct().getId());
         dto.setProductName(wishlist.getProduct().getName());
         dto.setProductImageUrl(wishlist.getProduct().getMainImageUrl());
+        dto.setPrice(wishlist.getProduct().getPrice());
+        dto.setDiscountPrice(wishlist.getProduct().getDiscountPrice());
         dto.setCreatedAt(wishlist.getCreatedAt());
         return dto;
     }

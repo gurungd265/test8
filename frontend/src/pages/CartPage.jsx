@@ -33,8 +33,8 @@ export default function CartPage() {
 
               setCart({ ...cartData, items: normalizedItems });
 
-              // 초기엔 모든 아이템 선택 상태로 해도 되고 빈 셋으로 해도 됨 (필요에 따라 변경)
-              setSelectedItems(new Set(normalizedItems.map(item => item.id)));
+              // 초기엔 전체 선택 해제 상태
+              setSelectedItems(new Set());
           } catch (err) {
               console.error('カートデータを読み込むことができませんでした。', err);
               setError('カートデータを読み込むことができませんでした。');
@@ -119,7 +119,7 @@ export default function CartPage() {
         });
     };
 
-    // 전체 선택 / 전체 선택 해제 기능 (필요하면)
+    // 전체 선택 및 해제 기능
     const toggleSelectAll = () => {
         if (selectedItems.size === cart.items.length) {
             setSelectedItems(new Set());
