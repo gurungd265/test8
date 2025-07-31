@@ -4,12 +4,14 @@ import productsApi from "../api/products";
 import wishlistApi from "../api/wishlist";
 import cartApi from "../api/cart";
 import { useAuth } from "../contexts/AuthContext";
+import { Heart } from "lucide-react";
 
 export default function WishesPage() {
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [wishes, setWishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [wished, setWished] = useState(true); // マイリストに追加するための状態
 
   useEffect(() => {
     const fetchWishlist = async () => {
@@ -25,19 +27,25 @@ export default function WishesPage() {
 
         // 제품 상세정보 병렬 호출
         const detailedItems = await Promise.all(
-            wishlistItems.map(async (item) => {
-              try {
-                const productDetail = await productsApi.getProductById(item.productId);
-                console.log("가격 정보:", productDetail.price, productDetail.discountPrice);
-                return {
-                  ...item,
-                  price: productDetail.price,
-                  discountPrice: productDetail.discountPrice,
-                };
-              } catch (e) {
-                return { ...item, price: null, discountPrice: null };
-              }
-            })
+          wishlistItems.map(async (item) => {
+            try {
+              const productDetail = await productsApi.getProductById(
+                item.productId
+              );
+              console.log(
+                "가격 정보:",
+                productDetail.price,
+                productDetail.discountPrice
+              );
+              return {
+                ...item,
+                price: productDetail.price,
+                discountPrice: productDetail.discountPrice,
+              };
+            } catch (e) {
+              return { ...item, price: null, discountPrice: null };
+            }
+          })
         );
 
         setWishes(detailedItems);
@@ -54,8 +62,10 @@ export default function WishesPage() {
   const handleRemove = (productIdToRemove) => {
     const removeWishlistItemAction = async () => {
       try {
-          await wishlistApi.removeWishlistItemByProductId(productIdToRemove);
-          setWishes(wishes.filter((item) => item.productId !== productIdToRemove));
+        await wishlistApi.removeWishlistItemByProductId(productIdToRemove);
+        setWishes(
+          wishes.filter((item) => item.productId !== productIdToRemove)
+        );
       } catch (err) {
         console.error(
           `ウィッシュリストアイテムID ${productIdToRemove}の削除に失敗しました。`,
@@ -78,64 +88,83 @@ export default function WishesPage() {
   };
 
   return (
-      <div className="max-w-6xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">お気に入り</h1>
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">マイリスト</h2>
 
-        {loading ? (
-            <div className="text-center py-10">読み込み中...</div>
-        ) : error ? (
-            <div className="text-red-600 text-center py-10">{error}</div>
-        ) : wishes.length === 0 ? (
-            <div className="text-gray-600 text-center py-10">
-              ウィッシュリストにアイテムがありません。
-            </div>
-        ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {wishes.map((item) => {
-                const hasDiscount = typeof item.discountPrice === "number";
-                const displayPrice = hasDiscount ? item.discountPrice : item.price;
+      {loading ? (
+        <div className="text-center py-10">読み込み中...</div>
+      ) : error ? (
+        <div className="text-red-600 text-center py-10">{error}</div>
+      ) : wishes.length === 0 ? (
+        <div className="text-gray-600 text-center py-10">
+          ウィッシュリストにアイテムがありません。
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {wishes.map((item) => {
+            const hasDiscount = typeof item.discountPrice === "number";
+            const displayPrice = hasDiscount ? item.discountPrice : item.price;
 
-                return (
-                    <div
-                        key={item.id}
-                        className="border rounded p-4 flex flex-col items-start"  // items-center -> items-start로 변경
-                    >
-                      <Link to={`/product/${item.productId}`} className="w-full">
-                        <img
-                            src={item.productImageUrl}
-                            alt={item.productName}
-                            className="w-full h-56 object-cover rounded"
-                        />
-                        <h2 className="text-lg font-semibold mt-2 text-left">{item.productName}</h2>
-                      </Link>
-
-                      {/* 가격 표시 */}
-                      <div className="flex justify-between items-center mt-2 w-full text-sm">
-                        <div className="text-gray-500 line-through">
+            return (
+              <>
+                {/* Product */}
+                <div
+                  key={item.id}
+                  className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative" // items-center -> items-start로 변경
+                >
+                  {/* Remove from Wishes */}
+                  <button
+                    onClick={() => handleRemove(item.productId)}
+                    className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-trnsfrorm"
+                    title="マイリストに追加"
+                  >
+                    <Heart
+                      size={18}
+                      className="stroke-2 text-purple-600 fill-purple-600"
+                    />
+                  </button>
+                  {/* Product Image */}
+                  <Link to={`/product/${item.productId}`} className="w-full">
+                    <img
+                      src={item.productImageUrl}
+                      alt={item.productName}
+                      className="w-full h-56 object-cover rounded-lg group-hover:rounded-t-lg group-hover:rounded-b-none transition-all duration-300"
+                    />
+                  </Link>
+                  <div className="p-4">
+                    {/* Product Name */}
+                    <h2 className="font-semibold text-lg truncate">
+                      <Link to={`/product/${item.productId}`}>{item.productName}</Link>
+                    </h2>
+                    {/* Product Description */}
+                    <p className="text-sm text-gray-500 truncate">{item.productDetail}</p>
+                    <div className="mt-2 flex items-center justify between">
+                      {/* Product Price */}
+                      <div className="font-bold text-lg">
+                        {/* 割引前の価格 */}
+                        <div className="line-through text-gray-500 text-base mr-2">
                           {item.price.toLocaleString()}円
                         </div>
-                        <div className="text-purple-700 font-semibold ml-2">
+                        {/* 割引価格 */}
+                        <div className="text-purple-600">
                           {displayPrice.toLocaleString()}円
                         </div>
-                        <button
-                            onClick={() => handleRemove(item.productId)}
-                            className="text-red-600 hover:text-red-800 font-medium underline ml-auto"
-                        >
-                          削除
-                        </button>
                       </div>
-
-                      <button
-                          onClick={() => handleAddToCart(item.productId)}
-                          className="w-full bg-purple-600 text-white px-4 py-2 rounded mt-2 hover:bg-purple-700"
-                      >
-                        カートに入れる
-                      </button>
                     </div>
-                );
-              })}
-            </div>
-        )}
-      </div>
+                    {/* Button of Adding To Cart */}
+                    <button
+                      onClick={() => handleAddToCart(item.productId)}
+                      className="w-full bg-purple-600 text-white px-4 py-2 rounded mt-2 hover:bg-purple-700"
+                    >
+                      カートに入れる
+                    </button>
+                  </div>
+                </div>
+              </>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
