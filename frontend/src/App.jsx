@@ -3,19 +3,18 @@ import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-ro
 import Header from './components/Header';
 import Footer from './components/Footer';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
-
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import WishesPage from './pages/WishesPage';
-import FilteredProductPage from './pages/FilteredProductPage'
 import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import {AuthProvider,useAuth} from './contexts/AuthContext';
+import { AuthProvider,useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext.jsx';
 import ProfilePage from './pages/ProfilePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import FilteredProductPage from "./pages/FilteredProductPage.jsx";
 
     const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
@@ -53,10 +52,10 @@ function AppContent() {
             <Routes>
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<Products />} />
-                <Route path="/product/:id" element={<ProductPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/filtered-products" element={<FilteredProductPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/products" element={<FilteredProductPage />} />
+                  <Route path="/product/:id" element={<ProductPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 {/* (Payment/Checkout) 機能はショッピングカート内のアクションか別途ページ
                     もし/checkoutページがあれば、次のように保護:
                     <Route path="/checkout" element={<ProtectedRoute requiresAuth={true} redirectPath="/login"><CheckoutPage /></ProtectedRoute>} />
