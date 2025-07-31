@@ -104,7 +104,7 @@ export default function WishesPage() {
                         <img
                             src={item.productImageUrl}
                             alt={item.productName}
-                            className="w-full h-auto object-cover rounded"
+                            className="w-full h-56 object-cover rounded"
                         />
                         <h2 className="text-lg font-semibold mt-2 text-left">{item.productName}</h2>
                       </Link>
