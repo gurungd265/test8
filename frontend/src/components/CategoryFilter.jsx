@@ -11,7 +11,7 @@ export default function CategoryFilter({ categories, selectedCategory, onFilter 
                 className="font-medium text-gray-700 mb-2 cursor-pointer select-none flex justify-between items-center"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                Categories
+                カテゴリー
                 <span className="text-gray-500">{isOpen ? '▲' : '▼'}</span>
             </h3>
 
@@ -24,7 +24,7 @@ export default function CategoryFilter({ categories, selectedCategory, onFilter 
                             !selectedCategory ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
                         }`}
                     >
-                        All Categories
+                        すべて
                     </button>
 
                     {categories.map((category) => (

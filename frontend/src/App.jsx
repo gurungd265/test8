@@ -1,8 +1,8 @@
 import React from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Header from './components/Header';
-import Footer from './components/Footer';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
+import MobileSearchPage from './pages/MobileSearchPage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -50,12 +50,13 @@ function AppContent() {
         <main className="min-h-screen pb-20">
         {/* public */}
             <Routes>
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Products />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Products />} />
                   <Route path="/products" element={<FilteredProductPage />} />
                   <Route path="/product/:id" element={<ProductPage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/search" element={<MobileSearchPage />} />
                 {/* (Payment/Checkout) 機能はショッピングカート内のアクションか別途ページ
                     もし/checkoutページがあれば、次のように保護:
                     <Route path="/checkout" element={<ProtectedRoute requiresAuth={true} redirectPath="/login"><CheckoutPage /></ProtectedRoute>} />
