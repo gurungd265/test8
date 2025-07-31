@@ -151,7 +151,7 @@ export default function Header() {
                     aria-label="My account"
                 >
                   <User className="hidden lg:block" />
-                  <span className="hidden lg:block">{user?.email || 'My Page'}</span>
+                  <span className="hidden lg:block">{'My Page'}</span>
                 </button>
             ) : (
                 <Link
