@@ -10,7 +10,21 @@ const productsApi = {
             throw error;
         }
     },
-    // 特定の商品の物を読み込み
+
+    getProductsByFilter: async ({ categoryId, keyword }) => {
+        try {
+            const params = {};
+            if (categoryId) params.categoryId = categoryId;
+            if (keyword) params.keyword = keyword;
+
+            const response = await api.get('/api/products', { params });
+            return response.data;
+        } catch (error) {
+            console.error('フィルター付き商品読み込み失敗:', error);
+            throw error;
+        }
+    },
+
     getProductById: async (productId) => {
         try {
             const response = await api.get(`/api/products/${productId}`);

@@ -18,7 +18,11 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-
+    
+    /**
+     * 조회, 등록, 삭제
+     */
+    
     // 카테고리 전체 조회 (DTO 리스트 반환)
     public List<CategoryDto> getAllCategories() {
         return categoryRepository.findAll().stream()
@@ -33,6 +37,13 @@ public class CategoryService {
 
     // 카테고리 등록 (DTO 입력, Entity 저장 후 DTO 반환)
     public CategoryDto createCategory(CategoryDto dto) {
+        if (existsBySlug(dto.getSlug())) {
+            throw new IllegalArgumentException("Slug name already exists.");
+        }
+        if (existsByName(dto.getName())) {
+            throw new IllegalArgumentException("Category name already exists.");
+        }
+
         Category category = toEntity(dto);
         Category saved = categoryRepository.save(category);
         return toDto(saved);
@@ -45,8 +56,25 @@ public class CategoryService {
         category.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         categoryRepository.save(category);
     }
+    
+    /**
+     * 편의 메소드
+     */
 
-    // 편의 메소드 ==========================================================================================
+    // 카테고리 중복 체크
+    public boolean existsBySlug(String slug) {
+        return categoryRepository.existsBySlug(slug);
+    }
+
+    // 슬러그 중복 체크
+    public boolean existsByName(String name) {
+        return categoryRepository.existsByName(name);
+    }
+
+    /**
+     * 변환 헬퍼 메소드
+     */
+
     // Entity -> DTO 변환
     private CategoryDto toDto(Category category) {
         CategoryDto dto = new CategoryDto();

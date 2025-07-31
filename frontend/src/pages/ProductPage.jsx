@@ -1,12 +1,11 @@
-import React,{useState,useEffect} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import productsApi from '../api/products';
 import cartApi from '../api/cart';
 import wishlistApi from '../api/wishlist';
 import { Heart } from "lucide-react";
-import { useContext } from 'react';
 import { CartContext } from '../contexts/CartContext';
-import {useAuth} from "../contexts/AuthContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 export default function ProductPage() {
     const { id } = useParams();
@@ -15,11 +14,9 @@ export default function ProductPage() {
     const [error, setError] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
-
     const productRating = product?.rating ?? 0;
     const productReviewCount = product?.reviewCount ?? 0;
     const { fetchCartCount } = useContext(CartContext);
-
     const [wished, setWished] = useState(false); // マイリストに追加するための状態
     const {isLoggedIn,loading: authLoading} = useAuth();
 

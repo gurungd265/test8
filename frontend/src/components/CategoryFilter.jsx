@@ -1,31 +1,45 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function CategoryFilter({ categories, selectedCategory, onFilter }) {
+
+    const [isOpen, setIsOpen] = useState(false);
+
     return (
         <div className={"mb-6"}>
-            <h3 className="font-medium text-gray-700 mb-2">Categories</h3>
-            <div className="space-y-2">
-                <button
-                    onClick={() => onFilter(null)}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                        !selectedCategory ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
-                    }`}
-                >
-                    All Categories
-                </button>
+            {/* 필터 제목 클릭하면 토글 */}
+            <h3
+                className="font-medium text-gray-700 mb-2 cursor-pointer select-none flex justify-between items-center"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                Categories
+                <span className="text-gray-500">{isOpen ? '▲' : '▼'}</span>
+            </h3>
 
-                {categories.map((category) => (
+            {/* isOpen이 true일 때만 필터 버튼 노출 */}
+            {isOpen && (
+                <div className="space-y-2">
                     <button
-                        key={category.id}
-                        onClick={() => onFilter(category.id)}
+                        onClick={() => onFilter(null)}
                         className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                            selectedCategory === category.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
+                            !selectedCategory ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
                         }`}
                     >
-                        {category.name}
+                        All Categories
                     </button>
-                ))}
-            </div>
+
+                    {categories.map((category) => (
+                        <button
+                            key={category.id}
+                            onClick={() => onFilter(category.id)}
+                            className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                                selectedCategory === category.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
+                            }`}
+                        >
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

@@ -1,28 +1,38 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import Product from '../components/Product.jsx';
 import CategoryFilter from '../components/CategoryFilter';
 import Pagination from '../components/Pagination';
 
 export default function FilteredProductPage() {
+
+    const [searchParams] = useSearchParams();
+
+    const categoryIdFromUrl = searchParams.get('categoryId');
+    const keywordFromUrl = searchParams.get('keyword') || '';
+    const pageFromUrl = parseInt(searchParams.get('page')) || 1;
+
+    const [page, setPage] = useState(pageFromUrl);
+
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProducts, setTotalProducts] = useState(0);
+    const navigate = useNavigate();
 
     const fetchProducts = async (categoryId = null, pageNum = 1) => {
         try {
             setLoading(true);
             setError(null);
-
             let url = `http://localhost:8080/api/products?page=${pageNum}`;
             if (categoryId) {
                 url += `&categoryId=${categoryId}`;
             }
+            console.log('Fetching:', url); // 여기 추가
 
             const response = await axios.get(url);
             const data = response.data;
@@ -48,23 +58,60 @@ export default function FilteredProductPage() {
         }
     };
 
+    const fetchSearchProducts = async (keyword, pageNum = 1) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await axios.get('http://localhost:8080/api/products/search', {
+                params: { keyword, page: pageNum }
+            });
+
+            const data = response.data;
+            setProducts(data.content || []);
+            setTotalPages(data.totalPages || 1);
+            setTotalProducts(data.totalElements || data.length);
+            setPage(pageNum);
+        } catch (err) {
+            console.error('Search error:', err);
+            setError('Failed to load product.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            await Promise.all([fetchCategories(), fetchProducts()]);
-        };
-        fetchData();
+        setPage(pageFromUrl); // URL 쿼리가 바뀌면 페이지도 변경
+    }, [pageFromUrl]);
+
+    // 1) 카테고리 리스트는 처음 한번만 불러오기
+    useEffect(() => {
+        fetchCategories();
     }, []);
+
+    // 2) URL 카테고리 혹은 검색 키워드가 바뀔 때마다 상품 데이터 다시 불러오기
+    useEffect(() => {
+        if (keywordFromUrl.trim()) {
+            fetchSearchProducts(keywordFromUrl, page);
+        } else {
+            setSelectedCategory(categoryIdFromUrl || null);
+            fetchProducts(categoryIdFromUrl, page);
+        }
+    }, [categoryIdFromUrl, keywordFromUrl, page]);
 
     const handleFilter = (categoryId) => {
         setSelectedCategory(categoryId);
-        setPage(1);
-        fetchProducts(categoryId, 1);
+        // 카테고리 변경 시 URL 변경 (page도 1로 초기화)
+        navigate(`/products?categoryId=${categoryId || ''}&page=1`);
     };
 
     const handlePageChange = (newPage) => {
         if (newPage > 0 && newPage <= totalPages) {
             setPage(newPage);
-            fetchProducts(selectedCategory, newPage);
+            // URL에 page 쿼리 추가 (keyword, categoryId 유지)
+            const params = new URLSearchParams(searchParams);
+            params.set('page', newPage);
+            navigate(`/products?${params.toString()}`);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -82,7 +129,6 @@ export default function FilteredProductPage() {
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Filters Sidebar */}
                 <div className="w-full md:w-64">
-                    <h2 className="text-xl font-bold mb-4">Filters</h2>
                     <CategoryFilter
                         categories={categories}
                         selectedCategory={selectedCategory}
