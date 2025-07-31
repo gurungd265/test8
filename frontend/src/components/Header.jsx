@@ -66,77 +66,71 @@ export default function Header() {
 
   return (
       <>
-        <header className="bg-white shadow p-4 flex items-center justify-between relative">
-          <div className="flex items-center gap-4">
-            {/* 모바일 메뉴 버튼: 첫번째 코드와 두번째 코드 합침 */}
-            <button
-                onClick={() => setIsCatalogOpen(true)}
-                className="lg:hidden cursor-pointer"
-                aria-label="Open menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+        <header className="fixed top-0 left-0 w-full bg-white shadow p-2 flex items-center justify-between z-20" style={{ height: '48px' }}>
+          <div className="flex items-center gap-3">
             {/* 로고 */}
             <Link to="/" aria-label="Home">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <img
                     src={logo}
                     alt="Company Logo"
-                    className="hidden lg:block h-8"
+                    className="hidden lg:block"
+                    style={{ height: '32px' }}
                 />
               </div>
             </Link>
-              {/* 카탈로그 버튼 (PC에서 보임) */}
-              <button
-                  className="hidden lg:flex items-center gap-1 text-sm font-semibold hover:text-purple-600"
-                  onClick={() => setIsCatalogOpen(true)}
-                  aria-label="Browse categories"
-              >
-                カテゴリー
-                <ChevronDown size="16" />
-              </button>
+            {/* Category */}
+            <button
+                onClick={() => setIsCatalogOpen(true)}
+                className="cursor-pointer"
+                aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             {/* PostalCode (UserOnly) */}
             <button
-                className="flex items-center gap-1 text-sm text-gray-700"
+                className="flex items-center gap-1 text-xs text-gray-700"
                 aria-label="Location"
             >
-              <MapPin size="16" />
+              <MapPin size={14} />
               Tokyo
             </button>
           </div>
 
           {/* 검색, 위시리스트, 장바구니, 프로필 영역 */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* 검색 */}
-            <div className="flex items-center border rounded overflow-hidden bg-gray-50">
+            <div className="hidden lg:flex items-center border rounded overflow-hidden bg-gray-50" style={{ height: '32px' }}>
               <input
                   type="search"
-                  placeholder="Search..."
-                  className="px-3 py-1 outline-none bg-gray-50"
+                  placeholder="探す..."
+                  className="px-2 py-0 outline-none bg-gray-50 text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleKeyPress}
                   aria-label="Search products"
+                  style={{ height: '32px' }}
               />
               <button
-                  className="p-3 bg-purple-600 text-white"
+                  className="px-2 bg-purple-600 text-white flex items-center justify-center"
                   onClick={handleSearch}
                   aria-label="Submit search"
+                  style={{ height: '32px' }}
               >
-                <Search size="16" />
+                <Search size={14} />
               </button>
             </div>
 
             {/* 위시리스트 */}
             <Link to={`/wishes`} aria-label="Wishlist">
-              <Heart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
+              <Heart className="hidden lg:flex text-gray-700 w-5 h-5 hover:text-purple-600 cursor-pointer" />
             </Link>
 
             {/* 장바구니 */}
             <Link to="/cart" className="relative" aria-label="Shopping cart">
-              <ShoppingCart className="text-gray-700 w-6 h-6 hover:text-purple-600 cursor-pointer" />
+              <ShoppingCart className="text-gray-700 w-5 h-5 hover:text-purple-600 cursor-pointer" />
               {cartItemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
                 {cartItemCount}
               </span>
               )}
@@ -146,19 +140,19 @@ export default function Header() {
             {isLoggedIn ? (
                 <button
                     onClick={() => setIsAccountOpen(true)}
-                    className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-blue-500 cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-blue-500 cursor-pointer"
                     aria-label="My account"
                 >
-                  <User className="hidden lg:block" />
-                  <span className="hidden lg:block">{'My Page'}</span>
+                  <User className="hidden lg:block w-5 h-5" />
+                  <span className="hidden lg:block">{'アカウント'}</span>
                 </button>
             ) : (
                 <Link
                     to="/login"
-                    className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-blue-500 cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-blue-500 cursor-pointer"
                     aria-label="Login"
                 >
-                  <User className="hidden lg:block" />
+                  <User className="hidden lg:block w-5 h-5" />
                   <span className="hidden lg:block">Login</span>
                 </Link>
             )}
@@ -176,7 +170,7 @@ export default function Header() {
 
               <div className="absolute inset-y-0 left-0 w-64 bg-white shadow-lg flex flex-col">
                 <div className="p-4 border-b flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">Category</h2>
+                  <h2 className="text-lg font-semibold">カテゴリー</h2>
                   <button
                       onClick={() => setIsCatalogOpen(false)}
                       className="text-gray-500 hover:text-gray-700"
@@ -192,7 +186,7 @@ export default function Header() {
                       className="block px-4 py-3 text-gray-700 hover:bg-gray-100 border-b"
                       onClick={() => setIsCatalogOpen(false)}
                   >
-                    All Products
+                    すべて
                   </Link>
                   {categories.map((category) => (
                       <button
@@ -219,7 +213,9 @@ export default function Header() {
                 <div className="relative w-screen max-w-md">
                   <div className="h-full flex flex-col bg-white shadow-xl">
                     <div className="flex items-center justify-between p-4 border-b">
-                      <h2 className="text-lg font-semibold">My Account</h2>
+                      <h2 className="text-lg font-semibold">
+                        マイアカウント
+                      </h2>
                       <button
                           onClick={() => setIsAccountOpen(false)}
                           className="text-gray-500 hover:text-gray-700"
@@ -231,7 +227,9 @@ export default function Header() {
                     <div className="flex-1 overflow-y-auto p-4">
                       <div className="space-y-4">
                         <div className="p-4 border rounded-lg">
-                          <h3 className="font-medium">Account Information</h3>
+                          <h3 className="font-medium">
+                            メールアドレス
+                          </h3>
                           <p className="text-sm text-gray-600 mt-2">
                             {user?.email || ''}
                           </p>
@@ -243,21 +241,21 @@ export default function Header() {
                               className="block p-3 hover:bg-gray-100 rounded-lg"
                               onClick={() => setIsAccountOpen(false)}
                           >
-                            My Orders
+                            注文履歴
                           </Link>
                           <Link
                               to="/wishes"
                               className="block p-3 hover:bg-gray-100 rounded-lg"
                               onClick={() => setIsAccountOpen(false)}
                           >
-                            Wishlist
+                            お気に入り
                           </Link>
                           <Link
                               to="/profile"
                               className="block p-3 hover:bg-gray-100 rounded-lg"
                               onClick={() => setIsAccountOpen(false)}
                           >
-                            Edit profile
+                            マイプロフィール変更
                           </Link>
                         </div>
 
@@ -265,7 +263,7 @@ export default function Header() {
                             onClick={handleLogout}
                             className="w-full p-3 text-left text-red-600 hover:bg-red-50 rounded-lg"
                         >
-                          Logout
+                          ログアウト
                         </button>
                       </div>
                     </div>

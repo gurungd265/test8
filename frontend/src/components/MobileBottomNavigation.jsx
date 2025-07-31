@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { User, ShoppingCart, Search } from "lucide-react";
+import { User, Heart, Search, ChevronDown } from "lucide-react";
 import logo from "../assets/Logo.png"
 
 export default function MobileBottomNavigation() {
@@ -15,11 +15,13 @@ export default function MobileBottomNavigation() {
           />
         </Link>
         <button>
-          <Search />
+          <Link to={`/search`}>
+            <Search />
+          </Link>
         </button>
         <button>
-          <Link to={`/cart`}>
-            <ShoppingCart />
+          <Link to={`/wishes`}>
+            <Heart />
           </Link>
         </button>
         <button>
