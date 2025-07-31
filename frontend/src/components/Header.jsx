@@ -76,8 +76,7 @@ export default function Header() {
             >
               <Menu className="w-6 h-6" />
             </button>
-
-            {/* 로고 및 위치 */}
+            {/* 로고 */}
             <Link to="/" aria-label="Home">
               <div className="flex items-center gap-4">
                 <img
@@ -85,24 +84,24 @@ export default function Header() {
                     alt="Company Logo"
                     className="hidden lg:block h-8"
                 />
-                <button
-                    className="flex items-center gap-1 text-sm text-gray-700"
-                    aria-label="Location"
-                >
-                  <MapPin size="16" />
-                  Tokyo
-                </button>
               </div>
             </Link>
-
-            {/* 카탈로그 버튼 (PC에서 보임) */}
+              {/* 카탈로그 버튼 (PC에서 보임) */}
+              <button
+                  className="hidden lg:flex items-center gap-1 text-sm font-semibold hover:text-purple-600"
+                  onClick={() => setIsCatalogOpen(true)}
+                  aria-label="Browse categories"
+              >
+                カテゴリー
+                <ChevronDown size="16" />
+              </button>
+            {/* PostalCode (UserOnly) */}
             <button
-                className="hidden lg:flex items-center gap-1 text-sm font-semibold hover:text-purple-600"
-                onClick={() => setIsCatalogOpen(true)}
-                aria-label="Browse categories"
+                className="flex items-center gap-1 text-sm text-gray-700"
+                aria-label="Location"
             >
-              Catalog
-              <ChevronDown size="16" />
+              <MapPin size="16" />
+              Tokyo
             </button>
           </div>
 
@@ -177,7 +176,7 @@ export default function Header() {
 
               <div className="absolute inset-y-0 left-0 w-64 bg-white shadow-lg flex flex-col">
                 <div className="p-4 border-b flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">Catalog</h2>
+                  <h2 className="text-lg font-semibold">Category</h2>
                   <button
                       onClick={() => setIsCatalogOpen(false)}
                       className="text-gray-500 hover:text-gray-700"
