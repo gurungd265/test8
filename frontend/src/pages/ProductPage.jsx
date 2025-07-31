@@ -198,11 +198,18 @@ export default function ProductPage() {
                             />
                         </button>
                         {/* Main Image */}
-                        <img
-                            src={mainImage || 'https://via.placeholder.com/600/CCCCCC/FFFFFF?text=No+Image'}
-                            alt={product.name}
-                            className="w-full h-[420px] object-cover rounded-lg shadow"
-                        />
+                        <div className="flex">
+                            <img
+                                src={mainImage || 'https://via.placeholder.com/600/CCCCCC/FFFFFF?text=No+Image'}
+                                alt={product.name}
+                                className="w-full h-[420px] object-cover rounded-lg shadow"
+                            />
+                            {/* <img
+                                src={mainImage || 'https://via.placeholder.com/600/CCCCCC/FFFFFF?text=No+Image'}
+                                alt={product.name}
+                                className="w-full h-[420px] object-cover rounded-lg shadow"
+                            /> */}
+                        </div>
                     </div>
                     {/* Mini Thumbnails */}
                     <div className="flex gap-2 mt-2">
