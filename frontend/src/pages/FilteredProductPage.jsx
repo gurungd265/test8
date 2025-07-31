@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import Product from '../components/Product.jsx';
 import CategoryFilter from '../components/CategoryFilter';
 import Pagination from '../components/Pagination';
 
 export default function FilteredProductPage() {
+
+    console.log('FilteredProductPage 렌더링');
+
+    const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -13,16 +18,18 @@ export default function FilteredProductPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProducts, setTotalProducts] = useState(0);
+    const [searchParams] = useSearchParams();
+    const categoryIdFromUrl = searchParams.get('categoryId');
 
     const fetchProducts = async (categoryId = null, pageNum = 1) => {
         try {
             setLoading(true);
             setError(null);
-
             let url = `http://localhost:8080/api/products?page=${pageNum}`;
             if (categoryId) {
                 url += `&categoryId=${categoryId}`;
             }
+            console.log('Fetching:', url); // 여기 추가
 
             const response = await axios.get(url);
             const data = response.data;
@@ -48,17 +55,26 @@ export default function FilteredProductPage() {
         }
     };
 
+    // 1) 카테고리 리스트는 처음 한번만 불러오기
     useEffect(() => {
-        const fetchData = async () => {
-            await Promise.all([fetchCategories(), fetchProducts()]);
-        };
-        fetchData();
+        fetchCategories();
     }, []);
+
+    // 2) URL 카테고리 혹은 페이지가 바뀔 때마다 상품 데이터 다시 불러오기
+    useEffect(() => {
+        console.log('categoryIdFromUrl:', categoryIdFromUrl);
+        setSelectedCategory(categoryIdFromUrl || null);
+        fetchProducts(categoryIdFromUrl, page);
+    }, [categoryIdFromUrl, page]);
 
     const handleFilter = (categoryId) => {
         setSelectedCategory(categoryId);
         setPage(1);
-        fetchProducts(categoryId, 1);
+        if (categoryId) {
+            navigate(`/products?categoryId=${categoryId}`);
+        } else {
+            navigate('/products');  // categoryId 없을 때는 쿼리 파라미터 없이 이동
+        }
     };
 
     const handlePageChange = (newPage) => {
