@@ -23,10 +23,20 @@ const wishlistApi = {
 
     removeWishlistItem: async (wishlistItemId) => {
         try {
-            const response = await api.delete(`/api/users/me/wishlists/${wishlistItemId}`);
+            const response = await api.delete(`/api/users/me/wishlists/${productId}`);
             return response.data;
         } catch (error) {
             console.error(`ウィッシュリストアイテムID ${wishlistItemId}の削除に失敗しました。`, error);
+            throw error;
+        }
+    },
+
+    removeWishlistItemByProductId: async (productId) => {
+        try {
+            const response = await api.delete(`/api/users/me/wishlists/products/${productId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`ウィッシュリストから商品ID ${productId}の削除に失敗しました。`, error);
             throw error;
         }
     }

@@ -1,8 +1,9 @@
 import React,{useState,useEffect} from "react";
 import { useParams, Link } from "react-router-dom";
-// import products from "../data/products.json";
 import productsApi from '../api/products';
 import cartApi from '../api/cart';
+import { useContext } from 'react';
+import { CartContext } from '../contexts/CartContext';
 
 export default function ProductPage() {
     const { id } = useParams();
@@ -14,6 +15,7 @@ export default function ProductPage() {
 
     const productRating = product?.rating ?? 0;
     const productReviewCount = product?.reviewCount ?? 0;
+    const { fetchCartCount } = useContext(CartContext);
 
 useEffect(() => {
     const fetchProduct = async () => {
@@ -96,6 +98,7 @@ const handleAddToCart = async() => {
         // 実際のショッピングカートAPI呼び出し
         await cartApi.addToCart(product.id, quantity);
         alert(`${product.name} ${quantity}個がカートに追加されました！`);
+        fetchCartCount();
         // 成功的に追加されると、ショッピングカートページに移動したり、ショッピングカートアイコンのアップデートなど
         // navigate('/cart'); // 必要に応じてショッピングカートページへ自動移動
     } catch (err) {

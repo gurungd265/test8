@@ -1,117 +1,355 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import userApi from "../api/user";
+import authApi from "../api/auth";
+import { useAuth } from "../contexts/AuthContext";
+
+import ProfileInfoSection from "../components/Profile/ProfileInfoSection";
+import AddressSection from "../components/Profile/AddressSection";
+import PasswordConfirmationModal from "../components/Profile/PasswordConfirmationModal";
+import DeleteConfirmationModal from "../components/profile/DeleteConfirmationModal";
 
 export default function ProfilePage() {
-    const initialUser = {
-        first_name: "John",
-        last_name: "Doe",
-        email: "john@mail.com",
-        phone: "+1234567890",
-        address: "Japan, Tokyo, Shibuya, 123-4567",
-    }
-
-    const [user, setUser] = useState(initialUser);
-    const [editedUser, setEditedUser] = useState(initialUser);
-    const [hasChanges, setHasChanges] = useState(false);
-
-    useEffect(() => {
-        const isChanged = Object.keys(user).some(
-            (key) => user[key] !== editedUser[key]
-        );
-        setHasChanges(isChanged);
-    }, [editedUser, user]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setEditedUser((prev) => ({...prev, [name]: value}));
+    const initialUserProfile = {
+        firstName: "",
+        lastName: "",
+        firstNameKana: "", // フロントエンド専用
+        lastNameKana: "",  // フロントエンド専用
+        email: "",
+        phoneNumber: "",
     };
 
-    const handleSave = () => {
-        setUser(editedUser);
-        setHasChanges(false);
-        alert("変更を保存しました！");
+    const initialAddress = {
+        id: null,
+        postalCode: "",
+        prefecture: "", // AddressDto 'state' マッピング
+        city: "",
+        streetAddress: "", // AddressDto 'street' マッピング
+        isDefault: false,
+    };
+
+    const { isLoggedIn, logout, loading: authLoading } = useAuth();
+
+    const [userProfile, setUserProfile] = useState(initialUserProfile);
+    const [editedUserProfile, setEditedUserProfile] = useState(initialUserProfile);
+    const [userProfileHasChanges, setUserProfileHasChanges] = useState(false);
+
+    const [addresses, setAddresses] = useState([]);
+    const [editedAddress, setEditedAddress] = useState(initialAddress);
+    const [addressHasChanges, setAddressHasChanges] = useState(false);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+
+    const [loadingData, setLoadingData] = useState(true);
+    const [error, setError] = useState(null);
+
+    const [addressSearchError, setAddressSearchError] = useState(null);
+
+    const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
+    const [passwordInput, setPasswordInput] = useState("");
+    const [passwordError, setPasswordError] = useState(null);
+    const [confirmingPassword, setConfirmingPassword] = useState(false);
+
+    const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+    const [addressToDeleteId, setAddressToDeleteId] = useState(null);
+
+    const fetchUserData = useCallback(async () => {
+        if (!isLoggedIn) {
+            setError("プロフィールを表示するにはログインしてください。");
+            setLoadingData(false);
+            return;
+        }
+
+        if (!isPasswordConfirmed) {
+            setLoadingData(false);
+            return;
+        }
+
+        try {
+            setLoadingData(true);
+            const profileData = await userApi.getUserProfile();
+            const addressList = await userApi.getUserAddresses();
+
+            setUserProfile(profileData);
+            setEditedUserProfile({
+                ...profileData,
+                firstNameKana: "",
+                lastNameKana: "",
+            });
+            setAddresses(addressList);
+
+            const defaultAddress = addressList.find(addr => addr.isDefault) || addressList[0];
+            if (defaultAddress) {
+                setEditedAddress({
+                    id: defaultAddress.id,
+                    postalCode: defaultAddress.postalCode || "",
+                    prefecture: defaultAddress.state || "",
+                    city: defaultAddress.city || "",
+                    streetAddress: defaultAddress.street || "",
+                    isDefault: defaultAddress.isDefault ?? false,
+                });
+            } else {
+                setEditedAddress(initialAddress);
+            }
+
+            setError(null);
+        } catch (err) {
+            console.error("Failed to load user data:", err);
+            setError("データの読み込みに失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    }, [isLoggedIn, isPasswordConfirmed]);
+
+    useEffect(() => {
+        if (!authLoading) {
+            fetchUserData();
+        }
+    }, [authLoading, fetchUserData]);
+
+    useEffect(() => {
+        const profileChanged = Object.keys(userProfile).some(
+            (key) => userProfile[key] !== editedUserProfile[key]
+        );
+        setUserProfileHasChanges(profileChanged);
+    }, [editedUserProfile, userProfile]);
+
+    useEffect(() => {
+        const currentDefaultAddress = addresses.find(addr => addr.isDefault) || initialAddress;
+        const addressChanged = Object.keys(initialAddress).some(
+            (key) => {
+                if (key === 'id') return false;
+                if (key === 'isDefault') return editedAddress.isDefault !== currentDefaultAddress.isDefault;
+
+                return currentDefaultAddress[key] !== editedAddress[key];
+            }
+        );
+        setAddressHasChanges(addressChanged || (editedAddress.id === null && (editedAddress.postalCode || editedAddress.streetAddress)));
+    }, [editedAddress, addresses, initialAddress]);
+
+
+    const handleProfileChange = (e) => {
+        const { name, value } = e.target;
+        setEditedUserProfile((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleProfileSave = async () => {
+        try {
+            setLoadingData(true);
+            const updatedProfile = await userApi.updateUserProfile(editedUserProfile);
+            setUserProfile(updatedProfile);
+            setUserProfileHasChanges(false);
+            setError(null);
+            alert("プロフィール情報を保存しました！");
+        } catch (error) {
+            console.error("プロフィールの保存に失敗しました。", error);
+            setError("プロフィールの保存に失敗しました。");
+            alert("プロフィールの保存に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleAddressChange = (e) => {
+        const { name, value } = e.target;
+        setEditedAddress((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddressSave = async () => {
+        try {
+            setLoadingData(true);
+            await userApi.saveUserAddress(editedAddress);
+
+            await fetchUserData();
+
+            setAddressHasChanges(false);
+            setIsEditingAddress(false);
+            setEditedAddress(initialAddress);
+            setError(null);
+            alert("住所情報を保存しました！");
+        } catch (error) {
+            console.error("住所の保存に失敗しました。", error);
+            setError("住所の保存に失敗しました。");
+            alert("住所の保存に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleSetDefaultAddress = async (addressId) => {
+        try {
+            setLoadingData(true);
+            await userApi.setDefaultAddress(addressId);
+            await fetchUserData();
+            alert("デフォルト住所を設定しました。");
+        } catch (error) {
+            console.error("デフォルト住所の設定に失敗しました。", error);
+            setError("デフォルト住所の設定に失敗しました。");
+            alert("デフォルト住所の設定に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleAddressSearch = async (zipcode) => {
+        setAddressSearchError(null);
+        try {
+            const addressData = await userApi.searchAddressByZipcode(zipcode);
+            setEditedAddress((prev) => ({
+                ...prev,
+                prefecture: addressData.prefecture,
+                city: addressData.city,
+                streetAddress: addressData.streetAddress || "",
+            }));
+        } catch (error) {
+            console.error("郵便番号検索エラー:", error);
+            setAddressSearchError(error.message || "住所の検索に失敗しました。");
+        }
+    };
+
+    const startEditingAddress = (addressToEdit = initialAddress) => {
+        setEditedAddress({
+            id: addressToEdit.id,
+            postalCode: addressToEdit.postalCode || "",
+            prefecture: addressToEdit.state || "",
+            city: addressToEdit.city || "",
+            streetAddress: addressToEdit.street || "",
+            isDefault: addressToEdit.isDefault ?? false,
+        });
+        setIsEditingAddress(true);
+        setAddressSearchError(null);
+    };
+
+    const cancelEditingAddress = () => {
+        setIsEditingAddress(false);
+        setEditedAddress(initialAddress);
+        setAddressSearchError(null);
+    };
+
+    //delete modal
+    const confirmDeleteAddress = (id) => {
+        setAddressToDeleteId(id);
+        setShowDeleteConfirmationModal(true);
+    };
+
+    const cancelDeleteAddress = () => {
+        setAddressToDeleteId(null);
+        setShowDeleteConfirmationModal(false);
+        setError(null);
+    };
+
+    const executeDeleteAddress = async () => {
+        if (!addressToDeleteId) return;
+
+        try {
+            setLoadingData(true);
+            await userApi.deleteUserAddress(addressToDeleteId);
+            await fetchUserData();
+            alert("住所を削除しました。");
+            cancelDeleteAddress();
+        } catch (error) {
+            console.error("住所の削除に失敗しました。", error);
+            setError("住所の削除に失敗しました。");
+            alert("住所の削除に失敗しました。");
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    // password confirm
+    const handlePasswordConfirm = async () => {
+        setPasswordError(null);
+        setConfirmingPassword(true);
+
+        try {
+            const response = await userApi.confirmPassword(passwordInput);
+            if (response.valid) {
+                setIsPasswordConfirmed(true);
+                setPasswordInput("");
+            } else {
+                setPasswordError("パスワードが正しくありません。");
+            }
+        } catch (error) {
+            console.error("パスワード確認エラー:", error);
+            if (error.response && error.response.status === 401) {
+                setPasswordError("パスワードが正しくありません。");
+            } else {
+                setPasswordError("パスワード確認中にエラーが発生しました。ネットワーク接続を確認してください。");
+            }
+        } finally {
+            setConfirmingPassword(false);
+        }
     };
 
     const handleLogout = () => {
-        alert("ログアウトしました");
+        logout();
     };
 
-    return(
+    if (loadingData || authLoading) {
+        return (
+            <div className="max-w-xl mx-auto p-6 text-center text-gray-700">
+                <p>プロファイルと住所情報を読み込み中...</p>
+            </div>
+        );
+    }
+
+    if (!isPasswordConfirmed) {
+        return (
+            <PasswordConfirmationModal
+                passwordInput={passwordInput}
+                setPasswordInput={setPasswordInput}
+                handlePasswordConfirm={handlePasswordConfirm}
+                passwordError={passwordError}
+                confirmingPassword={confirmingPassword}
+            />
+        );
+    }
+
+
+    return (
         <div className="max-w-xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-6">マイプロフィール</h1>
 
-            <div className="bg-white rounded shadow p-6 space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-500">名</label>
-                    <input 
-                        type="text" 
-                        name="first_name"
-                        value={editedUser.first_name}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2"
-                    />
-                </div>
-                
-                <div>
-                    <label className="block text-sm font-medium text-gray-500">姓</label>
-                    <input 
-                        type="text" 
-                        name="last_name"
-                        value={editedUser.last_name}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2"
-                    />
-                </div>
+            {error && (
+                <p className="text-red-500 text-center mb-4">{error}</p>
+            )}
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-500">メール</label>
-                    <input 
-                        type="email" 
-                        name="email"
-                        value={editedUser.email}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2"
-                    />
-                </div>
+            <ProfileInfoSection
+                userProfile={userProfile}
+                editedUserProfile={editedUserProfile}
+                handleProfileChange={handleProfileChange}
+                handleProfileSave={handleProfileSave}
+                userProfileHasChanges={userProfileHasChanges}
+            />
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-500">電話番号</label>
-                    <input 
-                        type="tel" 
-                        name="phone"
-                        value={editedUser.phone}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2"
-                    />
-                </div>
+            <AddressSection
+                addresses={addresses}
+                editedAddress={editedAddress}
+                handleAddressChange={handleAddressChange}
+                handleAddressSave={handleAddressSave}
+                handleAddressSearch={handleAddressSearch}
+                addressSearchError={addressSearchError}
+                isEditingAddress={isEditingAddress}
+                startEditingAddress={startEditingAddress}
+                cancelEditingAddress={cancelEditingAddress}
+                handleSetDefaultAddress={handleSetDefaultAddress}
+                addressHasChanges={addressHasChanges}
+                onDeleteAddress={confirmDeleteAddress}
+            />
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-500">お届け先</label>
-                    <input 
-                        type="text" 
-                        name="address"
-                        value={editedUser.address}
-                        onChange={handleChange}
-                        className="w-full mt-1 border rounded px-3 py-2"
-                    />
-                </div>
-
-                <div className="flex justify-between mt-6">
-                    {hasChanges && (
-                        <button 
-                            onClick={handleSave}
-                            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-                        >
-                            保存する
-                        </button>
-                    )}
-                    <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 ml-auto"
-                    >
-                        ログアウト
-                    </button>
-                </div>
+            <div className="flex justify-end mt-6">
+                <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                >
+                    ログアウト
+                </button>
             </div>
+            {/* 削除確認モーダルレンダリング  */}
+            <DeleteConfirmationModal
+                show={showDeleteConfirmationModal}
+                onConfirm={executeDeleteAddress}
+                onCancel={cancelDeleteAddress}
+                message="この住所を本当に削除してもよろしいですか？この操作は元に戻せません。"
+            />
         </div>
-    )
+    );
 }

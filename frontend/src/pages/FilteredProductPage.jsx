@@ -1,0 +1,128 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import Product from '../components/Product.jsx';
+import CategoryFilter from '../components/CategoryFilter';
+import Pagination from '../components/Pagination';
+
+export default function FilteredProductPage() {
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalProducts, setTotalProducts] = useState(0);
+
+    const fetchProducts = async (categoryId = null, pageNum = 1) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            let url = `http://localhost:8080/api/products?page=${pageNum}`;
+            if (categoryId) {
+                url += `&categoryId=${categoryId}`;
+            }
+
+            const response = await axios.get(url);
+            const data = response.data;
+
+            setProducts(data.content || data);
+            setTotalPages(data.totalPages || 1);
+            setTotalProducts(data.totalElements || data.length);
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            setError('Failed to load products. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/api/categories');
+            setCategories(response.data);
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+            setError('Failed to load categories. Product filtering may not work.');
+        }
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([fetchCategories(), fetchProducts()]);
+        };
+        fetchData();
+    }, []);
+
+    const handleFilter = (categoryId) => {
+        setSelectedCategory(categoryId);
+        setPage(1);
+        fetchProducts(categoryId, 1);
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage > 0 && newPage <= totalPages) {
+            setPage(newPage);
+            fetchProducts(selectedCategory, newPage);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    if (error) {
+        return <div className="p-4 text-red-600">{error}</div>;
+    }
+
+    if (loading && products.length === 0) {
+        return <div className="p-4 text-gray-600">Loading products...</div>;
+    }
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row gap-8">
+                {/* Filters Sidebar */}
+                <div className="w-full md:w-64">
+                    <h2 className="text-xl font-bold mb-4">Filters</h2>
+                    <CategoryFilter
+                        categories={categories}
+                        selectedCategory={selectedCategory}
+                        onFilter={handleFilter}
+                    />
+                </div>
+
+                {/* Products Grid */}
+                <div className="flex-1">
+                    <h1 className="text-2xl font-bold mb-6">
+                        Products {totalProducts > 0 && `(${totalProducts})`}
+                    </h1>
+
+                    {loading && products.length > 0 && (
+                        <div className="text-gray-600 mb-4">Loading more products...</div>
+                    )}
+
+                    {products.length === 0 && !loading ? (
+                        <div className="text-gray-600 text-center py-12">
+                            No products found. Try adjusting your filters.
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {products.map((product) => (
+                                    <Product key={product.id} product={product} />
+                                ))}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                />
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

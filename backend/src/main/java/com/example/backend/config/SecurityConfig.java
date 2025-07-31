@@ -72,12 +72,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/signup").permitAll()
-//                        .requestMatchers("/api/users/me/**").authenticated()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/cart/items","/api/cart").permitAll()
+                        .requestMatchers("/api/cart/items/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/cart/merge").authenticated()
+                        .requestMatchers("/api/cart/count").permitAll()
+
+                        .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
+                        .requestMatchers("/api/addresses/me", "/api/addresses/**").authenticated()
+
                         .requestMatchers("/api/users/me/wishlists/**").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

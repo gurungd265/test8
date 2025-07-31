@@ -16,10 +16,10 @@ public interface CartRepository extends JpaRepository<Cart,Long> {
     /*
         (deleted_at IS NULL 자동 필터링)
      */
-    Optional<Cart> findByUser(User user); // 회원 카트 조회
-    Optional<Cart> findBySessionId(String sessionId); // 비회원 카트 조회
+    Optional<Cart> findByUserAndDeletedAtIsNull(User user); // 회원 카트 조회
+    Optional<Cart> findBySessionIdAndDeletedAtIsNull(String sessionId); // 비회원 카트 조회
 
-    @Modifying
-    @Query(value = "DELETE FROM Cart c WHERE c.product.id = :productId")
-    void deleteByProductId(@Param("productId") Long productId); // 상품이 삭제된 경우 카트에서도 삭제
+//    @Modifying
+//    @Query(value = "DELETE FROM Cart c WHERE c.product.id = :productId")
+//    void deleteByProductId(@Param("productId") Long productId); // 상품이 삭제된 경우 카트에서도 삭제
 }

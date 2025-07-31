@@ -18,4 +18,5 @@ public class CartDto {
     private LocalDateTime updatedAt;
 
     private List<CartItemDto> items; // 담긴 상품 목록
+    private int totalItemCount;
 }

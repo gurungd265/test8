@@ -7,6 +7,7 @@ import com.example.backend.entity.Wishlist;
 import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
+import com.example.backend.service.CartService;
 
 import com.example.backend.repository.WishlistRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,6 +33,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final CartRepository cartRepository;
     private final WishlistRepository wishlistRepository;
+    private final CartService cartService;
 
     // DTO -> Entity Packing
     public ProductDto toDto(Product product) {
@@ -106,7 +108,7 @@ public class ProductService {
         product.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Tokyo")));
         productRepository.save(product);
         // 카트에서도 소프트 삭제
-        cartRepository.deleteByProductId(id);
+        cartService.softDeleteCartItemsByProductId(id);
         // 위시리스트에서도 소프트 삭제
         List<Wishlist> wishlists = wishlistRepository.findByProductId(id);
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Tokyo"));
@@ -117,7 +119,7 @@ public class ProductService {
 
     }
 
-    // ===================================== Cart + ProductImage =====================================
+    // ============================================== Cart + ProductImage ==============================================
     // 특정 카테고리 내 모든 상품 조회
     public Page<ProductDto> getProductsByCategory(Long categoryId, Pageable pageable) {
         return productRepository.findByCategoryIdWithImages(categoryId, pageable)

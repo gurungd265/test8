@@ -16,13 +16,17 @@ public class ExternalPaymentServiceImpl implements ExternalPaymentService {
                 // 신용카드 결제 모킹 로직
                 System.out.println("Processing credit card payment: " + amount);
                 return true; // 결제 성공 모킹
-            case "paypal":
-                // 페이팔 결제 모킹 로직
-                System.out.println("Processing PayPal payment: " + amount);
+            case "konbini":
+                // 편의점 결제 모킹 로직
+                System.out.println("Processing konbini payment: " + amount);
                 return true; // 결제 성공 모킹
             case "bank_transfer":
                 // 계좌이체 모킹 로직
                 System.out.println("Processing bank transfer payment: " + amount);
+                return true; // 결제 성공 모킹
+            case "cod":
+                // 현금 착불 모킹 로직
+                System.out.println("Processing Cash On Delivery payment: " + amount);
                 return true; // 결제 성공 모킹
             default:
                 System.out.println("Unknown payment method: " + paymentMethod);

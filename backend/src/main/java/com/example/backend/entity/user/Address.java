@@ -3,6 +3,7 @@ package com.example.backend.entity.user;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Address {
 
     @Id
@@ -35,15 +37,15 @@ public class Address {
 
     @NotBlank
     @Column(nullable = false)
-    private String street;
+    private String state; // 都道府県
 
     @NotBlank
     @Column(nullable = false)
-    private String city;
+    private String city; // 市区町村
 
     @NotBlank
     @Column(nullable = false)
-    private String state;
+    private String street; // 番地、ビル、部屋番号
 
     @NotBlank
     @Column(name = "postal_code", nullable = false)
@@ -51,9 +53,11 @@ public class Address {
 
     @NotBlank
     @Column(nullable = false)
-    private String country;
+    @Builder.Default
+    private String country = "JAPAN";
 
     @Column(name = "is_default", nullable = false)
+    @Builder.Default
     private Boolean isDefault = false;
 
     @CreationTimestamp

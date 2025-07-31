@@ -6,12 +6,16 @@ import MobileBottomNavigation from './components/MobileBottomNavigation';
 
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
 import WishesPage from './pages/WishesPage';
+import FilteredProductPage from './pages/FilteredProductPage'
 import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import {AuthProvider,useAuth} from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext.jsx';
 import ProfilePage from './pages/ProfilePage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
     const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
@@ -40,6 +44,7 @@ function AppContent() {
   return (
       <>
         {/* AuthContext */}
+      <CartProvider>
         <Header />
 
         {/* Routing Area */}
@@ -50,6 +55,8 @@ function AppContent() {
                 <Route path="/" element={<Products />} />
                 <Route path="/product/:id" element={<ProductPage />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/filtered-products" element={<FilteredProductPage />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 {/* (Payment/Checkout) 機能はショッピングカート内のアクションか別途ページ
                     もし/checkoutページがあれば、次のように保護:
                     <Route path="/checkout" element={<ProtectedRoute requiresAuth={true} redirectPath="/login"><CheckoutPage /></ProtectedRoute>} />
@@ -66,6 +73,7 @@ function AppContent() {
                   <Route element={<ProtectedRoute requiresAuth={true} redirectPath="/login" />}>
                     <Route path="/wishes" element={<WishesPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}
                     {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
@@ -74,7 +82,8 @@ function AppContent() {
                   {/* 404 Not Found page */}
                   <Route path="*" element={<div>(404 Not Found)</div>} />
                 </Routes>
-            </main>
+          </main>
+          </CartProvider>
 
         {/* Footer */}
         {/* <Footer /> */}

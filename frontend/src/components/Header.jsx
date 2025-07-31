@@ -1,4 +1,4 @@
-import React from "react";
+import React,{ useContext, useState } from "react";
 import {
   Menu,
   MapPin,
@@ -7,18 +7,30 @@ import {
   ShoppingCart,
   User,
   LogOut,
+  X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/Logo.png"
+import { CartContext } from "../contexts/CartContext";
 
 export default function Header() {
   const { isLoggedIn, user, logout } = useAuth();
+  const { cartItemCount } = useContext(CartContext);
   const navigate = useNavigate();
+
+  // 사이드바 열림 상태 추가
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
+    setIsSidebarOpen(false);  // 로그아웃시 사이드바 닫기
     navigate("/");
+  };
+
+  // 사이드바 토글 함수
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
   return (
@@ -75,9 +87,7 @@ export default function Header() {
               onClick={handleLogout}
               className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-red-500 cursor-pointer"
             >
-              <Link>
-                <User className="hidden lg:block" />
-              </Link>
+              <LogOut className="hidden lg:block" />
               <span className="hidden lg:block">
                 {user?.email ? user.email : "Logout"}
               </span>
