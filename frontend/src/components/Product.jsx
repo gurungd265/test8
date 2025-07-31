@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import React, { useContext } from 'react';
+import { useContext } from "react";
 import cartApi from "../api/cart";
-import {CartContext} from '../contexts/CartContext';
+import { CartContext } from "../contexts/CartContext";
 import { Heart } from "lucide-react";
-import { useState,useEffect } from "react";
-import wishlistApi from '../api/wishlist';
-import {useAuth} from '../contexts/AuthContext';
+import { useState, useEffect } from "react";
+import wishlistApi from "../api/wishlist";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Product({ product }) {
   const { id, name, price, description, discountPrice, stockQuantity, images } =
@@ -15,7 +15,8 @@ export default function Product({ product }) {
       ? (images.find((img) => img.isPrimary) || images[0]).imageUrl
       : "https://via.placeholder.com/200/CCCCCC/FFFFFF?text=No+Image";
   //カートに商品を追加する臨時ハンドラー(cartApi連動は後で)
-  const { cartItemCount, setCartItemCount, fetchCartCount } = useContext(CartContext);
+  const { cartItemCount, setCartItemCount, fetchCartCount } =
+    useContext(CartContext);
 
   const handleAddToCart = async (e) => {
     e.preventDefault(); // Linkタグへの移動防止
@@ -25,7 +26,7 @@ export default function Product({ product }) {
     }
 
     const previousCartItemCount = cartItemCount;
-    setCartItemCount(prevCount => prevCount + 1);
+    setCartItemCount((prevCount) => prevCount + 1);
     try {
       // 実際のcartApi.addToCart呼び出し（基本数量1個）
       await cartApi.addToCart(id, 1);
@@ -51,54 +52,62 @@ export default function Product({ product }) {
     }
   };
   const [wished, setWished] = useState(false); // マイリストに追加するための状態
-  const {isLoggedIn,loading: authLoading} = useAuth();
-    useEffect(() => {
-      const checkWishStatus = async () => {
-        if (authLoading || !isLoggedIn) {
-          setWished(false);
-          return;
-        }
-        try {
-          const wishlistItems = await wishlistApi.getWishlistItems();
-          const isProductWished = wishlistItems.some(item => item.productId === id);
-          setWished(isProductWished);
-        } catch (err) {
-          console.error("ウィッシュリストの状態を確認できませんでした。", err);
-        }
-      };
-      checkWishStatus();
-    }, [id, isLoggedIn, authLoading]);
-
-    const handleWishlist = async(e) => {
-      e.preventDefault();
-      if (!isLoggedIn) {
-        alert("ウィッシュリスト操作にはログインが必要です。");
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  useEffect(() => {
+    const checkWishStatus = async () => {
+      if (authLoading || !isLoggedIn) {
+        setWished(false);
         return;
       }
-
-      const previousWished = wished;
-      setWished(!wished); // optimistic update
-
       try {
-        if (!previousWished) {
-          await wishlistApi.addWishlistItem(id);
-          console.log(`${name}をウィッシュリストに追加しました。`);
-        } else {
-          await wishlistApi.removeWishlistItemByProductId(id);
-          console.log(`${name}をウィッシュリストから削除しました。`);
-        }
+        const wishlistItems = await wishlistApi.getWishlistItems();
+        const isProductWished = wishlistItems.some(
+          (item) => item.productId === id
+        );
+        setWished(isProductWished);
       } catch (err) {
-        console.error("ウィッシュリスト操作に失敗しました。", err);
-        setWished(previousWished);
-        if (err.response && err.response.status === 400 && err.response.data.message) {
-          alert(`ウィッシュリスト操作中にエラーが発生しました: ${err.response.data.message}`);
-        } else if (err.response && err.response.status === 401) {
-          alert("ウィッシュリスト操作にはログインが必要です。");
-        } else {
-          alert("ウィッシュリスト操作中に不明なエラーが発生しました。");
-        }
+        console.error("ウィッシュリストの状態を確認できませんでした。", err);
       }
     };
+    checkWishStatus();
+  }, [id, isLoggedIn, authLoading]);
+
+  const handleWishlist = async (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      alert("ウィッシュリスト操作にはログインが必要です。");
+      return;
+    }
+
+    const previousWished = wished;
+    setWished(!wished); // optimistic update
+
+    try {
+      if (!previousWished) {
+        await wishlistApi.addWishlistItem(id);
+        console.log(`${name}をウィッシュリストに追加しました。`);
+      } else {
+        await wishlistApi.removeWishlistItemByProductId(id);
+        console.log(`${name}をウィッシュリストから削除しました。`);
+      }
+    } catch (err) {
+      console.error("ウィッシュリスト操作に失敗しました。", err);
+      setWished(previousWished);
+      if (
+        err.response &&
+        err.response.status === 400 &&
+        err.response.data.message
+      ) {
+        alert(
+          `ウィッシュリスト操作中にエラーが発生しました: ${err.response.data.message}`
+        );
+      } else if (err.response && err.response.status === 401) {
+        alert("ウィッシュリスト操作にはログインが必要です。");
+      } else {
+        alert("ウィッシュリスト操作中に不明なエラーが発生しました。");
+      }
+    }
+  };
 
   // 表示される価格(割引価格があれば割引価格、なければ原価)
   const displayPrice =
@@ -116,7 +125,7 @@ export default function Product({ product }) {
           className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-trnsfrorm"
           title="マイリストに追加"
         >
-          <Heart 
+          <Heart
             size={18}
             className={`stroke-2 ${
               wished ? "text-purple-600 fill-purple-600" : "text-gray-400"
@@ -154,7 +163,7 @@ export default function Product({ product }) {
                   </div>
                 </>
               ) : (
-                <span>{displayPrice.toLocaleString()}円</span>
+                <div className="text-purple-600">{displayPrice.toLocaleString()}円</div>
               )}
             </div>
           </div>
