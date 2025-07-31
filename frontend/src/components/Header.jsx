@@ -75,7 +75,9 @@ export default function Header() {
               onClick={handleLogout}
               className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-red-500 cursor-pointer"
             >
-              <LogOut className="hidden lg:block" />
+              <Link>
+                <User className="hidden lg:block" />
+              </Link>
               <span className="hidden lg:block">
                 {user?.email ? user.email : "Logout"}
               </span>
