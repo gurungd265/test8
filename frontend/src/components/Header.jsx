@@ -169,8 +169,7 @@ export default function Header() {
               ></div>
 
               <div className="absolute inset-y-0 left-0 w-64 bg-white shadow-lg flex flex-col">
-                <div className="p-4 border-b flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">カテゴリー</h2>
+                <div className="p-4 flex justify-between items-center">
                   <button
                       onClick={() => setIsCatalogOpen(false)}
                       className="text-gray-500 hover:text-gray-700"
@@ -212,10 +211,7 @@ export default function Header() {
               <div className="absolute inset-y-0 right-0 max-w-full flex">
                 <div className="relative w-screen max-w-md">
                   <div className="h-full flex flex-col bg-white shadow-xl">
-                    <div className="flex items-center justify-between p-4 border-b">
-                      <h2 className="text-lg font-semibold">
-                        マイアカウント
-                      </h2>
+                    <div className="flex items-center justify-between p-4">
                       <button
                           onClick={() => setIsAccountOpen(false)}
                           className="text-gray-500 hover:text-gray-700"
