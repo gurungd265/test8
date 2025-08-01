@@ -1,0 +1,111 @@
+import React, { useContext, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Menu } from "lucide-react";
+import { useCategory } from "../../contexts/CategoryContext.jsx";
+import { CartContext } from "../../contexts/CartContext.jsx";
+import CategorySidebar from './CategorySidebar.jsx';
+
+import SearchBox from './SearchBox.jsx';
+import WishlistButton from "./WishlistButton.jsx";
+import CartButton from "./CartButton.jsx";
+import ProfileButton from './ProfileButton.jsx';
+import logo from "../../assets/Logo.png"
+import LocationButton from './LocationButton.jsx';
+
+export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
+  const location = useLocation();
+  const isMobileSearchPage = location.pathname === "/search";
+
+  const { cartItemCount } = useContext(CartContext);
+  const { categories, loading } = useCategory();
+  const navigate = useNavigate();
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 카테고리 클릭 시 이동
+  const handleCategoryClick = (categoryId) => {
+    navigate(`/products?categoryId=${categoryId}`);
+    setIsCatalogOpen(false);
+  };
+
+  // 검색 실행
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      navigate(`/products?keyword=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm('');
+    }
+  };
+
+  // 엔터키 검색 실행
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  if (isMobileSearchPage) return null; // <- /search면 렌더링하지 않음
+
+  return (
+      <>
+        <header className="fixed top-0 left-0 w-full bg-white shadow p-2 flex items-center justify-between z-20" style={{ height: '48px' }}>
+
+          <div className="flex items-center gap-3">
+
+            {/* logo */}
+            <Link to="/" aria-label="Home">
+              <div className="flex items-center gap-3">
+                <img
+                    src={logo}
+                    alt="Company Logo"
+                    className="hidden lg:block"
+                    style={{ height: '32px' }}
+                />
+              </div>
+            </Link>
+
+            {/* Category */}
+            <button
+                onClick={() => setIsCatalogOpen(true)}
+                className="cursor-pointer"
+                aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Shipping Address */}
+            <LocationButton locationName="お届け先" />
+
+          </div>
+
+          {/* Search, Wishlist, Cart, Profile 영역 */}
+          <div className="flex items-center gap-3">
+
+            <SearchBox
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                onSearch={handleSearch}
+                onKeyPress={handleKeyPress}
+            />
+
+            <WishlistButton />
+
+            <CartButton
+                count={cartItemCount}
+            />
+
+            <ProfileButton />
+
+          </div>
+        </header>
+
+        {/* CategorySidebar */}
+        {isCatalogOpen && (
+            <CategorySidebar
+                categories={categories}
+                onClose={() => setIsCatalogOpen(false)}
+                onCategoryClick={handleCategoryClick}
+            />
+        )}
+      </>
+  );
+}

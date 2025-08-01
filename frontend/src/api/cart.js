@@ -123,15 +123,16 @@ const cartApi = {
             const sessionId = Cookies.get('sessionId');
             if (sessionId) {
                 url += `?sessionId=${sessionId}`;
-            }else{
+            } else {
                 return 0;
             }
-        } else{
+        } else {
             console.log('DEBUG_CART_API: getCartItemCount: not sessionId request:', url);
         }
         try {
             const response = await api.get(url);
-            return response.data.items;
+            console.log('DEBUG_CART_API: getCartItemCount response.data:', response.data);
+            return response.data ?? 0;
         } catch (error) {
             console.error('Failed to fetch cart item count:', error);
             return 0;
