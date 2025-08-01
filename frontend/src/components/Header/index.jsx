@@ -22,13 +22,13 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 카테고리 클릭 시 이동
+  // Navigate to selected category
   const handleCategoryClick = (categoryId) => {
     navigate(`/products?categoryId=${categoryId}`);
     setIsCatalogOpen(false);
   };
 
-  // 검색 실행
+  // Trigger search action
   const handleSearch = () => {
     if (searchTerm.trim()) {
       navigate(`/products?keyword=${encodeURIComponent(searchTerm.trim())}`);
@@ -36,13 +36,14 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
     }
   };
 
-  // 엔터키 검색 실행
+  // Trigger search on Enter key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
+  // Skip rendering on the /search route
   if (isMobileSearchPage) return null; // <- /search면 렌더링하지 않음
 
   return (
@@ -50,6 +51,15 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
         <header className="fixed top-0 left-0 w-full bg-white shadow p-2 flex items-center justify-between z-20" style={{ height: '48px' }}>
 
           <div className="flex items-center gap-3">
+
+            {/* Category */}
+            <button
+                onClick={() => setIsCatalogOpen(true)}
+                className="cursor-pointer"
+                aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
 
             {/* logo */}
             <Link to="/" aria-label="Home">
@@ -63,16 +73,7 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
               </div>
             </Link>
 
-            {/* Category */}
-            <button
-                onClick={() => setIsCatalogOpen(true)}
-                className="cursor-pointer"
-                aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            {/* Shipping Address */}
+            {/* Shipping destination display */}
             <LocationButton locationName="お届け先" />
 
           </div>

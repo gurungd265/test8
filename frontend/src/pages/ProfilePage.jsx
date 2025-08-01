@@ -190,6 +190,7 @@ export default function ProfilePage() {
     };
 
     const handleAddressSearch = async (zipcode) => {
+        console.log("検索する郵便番号:", zipcode);
         setAddressSearchError(null);
         try {
             const addressData = await userApi.searchAddressByZipcode(zipcode);
