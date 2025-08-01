@@ -49,21 +49,30 @@ export default function CartPage() {
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
   if (!cart || !cart.items) return <div className="p-6 text-center text-gray-500">カート情報がありません。</div>;
 
-  const handleRemove = (id) => {
-      const previousCartItemCount = cartItemCount;
-      setCartItemCount(prevCount => Math.max(0, prevCount - 1));
-      const removeCartItem = async (cartItemId) => {
-          try {
-              await cartApi.removeCartItem(cartItemId);
-              fetchCartCount();
-          } catch (err) {
-              console.error('カートアイテム削除失敗:', err);
-              setCartItemCount(previousCartItemCount);
-              alert('カートアイテムを削除できませんでした。');
-              }
-          };
+    const handleRemove = (id) => {
+        const previousCartItemCount = cartItemCount;
+        setCartItemCount(prevCount => Math.max(0, prevCount - selectedItems.size));
+
+        const removeCartItem = async (cartItemId) => {
+            try {
+                await cartApi.removeCartItem(cartItemId);
+
+                // 삭제 성공 시 cart.items에서 제거 후 상태 갱신
+                setCart(prevCart => ({
+                    ...prevCart,
+                    items: prevCart.items.filter(item => item.id !== cartItemId),
+                }));
+
+                fetchCartCount();
+            } catch (err) {
+                console.error('カートアイテム削除失敗:', err);
+                setCartItemCount(previousCartItemCount);
+                alert('カートアイテムを削除できませんでした。');
+            }
+        };
+
         removeCartItem(id);
-      };
+    };
 
 
   const handleQuantityChange = (cartItemId, currentQuantity, delta) => {
@@ -128,6 +137,33 @@ export default function CartPage() {
         }
     };
 
+    const handleClearCart = async () => {
+        if (selectedItems.size === 0) {
+            alert('削除する商品を選択してください。');
+            return;
+        }
+
+        if (!window.confirm('選択した商品を本当に削除しますか？')) {
+            return;
+        }
+
+        try {
+            const idsToRemove = Array.from(selectedItems);
+            await Promise.all(idsToRemove.map(id => cartApi.removeCartItem(id)));
+
+            setCart(prevCart => ({
+                ...prevCart,
+                items: prevCart.items.filter(item => !selectedItems.has(item.id)),
+            }));
+
+            setSelectedItems(new Set());
+            fetchCartCount();
+        } catch (err) {
+            console.error('選択商品削除失敗:', err);
+            alert('選択した商品を削除できませんでした。');
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-4">ショッピングカート</h1>
@@ -138,8 +174,8 @@ export default function CartPage() {
                 </div>
             ) : (
                 <>
-                    {/* 전체 선택 토글 버튼 */}
-                    <div className="mb-4">
+                    {/* 전체 선택 및 해제, 선택한 상품 삭제 */}
+                    <div className="mb-4 flex justify-between items-center">
                         <label className="inline-flex items-center cursor-pointer">
                             <input
                                 type="checkbox"
@@ -147,10 +183,16 @@ export default function CartPage() {
                                 checked={selectedItems.size === cart.items.length}
                                 onChange={toggleSelectAll}
                             />
-                            <span className="ml-2 text-sm font-normal text-gray-500 tracking-wide">
-                                全て選択
+                            <span className="ml-2 text-sm font-normal text-gray-500 underline decoration-solid decoration-gray-500 tracking-wide">
+                                すべて選択
                             </span>
                         </label>
+                        <button
+                            className="ml-auto text-sm font-normal text-red-700 underline decoration-solid decoration-red-700 hover:opacity-80 focus:outline-none"
+                            onClick={handleClearCart}
+                        >
+                            選択した商品を削除
+                        </button>
                     </div>
 
                     {/* Product List */}
@@ -231,7 +273,7 @@ export default function CartPage() {
                                     </p>
                                     <button
                                         onClick={() => handleRemove(item.id)}
-                                        className="text-red-500 text-sm hover:underline mt-2"
+                                        className="text-red-700 underline decoration-solid decoration-red-700 text-sm mt-2"
                                     >
                                         削除
                                     </button>

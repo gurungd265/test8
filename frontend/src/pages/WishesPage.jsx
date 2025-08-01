@@ -32,11 +32,6 @@ export default function WishesPage() {
               const productDetail = await productsApi.getProductById(
                 item.productId
               );
-              console.log(
-                "가격 정보:",
-                productDetail.price,
-                productDetail.discountPrice
-              );
               return {
                 ...item,
                 price: productDetail.price,
