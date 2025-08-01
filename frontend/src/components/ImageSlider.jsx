@@ -5,6 +5,7 @@ export default function ImageSlider({ images = [], productName }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [modalOpen, setModalOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [clickedImageIndex, setClickedImageIndex] = useState(0);
 
     // images massiv ekanligiga ishonch hosil qilamiz
     const safeImages = Array.isArray(images) ? images : [];
@@ -43,21 +44,27 @@ export default function ImageSlider({ images = [], productName }) {
 
     // Modalni ochish
     const openModal = (index) => {
-        setCurrentIndex(index);
+        setClickedImageIndex(index); // Bosilgan rasm indeksini saqlaymiz
         setModalOpen(true);
     };
 
     // Ko'rsatiladigan rasmlarni aniqlash
     const getCurrentImages = () => {
         if (isMobile || displayImages.length <= 1) {
-            return [displayImages[currentIndex]];
+            return [{...displayImages[currentIndex], originalIndex: currentIndex}];
         }
         
         if (currentIndex === displayImages.length - 1) {
-            return [displayImages[currentIndex], displayImages[0]];
+            return [
+                {...displayImages[currentIndex], originalIndex: currentIndex},
+                {...displayImages[0], originalIndex: 0}
+            ];
         }
         
-        return [displayImages[currentIndex], displayImages[currentIndex + 1]];
+        return [
+            {...displayImages[currentIndex], originalIndex: currentIndex},
+            {...displayImages[currentIndex + 1], originalIndex: currentIndex + 1}
+        ];
     };
 
     const currentImages = getCurrentImages();
@@ -90,7 +97,7 @@ export default function ImageSlider({ images = [], productName }) {
                         <img 
                             src={img.imageUrl} 
                             alt={img.altText || `${productName} ${i + 1}`}
-                            onClick={() => openModal(currentIndex)}
+                            onClick={() => openModal(img.originalIndex)} // originalIndex ni yuboramiz
                             className="w-full h-[420px] object-cover rounded-lg shadow cursor-zoom-in hover:opacity-90 transition-opacity" 
                         />
                     </div>
@@ -123,14 +130,22 @@ export default function ImageSlider({ images = [], productName }) {
                     {displayImages.length > 1 && (
                         <>
                             <button 
-                                onClick={prevSlide}
+                                onClick={() => {
+                                    setClickedImageIndex(prev => 
+                                        prev === 0 ? displayImages.length - 1 : prev - 1
+                                    );
+                                }}
                                 className="absolute left-4 bg-white/80 p-2 rounded-full hover:scale-110 transition-transform"
                             >
                                 <ChevronLeft size={30} />
                             </button>
                             
                             <button 
-                                onClick={nextSlide}
+                                onClick={() => {
+                                    setClickedImageIndex(prev => 
+                                        prev === displayImages.length - 1 ? 0 : prev + 1
+                                    );
+                                }}
                                 className="absolute right-4 bg-white/80 p-2 rounded-full hover:scale-110 transition-transform"
                             >
                                 <ChevronRight size={30} />
@@ -139,14 +154,14 @@ export default function ImageSlider({ images = [], productName }) {
                     )}
                     
                     <img
-                        src={displayImages[currentIndex]?.imageUrl}
-                        alt={displayImages[currentIndex]?.altText || `${productName} (zoomed)`}
+                        src={displayImages[clickedImageIndex]?.imageUrl}
+                        alt={displayImages[clickedImageIndex]?.altText || `${productName} (zoomed)`}
                         className="max-w-full max-h-full object-contain rounded"
                     />
                     
                     {displayImages.length > 1 && (
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                            {currentIndex + 1} / {displayImages.length}
+                            {clickedImageIndex + 1} / {displayImages.length}
                         </div>
                     )}
                 </div>
