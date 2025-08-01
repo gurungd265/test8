@@ -149,8 +149,8 @@ public class CartController {
     ) {
         String userEmail = (principal != null) ? principal.getName() : null;
         String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
-                        .map(jakarta.servlet.http.Cookie::getValue)
-                        .orElse(null);
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
         cartService.softClearCart(userEmail, sessionIdFromCookie);
         return ResponseEntity.noContent().build();
     }
@@ -172,13 +172,13 @@ public class CartController {
             } else {
                 if (sessionIdParam == null || sessionIdParam.isEmpty()) {
                     return ResponseEntity.ok(0);
-            }
+                }
                 int count = cartService.getTotalCartItemCount(null, sessionIdParam);
                 return ResponseEntity.ok(count);
             }
         } catch ( Exception e ){
-                e.printStackTrace();
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(0);
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(0);
         }
     }
     @PostMapping("/order")
@@ -206,7 +206,7 @@ public class CartController {
                 .quantity(item.getQuantity())
                 .build();
     }
-    
+
     // 사용자 이메일 추출
     private String getUserEmail(Principal principal) {
         return (principal != null) ? principal.getName() : null;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
-import Header from './components/Header';
+import Index from './components/Header/index.jsx';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
 import MobileSearchPage from './pages/MobileSearchPage';
 import ProductPage from './pages/ProductPage';
@@ -10,11 +10,12 @@ import WishesPage from './pages/WishesPage';
 import Products from './components/Products';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import { AuthProvider,useAuth } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext.jsx';
 import ProfilePage from './pages/ProfilePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import FilteredProductPage from "./pages/FilteredProductPage.jsx";
+import { AuthProvider,useAuth } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext.jsx';
+import { CategoryProvider } from "./contexts/CategoryContext.jsx";
 
 const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
     const { isLoggedIn,loading } = useAuth();
@@ -46,7 +47,7 @@ function AppContent() {
         <>
             {/* AuthContext */}
             <CartProvider>
-                <Header isCatalogOpen={isCatalogOpen} setIsCatalogOpen={setIsCatalogOpen} />
+                <Index isCatalogOpen={isCatalogOpen} setIsCatalogOpen={setIsCatalogOpen} />
 
                 {/* Routing Area */}
                 <main className="min-h-screen pb-20">
@@ -99,9 +100,11 @@ function AppContent() {
 export default function App() {
     return (
         <Router>
-            <AuthProvider>
-                <AppContent />
-            </AuthProvider>
+            <CategoryProvider>
+                <AuthProvider>
+                    <AppContent />
+                </AuthProvider>
+            </CategoryProvider>
         </Router>
     );
 }
