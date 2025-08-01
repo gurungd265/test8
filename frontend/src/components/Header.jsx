@@ -1,18 +1,20 @@
 import React,{ useContext, useState, useEffect } from "react";
-import { Menu, MapPin, Search, Heart, ShoppingCart, User, LogOut, ChevronDown, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { CartContext } from "../contexts/CartContext";
+import { Menu, MapPin, Search, Heart, ShoppingCart, User, LogOut, ChevronDown, X } from "lucide-react";
 import logo from "../assets/Logo.png"
 
-export default function Header() {
+export default function Header({ isCatalogOpen, setIsCatalogOpen }) {
+  const location = useLocation();
+  const isMobileSearchPage = location.pathname === "/search";
+
   const { isLoggedIn, user, logout } = useAuth();
   const { cartItemCount } = useContext(CartContext);
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState([]);
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // 첫번째 코드에 있던 사이드바 열림 상태 (필요하면 활용)
@@ -64,6 +66,8 @@ export default function Header() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  if (isMobileSearchPage) return null; // <- /search면 렌더링하지 않음
+
   return (
       <>
         <header className="fixed top-0 left-0 w-full bg-white shadow p-2 flex items-center justify-between z-20" style={{ height: '48px' }}>
@@ -99,6 +103,7 @@ export default function Header() {
 
           {/* 검색, 위시리스트, 장바구니, 프로필 영역 */}
           <div className="flex items-center gap-3">
+
             {/* 검색 */}
             <div className="hidden lg:flex items-center border rounded overflow-hidden bg-gray-50" style={{ height: '32px' }}>
               <input

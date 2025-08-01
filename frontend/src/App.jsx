@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Header from './components/Header';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
@@ -40,13 +40,15 @@ import FilteredProductPage from "./pages/FilteredProductPage.jsx";
 
 function AppContent() {
 
+    const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+
   return (
       <>
         {/* AuthContext */}
       <CartProvider>
-        <Header />
+          <Header isCatalogOpen={isCatalogOpen} setIsCatalogOpen={setIsCatalogOpen} />
 
-        {/* Routing Area */}
+          {/* Routing Area */}
         <main className="min-h-screen pb-20">
         {/* public */}
             <Routes>
@@ -89,7 +91,7 @@ function AppContent() {
         {/* <Footer /> */}
 
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNavigation />
+          <MobileBottomNavigation setIsCatalogOpen={setIsCatalogOpen} />
       </>
     );
   }
