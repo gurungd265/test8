@@ -6,6 +6,7 @@ import wishlistApi from '../api/wishlist';
 import { Heart } from "lucide-react";
 import { CartContext } from '../contexts/CartContext';
 import { useAuth } from "../contexts/AuthContext.jsx";
+import ImageSlider from "../components/ImageSlider.jsx";
 
 export default function ProductPage() {
     const { id } = useParams();
@@ -197,12 +198,18 @@ export default function ProductPage() {
                                 className={`stroke-2 ${wished ? "text-purple-600 fill-purple-600" : "text-gray-400"}`}
                             />
                         </button>
+                        {/* Image Slider */}
+                        <ImageSlider
+                            images={product?.images || []}
+                            productName={product?.name || "Product"}
+                        />
+
                         {/* Main Image */}
-                        <img
+                        {/* <img
                             src={mainImage || 'https://via.placeholder.com/600/CCCCCC/FFFFFF?text=No+Image'}
                             alt={product.name}
                             className="w-full h-[420px] object-cover rounded-lg shadow"
-                        />
+                        /> */}
                     </div>
                     {/* Mini Thumbnails */}
                     <div className="flex gap-2 mt-2">
