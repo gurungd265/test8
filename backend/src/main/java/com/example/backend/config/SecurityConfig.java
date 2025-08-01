@@ -81,6 +81,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
                         .requestMatchers("/api/addresses/me", "/api/addresses/**").authenticated()
+                        .requestMatchers("/api/balances/**").authenticated()
 
                         .requestMatchers("/api/users/me/wishlists/**").authenticated()
                         .requestMatchers("/api/orders/**").authenticated()

@@ -32,6 +32,11 @@ export default function WishesPage() {
               const productDetail = await productsApi.getProductById(
                 item.productId
               );
+              console.log(
+                "가격 정보:",
+                productDetail.price,
+                productDetail.discountPrice
+              );
               return {
                 ...item,
                 price: productDetail.price,
@@ -136,22 +141,14 @@ export default function WishesPage() {
                     <div className="mt-2 flex items-center justify between">
                       {/* Product Price */}
                       <div className="font-bold text-lg">
-                        {item.discountPrice !== null && item.discountPrice !== undefined ? (
-                          <>
-                            {/* 割引前の価格 */}
-                            <div className="line-through text-gray-500 text-base mr-2">
-                              {item.price.toLocaleString()}円
-                            </div>
-                            {/* 割引価格 */}
-                            <div className="text-purple-600">
-                              {displayPrice.toLocaleString()}円
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-purple-600">
-                            {displayPrice.toLocaleString()}円
-                          </div>
-                        )}
+                        {/* 割引前の価格 */}
+                        <div className="line-through text-gray-500 text-base mr-2">
+                          {item.price.toLocaleString()}円
+                        </div>
+                        {/* 割引価格 */}
+                        <div className="text-purple-600">
+                          {displayPrice.toLocaleString()}円
+                        </div>
                       </div>
                     </div>
                     {/* Button of Adding To Cart */}

@@ -138,7 +138,7 @@ export default function Product({ product }) {
           <img
             src={mainImageUrl}
             alt={name}
-            className="w-full h-56 object-cover rounded-lg group-hover:rounded-t-lg group-hover:rounded-b-none transition-all duration-300"
+            className="w-full h-300 object-cover rounded-lg group-hover:rounded-t-lg group-hover:rounded-b-none transition-all duration-300"
           />
         </Link>
         <div className="p-4">
