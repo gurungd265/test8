@@ -1,24 +1,32 @@
 import api from './index';
 export const fetchBalances = async (userId) => {
     console.log(`[API] 残高照会リクエスト (ユーザーID: ${userId})`);
-    try {
-        // バックエンドの仕様に合わせて、paymentMethodごとに個別に取得
-        const paypayRes = await api.get('/api/balances/find', { params: { userId, paymentMethod: 'PAYPAY' } });
-        const pointRes = await api.get('/api/balances/find', { params: { userId, paymentMethod: 'POINT' } });
+        try {
+            const paypayRes = await api.get('/api/balances/find', {
+                params: { userId, paymentMethod: 'PAYPAY' }
+            });
+            const pointRes = await api.get('/api/balances/find', {
+                params: { userId, paymentMethod: 'POINT' }
+            });
 
-        const balances = {
-            paypay: paypayRes.data.balance,
-            point: pointRes.data.balance,
-            // 仮想クレジットカードはバックエンドにないので固定値を維持
-            virtualCreditCard: 20000,
-        };
-        console.log('[API] 残高照会成功:', balances);
-        return balances;
-    } catch (error) {
-        console.error('[API] 残高照会失敗:', error);
-        throw error;
-    }
-};
+            return {
+                paypay: paypayRes.data.balance,
+                point: pointRes.data.balance,
+                virtualCreditCard: 0,
+            };
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.warn('[API]残高なし0円で処理 ');
+                return {
+                    paypay: 0,
+                    point: 0,
+                    virtualCreditCard: 0,
+                };
+            }
+            console.error('[API] 残高照会失敗:', error);
+            throw error;
+        }
+    };
 
 export const chargePoints = async (userId, method, amount) => {
     console.log(`[API] チャージリクエスト: ${method}, 金額: ${amount} (ユーザーID: ${userId})`);
