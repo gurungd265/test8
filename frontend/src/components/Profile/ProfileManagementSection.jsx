@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {useState, useEffect, useCallback, useContext} from "react";
 import userApi from "../../api/user";
 import authApi from "../../api/auth";
 import { useAuth } from "../../contexts/AuthContext";
@@ -46,6 +46,8 @@ export default function ProfileManagementSection({ onLogout }) {
     const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
     const [addressToDeleteId, setAddressToDeleteId] = useState(null);
 
+    const { setDefaultAddress } = useAuth();
+
     const fetchUserData = useCallback(async () => {
         if (!isLoggedIn) {
             setError("プロフィールを表示するにはログインしてください。");
@@ -76,6 +78,7 @@ export default function ProfileManagementSection({ onLogout }) {
                     streetAddress: defaultAddress.street || "",
                     isDefault: defaultAddress.isDefault ?? false,
                 });
+                setDefaultAddress(defaultAddress);
             } else {
                 setEditedAddress(initialAddress);
             }

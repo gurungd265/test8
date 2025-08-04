@@ -11,17 +11,30 @@ export default function LocationButton() {
     const [postalCode, setPostalCode] = useState("...");
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    function formatPostalCode(code) {
+        if (!code) return "";
+        return code.length === 7 ? code.slice(0, 3) + "-" + code.slice(3) : code;
+    }
+
     useEffect(() => {
+        console.log("defaultAddress:", defaultAddress);
+
         async function updatePostalCode() {
             if (user && defaultAddress) {
-                setPostalCode(defaultAddress.postalCode);
+                if (postalCode !== defaultAddress.postalCode) {
+                    setPostalCode(defaultAddress.postalCode);
+                }
             } else {
                 try {
                     const { latitude, longitude } = await getCurrentLocation();
                     const code = await fetchJapanesePostalCode(latitude, longitude);
-                    setPostalCode(code || "Unknown");
+                    if (postalCode !== (code || "Unknown")) {
+                        setPostalCode(code || "Unknown");
+                    }
                 } catch (error) {
-                    setPostalCode("Unavailable");
+                    if (postalCode !== "Unavailable") {
+                        setPostalCode("Unavailable");
+                    }
                 }
             }
         }
@@ -37,7 +50,7 @@ export default function LocationButton() {
             >
                 <div className="flex items-center gap-1">
                     <MapPin size={14} />
-                    〒{postalCode}
+                    〒{formatPostalCode(defaultAddress?.postalCode || postalCode)}
                 </div>
                 <span className="mt-1">お届け先を変更する</span>
             </button>
