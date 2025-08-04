@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Header from './components/Header';
-import MobileBottomNavigation from './components/MobileBottomNavigation';
+import MobileBottomNavigation from './components/mobile/MobileBottomNavigation.jsx';
 import MobileSearchPage from './pages/MobileSearchPage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';

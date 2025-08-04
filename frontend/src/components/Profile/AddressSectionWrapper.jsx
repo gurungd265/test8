@@ -81,17 +81,25 @@ export default function AddressSectionWrapper({ onClose, setDefaultAddress }) {
         }
     };
 
-    const handleSetDefaultAddress = async (id) => {
+    async function handleSetDefaultAddress(addressId) {
+        console.log("handleSetDefaultAddress 호출됨, addressId:", addressId);  // ← 이 부분 추가
         try {
-            await userApi.setDefaultAddress(id);
-            const addrList = await userApi.getUserAddresses();
-            setAddresses(addrList);
-            const defAddr = addrList.find((a) => a.isDefault);
-            setDefaultAddress(defAddr);
-        } catch {
-            alert("デフォルト住所の設定に失敗しました");
+            await userApi.setDefaultAddress(addressId);
+            const updatedDefaultAddress = await userApi.getAddressById(addressId);
+            setDefaultAddress({ ...updatedDefaultAddress });
+
+            setAddresses((prevAddresses) => {
+                const updated = prevAddresses.map(addr => ({
+                    ...addr,
+                    isDefault: addr.id === addressId
+                }));
+                console.log("업데이트된 주소 목록:", updated);
+                return updated;
+            });
+        } catch (error) {
+            console.error("デフォルト住所の設定に失敗しました", error);
         }
-    };
+    }
 
     const onDeleteAddress = async (id) => {
         if (!window.confirm("本当にこの住所を削除しますか？")) return;

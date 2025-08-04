@@ -14,6 +14,12 @@ export default function AddressSection({
     addressHasChanges,
     onDeleteAddress,
 }) {
+    function formatPostalCode(postalCode) {
+        if (!postalCode) return "";
+        const digits = postalCode.replace(/\D/g, "");
+        if (digits.length !== 7) return postalCode;
+        return digits.slice(0, 3) + "-" + digits.slice(3);
+    }
     return (
         <div className="bg-white rounded shadow p-6 space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">お届け先住所</h2>
@@ -27,8 +33,8 @@ export default function AddressSection({
                     <div>
                         <p>
                             {addr.isDefault && <span className="text-green-600 font-bold mr-2">[デフォルト]</span>}
-                            〒{addr.postalCode}<br/>
-                            {addr.state} {addr.city} {addr.street} {/* DTO */}
+                            〒{formatPostalCode(addr.postalCode)}<br/>
+                            {addr.prefecture || addr.state} {addr.city} {addr.streetAddress || addr.street}
                         </p>
                     </div>
                     <div className="flex space-x-2">
@@ -40,7 +46,10 @@ export default function AddressSection({
                         </button>
                         {!addr.isDefault && (
                             <button
-                                onClick={() => handleSetDefaultAddress(addr.id)}
+                                onClick={() => {
+                                    console.log("デフォルトに設定 버튼 클릭됨, 주소 ID:", addr.id);
+                                    handleSetDefaultAddress(addr.id);
+                                }}
                                 className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
                             >
                                 デフォルトに設定

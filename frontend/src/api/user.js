@@ -37,6 +37,16 @@ const userApi = {
             }
         },
 
+        getAddressById: async (addressId) => {
+            try {
+                const response = await api.get(`/api/addresses/${addressId}`);
+                return response.data;
+            } catch (error) {
+                console.error("Failed to fetch address by ID:", error);
+                throw error;
+            }
+        },
+
         getUserAddresses: async () => {
             try {
                 const response = await api.get('/api/addresses');
