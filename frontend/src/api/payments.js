@@ -1,10 +1,5 @@
 import api from './index';
 const paymentsApi = {
-    /**
-     * 新規支払いを作成する
-     * @param {object} paymentRequest - { orderId, paymentMethod, amount, transactionId }
-     * @returns {Promise<object>} 成功時は支払いデータ、失敗時はエラー
-     */
     createPayment: async (paymentRequest) => {
         try {
             const response = await api.post('/payments', paymentRequest);

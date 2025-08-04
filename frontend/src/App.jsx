@@ -18,6 +18,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import FilteredProductPage from "./pages/FilteredProductPage.jsx";
 import MyPointPage from './pages/MyPointPage';
 import PaymentRegistrationPage from './pages/PaymentRegistrationPage';
+import ChargePage from './pages/ChargePage';
 
     const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
@@ -84,6 +85,7 @@ function AppContent() {
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/my-points" element={<MyPointPage />} />
                     <Route path="/payment-registration" element={<PaymentRegistrationPage />} />
+                    <Route path="/charge" element={<ChargePage />} />
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}
                     {/* <Route path="/dashboard" element={<DashboardPage />} /> */}

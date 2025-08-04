@@ -4,43 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faMobileAlt } from '@fortawesome/free-solid-svg-icons';
 
-// コンポーネントのインポートパスを修正しました
+import * as paymentRegistrationApi from '../api/paymentRegistration';
 import PaypayRegistrationForm from '../components/payment/PaypayRegistrationForm';
 import CreditCardRegistrationForm from '../components/payment/CreditCardRegistrationForm';
-
-// バックエンドAPIがまだないので、ダミーAPI関数を使用します。
-const mockApi = {
-    registerPaypay: (userId, paypayId) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (paypayId) {
-                    console.log(`PayPayアカウント登録成功: User=${userId}, ID=${paypayId}`);
-                    resolve({ message: 'PayPayアカウントの登録が完了しました。' });
-                } else {
-                    reject({ message: 'PayPay IDは必須項目です。' });
-                }
-            }, 1000);
-        });
-    },
-    registerCreditCard: (userId, cardInfo) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                const { cardNumber, expiryDate, cvv } = cardInfo;
-                if (!cardNumber || cardNumber.length !== 16) {
-                    return reject({ message: '有効な16桁のカード番号を入力してください。' });
-                }
-                if (!expiryDate || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
-                    return reject({ message: '有効な有効期限(MM/YY)を入力してください。' });
-                }
-                if (!cvv || cvv.length !== 3) {
-                    return reject({ message: '有効な3桁のCVVを入力してください。' });
-                }
-                console.log(`クレジットカード登録成功: User=${userId}, Card=${cardNumber}`);
-                resolve({ message: 'クレジットカードの登録が完了しました。' });
-            }, 1500);
-        });
-    }
-};
 
 export default function PaymentRegistrationPage() {
     const { user, isLoggedIn } = useAuth();
@@ -48,15 +14,22 @@ export default function PaymentRegistrationPage() {
     const [selectedMethod, setSelectedMethod] = useState('paypay');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState(null);
+    const [paypayId, setPaypayId] = useState('');
 
-    const handlePaypaySubmit = async ({ paypayId }) => {
+    const handlePaypaySubmit = async () => {
         setIsLoading(true);
         setMessage(null);
         try {
-            const res = await mockApi.registerPaypay(user.email, paypayId);
-            setMessage({ type: 'success', text: res.message });
+            if (!user || !user.email) {
+                throw new Error('ユーザー情報がありません。');
+            }
+            await paymentRegistrationApi.registerPayPay(user.email, paypayId);
+            setMessage({ type: 'success', text: `PayPayアカウント (${paypayId}) の登録が完了しました。` });
+            setTimeout(() => navigate('/mypoint'), 2000);
         } catch (err) {
-            setMessage({ type: 'error', text: err.message });
+            console.error("PayPay登録に失敗しました:", err);
+            const errorMsg = err.response?.data || err.message || '登録中にエラーが発生しました。';
+            setMessage({ type: 'error', text: errorMsg });
         } finally {
             setIsLoading(false);
         }
@@ -66,10 +39,20 @@ export default function PaymentRegistrationPage() {
         setIsLoading(true);
         setMessage(null);
         try {
-            const res = await mockApi.registerCreditCard(user.email, cardInfo);
-            setMessage({ type: 'success', text: res.message });
+            if (!user || !user.email) {
+                throw new Error('ユーザー情報がありません。');
+            }
+            const fullCardInfo = {
+                userId: user.email,
+                ...cardInfo,
+            };
+            await paymentRegistrationApi.registerCard(fullCardInfo);
+            setMessage({ type: 'success', text: 'クレジットカードの登録が完了しました。' });
+            setTimeout(() => navigate('/mypoint'), 2000);
         } catch (err) {
-            setMessage({ type: 'error', text: err.message });
+            console.error("クレジットカード登録に失敗しました:", err);
+            const errorMsg = err.response?.data || err.message || '登録中にエラーが発生しました。';
+            setMessage({ type: 'error', text: errorMsg });
         } finally {
             setIsLoading(false);
         }
@@ -113,11 +96,28 @@ export default function PaymentRegistrationPage() {
 
             <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
                 {selectedMethod === 'paypay' ? (
-                    <PaypayRegistrationForm
-                        onSubmit={handlePaypaySubmit}
-                        isLoading={isLoading}
-                        message={message}
-                    />
+                    <div className="space-y-4">
+                        <label className="block text-gray-700">PayPay ID</label>
+                        <input
+                            type="text"
+                            value={paypayId}
+                            onChange={(e) => setPaypayId(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="あなたのPayPay IDを入力してください"
+                        />
+                        <button
+                            onClick={handlePaypaySubmit}
+                            disabled={isLoading || !paypayId}
+                            className="w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? '登録中...' : 'PayPayを登録する'}
+                        </button>
+                        {message && (
+                            <div className={`mt-4 px-4 py-3 rounded-md text-sm ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {message.text}
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <CreditCardRegistrationForm
                         onSubmit={handleCreditCardSubmit}
@@ -129,10 +129,10 @@ export default function PaymentRegistrationPage() {
 
             <div className="mt-8 text-center">
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/my-points')}
                     className="px-6 py-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
                 >
-                    メインページに戻る
+                    ポイントページに戻る
                 </button>
             </div>
         </div>
