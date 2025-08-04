@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Header from './components/Header';
 import MobileBottomNavigation from './components/MobileBottomNavigation';
@@ -43,11 +43,16 @@ import PaymentRegistrationPage from './pages/PaymentRegistrationPage';
 
 function AppContent() {
 
-  return (
+    const [isCatalogOpen, setIsCatalogOpen] = useState(false); // 상태 선언 추가
+
+    return (
       <>
         {/* AuthContext */}
       <CartProvider>
-        <Header />
+        <Header
+            isCatalogOpen={isCatalogOpen}
+            setIsCatalogOpen={setIsCatalogOpen}
+        />
 
         {/* Routing Area */}
         <main className="min-h-screen pb-20">

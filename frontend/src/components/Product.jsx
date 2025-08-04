@@ -118,12 +118,12 @@ export default function Product({ product }) {
   return (
     <>
       {/* Product */}
-      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative">
+      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative pb-16">
         {/* Add To Wishes */}
         <button
           onClick={handleWishlist}
-          className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-trnsfrorm"
-          title="マイリストに追加"
+          className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-transform"
+          title="ウィッシュリストに追加"
         >
           <Heart
             size={18}

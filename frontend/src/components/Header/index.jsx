@@ -18,6 +18,8 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
 
   const { cartItemCount } = useContext(CartContext);
   const { categories, loading } = useCategory();
+  // console.log("Categories in header:", categories);
+
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');

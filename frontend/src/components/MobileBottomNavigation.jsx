@@ -11,7 +11,7 @@ export default function MobileBottomNavigation({ setIsCatalogOpen }) {
   return (
     <>
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden bg-white fixed bottom-0 w-full flex justify-around items-center py-2 shadow">
+      <nav className="lg:hidden bg-white fixed bottom-0 w-full flex justify-around items-center py-2 shadow z-20">
 
         <Link to={`/`}>
           <img src={logo} alt="Logo" className="h-8"/>
