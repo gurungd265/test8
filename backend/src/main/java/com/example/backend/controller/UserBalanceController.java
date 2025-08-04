@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/balances")
@@ -21,10 +22,17 @@ public class UserBalanceController {
     }
 
     @GetMapping("/find")
-    public ResponseEntity<UserBalance> findBalance(@RequestParam String userId, @RequestParam PaymentMethod paymentMethod){
-        return userBalanceService.findUserBalance(userId, paymentMethod)
-                .map(ResponseEntity::ok)
-                .orElseGet(()->ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    public ResponseEntity<UserBalance> findBalance(@RequestParam String userId, @RequestParam String paymentMethod){
+        try {
+            // リクエストパラメータをStringで受け取り、ここでenumに変換
+            PaymentMethod method = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+            Optional<UserBalance> userBalance = userBalanceService.findUserBalance(userId, method);
+            return userBalance.map(ResponseEntity::ok)
+                    .orElseGet(()->ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (IllegalArgumentException e) {
+            // 無効なpaymentMethodが指定された場合
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @PostMapping("/Charge")

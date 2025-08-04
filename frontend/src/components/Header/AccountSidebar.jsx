@@ -44,20 +44,6 @@ export default function AccountSidebar({ user, onClose, onLogout }) {
                                         お気に入り
                                     </Link>
                                     <Link
-                                    	to="/my-points"
-                                        className="block p-3 hover:bg-gray-100 rounded-lg"
-                                        onClick={onClose}
-                                        >
-                                        	マイポイント
-                                    </Link>
-                                    <Link
-                                        to="/payment-registration"
-                                        className="block p-3 hover:bg-gray-100 rounded-lg"
-                                        onClick={onClose}
-                                    >
-                                        決済手段登録
-                                    </Link>
-                                    <Link
                                         to="/profile"
                                         className="block p-3 hover:bg-gray-100 rounded-lg"
                                         onClick={onClose}

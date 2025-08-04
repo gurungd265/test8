@@ -26,7 +26,7 @@ export const chargePoints = async (userId, method, amount) => {
     const payload = { userId: userId, paymentMethod: paymentMethod, amount: amount };
 
     try {
-        const response = await api.post('/api/balances/charge', payload);
+        const response = await api.post('/api/balances/Charge', payload);
         console.log(`[API] チャージ成功:`, response.data);
         return response.data;
     } catch (error) {
