@@ -27,6 +27,9 @@ public class Card {
     @Column(nullable = false)
     private String expiryDate;
 
+    @Column(nullable = false)
+    private int availableCredit;
+
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -40,5 +43,22 @@ public class Card {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void addCredit(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("チャージ金額は0より大きくなければなりません。");
+        }
+        this.availableCredit += amount;
+    }
+
+    public void subtractCredit(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("減額金額は0より大きくなければなりません。");
+        }
+        if (this.availableCredit < amount) {
+            throw new IllegalStateException("利用可能残高が足りません。");
+        }
+        this.availableCredit -= amount;
     }
 }

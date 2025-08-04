@@ -5,13 +5,22 @@ import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
 // このコンポーネントは、クレジットカード登録フォームのUIとロジックをカプセル化します。
 // 親コンポーネントから onSubmit, isLoading, message などのプロパティを受け取ります。
 export default function CreditCardRegistrationForm({ onSubmit, isLoading, message }) {
-    const [cardNumber, setCardNumber] = useState('');
-    const [expiryDate, setExpiryDate] = useState('');
-    const [cvv, setCvv] = useState('');
+    const [cardInfo, setCardInfo] = useState({
+        cardCompanyName: '',
+        cardNumber: '',
+        cardHolderName: '',
+        expiryDate: '',
+        cvv: ''
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setCardInfo(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit({ cardNumber, expiryDate, cvv });
+        onSubmit(cardInfo);
     };
 
     return (
@@ -26,12 +35,39 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
                 </div>
             )}
             <div className="mb-4">
+                <label htmlFor="cardCompanyName" className="block text-sm font-medium text-gray-700 mb-2">カード会社名</label>
+                <input
+                    type="text"
+                    id="cardCompanyName"
+                    name="cardCompanyName"
+                    value={cardInfo.cardCompanyName}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="例: Visa, Mastercard"
+                    required
+                />
+            </div>
+            <div className="mb-4">
+                <label htmlFor="cardHolderName" className="block text-sm font-medium text-gray-700 mb-2">カード名義人名</label>
+                <input
+                    type="text"
+                    id="cardHolderName"
+                    name="cardHolderName"
+                    value={cardInfo.cardHolderName}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="例: TARO YAMADA"
+                    required
+                />
+            </div>
+            <div className="mb-4">
                 <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-2">カード番号</label>
                 <input
                     type="text"
                     id="cardNumber"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
+                    name="cardNumber"
+                    value={cardInfo.cardNumber}
+                    onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="16桁のカード番号"
                     maxLength="16"
@@ -44,8 +80,9 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
                     <input
                         type="text"
                         id="expiryDate"
-                        value={expiryDate}
-                        onChange={(e) => setExpiryDate(e.target.value)}
+                        name="expiryDate"
+                        value={cardInfo.expiryDate}
+                        onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="MM/YY"
                         maxLength="5"
@@ -57,8 +94,9 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
                     <input
                         type="text"
                         id="cvv"
-                        value={cvv}
-                        onChange={(e) => setCvv(e.target.value)}
+                        name="cvv"
+                        value={cardInfo.cvv}
+                        onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="3桁"
                         maxLength="3"

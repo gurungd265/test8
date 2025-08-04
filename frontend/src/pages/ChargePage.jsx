@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCoins, faCreditCard, faMobileAlt } from '@fortawesome/free-solid-svg-icons';
+import { faCoins, faCreditCard, faMobileAlt, faArrowLeft, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import * as virtualPaymentsApi from '../api/virtualPayments';
 import * as paymentRegistrationApi from '../api/paymentRegistration';
 
@@ -13,25 +13,46 @@ export default function ChargePage() {
     const [chargeAmount, setChargeAmount] = useState(1000);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [paypayIsRegistered, setPaypayIsRegistered] = useState(null);
-    const [creditCardIsRegistered, setCreditCardIsRegistered] = useState(null);
+    const [paypayIsRegistered, setPaypayIsRegistered] = useState(false);
+    const [creditCardIsRegistered, setCreditCardIsRegistered] = useState(false);
+    const [statusLoading, setStatusLoading] = useState(true);
 
     const checkRegistrationStatus = async () => {
-        if (!user || !user.email) return;
+        if (!user || !user.email) {
+            setStatusLoading(false);
+            return;
+        }
+
+        let paypayRegistered = false;
+        let creditCardRegistered = false;
 
         try {
-            await virtualPaymentsApi.fetchPayPayBalance(user.email);
-            setPaypayIsRegistered(true);
+            const paypayAccount = await paymentRegistrationApi.fetchRegisteredPayPay(user.email);
+            if (paypayAccount && paypayAccount.paypayId) {
+                paypayRegistered = true;
+            }
         } catch (e) {
-            setPaypayIsRegistered(false);
+            console.error("PayPay登録状態の確認に失敗しました:", e);
+        }
+        setPaypayIsRegistered(paypayRegistered);
+        if (paypayRegistered) {
+             setSelectedMethod('paypay');
         }
 
         try {
-            await paymentRegistrationApi.checkCreditCard(user.email);
-            setCreditCardIsRegistered(true);
+            const cardInfo = await paymentRegistrationApi.fetchRegisteredCard(user.email);
+            if (cardInfo && cardInfo.maskedCardNumber) {
+                creditCardRegistered = true;
+            }
         } catch (e) {
-            setCreditCardIsRegistered(false);
+            console.error("クレジットカード登録状態の確認に失敗しました:", e);
         }
+        setCreditCardIsRegistered(creditCardRegistered);
+        if (!paypayRegistered && creditCardRegistered) {
+             setSelectedMethod('creditCard');
+        }
+
+        setStatusLoading(false);
     };
 
     useEffect(() => {
@@ -56,26 +77,26 @@ export default function ChargePage() {
 
         try {
             if (selectedMethod === 'paypay') {
-                if (paypayIsRegistered === false) {
-                    alert('PayPayアカウントが登録されていません。');
-                    navigate('/payment-registration');
+                if (!paypayIsRegistered) {
+                    alert('PayPayアカウントが登録されていません。登録ページへ移動します。');
+                    navigate('/payment-registration?method=paypay');
                     return;
                 }
                 await virtualPaymentsApi.chargePointsWithPayPay(user.email, chargeAmount);
                 alert(`${chargeAmount}円分のポイントをPayPayでチャージしました。`);
             } else if (selectedMethod === 'creditCard') {
-                 if (creditCardIsRegistered === false) {
-                    alert('クレジットカードが登録されていません。');
-                    navigate('/payment-registration');
+                 if (!creditCardIsRegistered) {
+                    alert('クレジットカードが登録されていません。登録ページへ移動します。');
+                    navigate('/payment-registration?method=creditCard');
                     return;
                 }
                 await virtualPaymentsApi.chargePointsWithCreditCard(user.email, chargeAmount);
                 alert(`${chargeAmount}円分のポイントをクレジットカードでチャージしました。`);
             }
-            navigate('/mypoint');
+            navigate('/my-points');
         } catch (err) {
             console.error("チャージに失敗しました:", err);
-            const errorMsg = err.response?.data || 'チャージ中にエラーが発生しました。';
+            const errorMsg = err.response?.data?.error || 'チャージ中にエラーが発生しました。';
             setError(errorMsg);
         } finally {
             setIsLoading(false);
@@ -84,67 +105,83 @@ export default function ChargePage() {
 
     if (!isLoggedIn) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl text-center text-gray-700">
+            <div className="container mx-auto px-4 py-12 max-w-2xl text-center text-gray-700">
                 <p>このページにアクセスするにはログインが必要です。</p>
-                <button onClick={() => navigate('/login')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                <button onClick={() => navigate('/login')} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     ログインページへ
                 </button>
             </div>
         );
     }
 
-    if (paypayIsRegistered === null || creditCardIsRegistered === null) {
+    if (statusLoading) {
          return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl text-center text-gray-700">
-                <div className="text-center py-10">登録状況を確認中...</div>
+            <div className="container mx-auto px-4 py-12 max-w-2xl">
+                <div className="flex justify-center items-center h-48 bg-white rounded-xl shadow-2xl border border-gray-100">
+                     <div className="text-lg font-medium text-gray-500 animate-pulse">登録状況を確認中...</div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <h1 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-4">ポイントチャージ</h1>
+        <div className="container mx-auto px-4 py-12 max-w-2xl">
+            <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 space-y-8">
+                <h1 className="text-3xl font-bold text-gray-800 border-b pb-4">ポイントチャージ</h1>
 
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                    <span className="block sm:inline">{error}</span>
-                </div>
-            )}
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                        <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
 
-            <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200">
-                <div className="mb-6">
-                    <h2 className="text-xl font-semibold text-gray-700 mb-4">チャージ方法を選択</h2>
+                {/* 탭 버튼 */}
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-700">チャージ方法を選択</h2>
                     <div className="flex justify-center gap-4">
                         <button
                             onClick={() => setSelectedMethod('paypay')}
-                            className={`px-6 py-3 rounded-md font-semibold transition-colors flex items-center gap-2 ${
-                                selectedMethod === 'paypay' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            className={`flex-1 px-6 py-4 rounded-xl font-bold transition-colors duration-200 flex items-center justify-center gap-3 ${
+                                selectedMethod === 'paypay' && paypayIsRegistered
+                                    ? 'bg-blue-600 text-white shadow-lg'
+                                    : paypayIsRegistered
+                                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                             }`}
                             disabled={!paypayIsRegistered}
                         >
-                            <FontAwesomeIcon icon={faMobileAlt} />
+                            <FontAwesomeIcon icon={faMobileAlt} className="text-xl" />
                             <span>PayPay</span>
+                            {paypayIsRegistered ? <FontAwesomeIcon icon={faCheckCircle} className="text-green-400" /> : <span className="text-sm font-normal">(未登録)</span>}
                         </button>
                         <button
                             onClick={() => setSelectedMethod('creditCard')}
-                            className={`px-6 py-3 rounded-md font-semibold transition-colors flex items-center gap-2 ${
-                                selectedMethod === 'creditCard' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            className={`flex-1 px-6 py-4 rounded-xl font-bold transition-colors duration-200 flex items-center justify-center gap-3 ${
+                                selectedMethod === 'creditCard' && creditCardIsRegistered
+                                    ? 'bg-blue-600 text-white shadow-lg'
+                                    : creditCardIsRegistered
+                                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                             }`}
                             disabled={!creditCardIsRegistered}
                         >
-                            <FontAwesomeIcon icon={faCreditCard} />
+                            <FontAwesomeIcon icon={faCreditCard} className="text-xl" />
                             <span>クレジットカード</span>
+                            {creditCardIsRegistered ? <FontAwesomeIcon icon={faCheckCircle} className="text-green-400" /> : <span className="text-sm font-normal">(未登録)</span>}
                         </button>
                     </div>
-                    <div className="text-center text-sm text-gray-500 mt-2">
-                        {!paypayIsRegistered && <p>PayPayは未登録です。決済手段登録ページで登録してください。</p>}
-                        {!creditCardIsRegistered && <p>クレジットカードは未登録です。決済手段登録ページで登録してください。</p>}
-                    </div>
+                    {(!paypayIsRegistered || !creditCardIsRegistered) && (
+                        <p className="text-sm text-center text-gray-500 mt-2">
+                            未登録の決済手段は選択できません。
+                            <Link to="/payment-registration" className="text-blue-600 underline hover:no-underline ml-1">登録はこちら</Link>
+                        </p>
+                    )}
                 </div>
 
-                <div>
-                    <h2 className="text-xl font-semibold text-gray-700 mb-4">チャージ金額</h2>
-                    <p className="text-sm text-gray-500 mb-4">
+                {/* 충전 금액 입력 */}
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-700">チャージ金額</h2>
+                    <p className="text-sm text-gray-500">
                         ※ 1000ポイント単位でチャージできます。
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -152,28 +189,29 @@ export default function ChargePage() {
                             type="number"
                             value={chargeAmount}
                             onChange={(e) => setChargeAmount(parseInt(e.target.value))}
-                            className="flex-grow p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-grow p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
                             min="1000"
                             step="1000"
                         />
                         <button
                             onClick={handleCharge}
                             disabled={isLoading || (selectedMethod === 'paypay' && !paypayIsRegistered) || (selectedMethod === 'creditCard' && !creditCardIsRegistered)}
-                            className="w-full sm:w-auto px-6 py-3 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full sm:w-auto px-8 py-4 bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? 'チャージ中...' : 'チャージする'}
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <div className="mt-8 text-center">
-                <button
-                    onClick={() => navigate('/my-points')}
-                    className="px-6 py-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                >
-                    ポイントページに戻る
-                </button>
+                <div className="pt-6 border-t border-gray-200 text-center">
+                    <button
+                        onClick={() => navigate('/my-points')}
+                        className="inline-flex items-center px-6 py-2 border border-gray-300 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition-colors"
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                        ポイントページに戻る
+                    </button>
+                </div>
             </div>
         </div>
     );
