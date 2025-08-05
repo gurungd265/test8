@@ -63,7 +63,7 @@ public class WishlistService {
             wishlist.setDeletedAt(LocalDateTime.now());
             wishlistRepository.save(wishlist);
         } else {
-            throw new EntityNotFoundException("指定された商品がウィッシュリストに見つからないか、既に削除されています。");
+            throw new EntityNotFoundException("指定された商品がお気に入りリストに見つからないか、既に削除されています。");
         }
     }
 

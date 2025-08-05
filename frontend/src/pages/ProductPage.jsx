@@ -18,7 +18,7 @@ export default function ProductPage() {
     const productRating = product?.rating ?? 0;
     const productReviewCount = product?.reviewCount ?? 0;
     const { fetchCartCount } = useContext(CartContext);
-    const [wished, setWished] = useState(false); // マイリストに追加するための状態
+    const [wished, setWished] = useState(false); // お気に入りに追加するための状態
     const {isLoggedIn,loading: authLoading} = useAuth();
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export default function ProductPage() {
                 const isProductWished = wishlistItems.some(item => item.productId === parseInt(id));
                 setWished(isProductWished);
             } catch (err) {
-                console.error("ウィッシュリストの状態を確認できませんでした。", err);
+                console.error("お気に入りリストの状態を確認できませんでした。", err);
             }
         };
 
@@ -44,7 +44,7 @@ export default function ProductPage() {
         e.preventDefault();
 
         if (!isLoggedIn) {
-            alert("ウィッシュリスト操作にはログインが必要です。");
+            alert("お気に入りリスト操作にはログインが必要です。");
             return;
         }
 
@@ -55,18 +55,18 @@ export default function ProductPage() {
             if (!previousWished) {
                 // 추가 요청
                 await wishlistApi.addWishlistItem(parseInt(id));
-                console.log(`${product.name}をウィッシュリストに追加しました。`);
+                console.log(`${product.name}をお気に入りリストに追加しました。`);
             } else {
                 // 제거 요청
                 await wishlistApi.removeWishlistItemByProductId(parseInt(id));
-                console.log(`${product.name}をウィッシュリストから削除しました。`);
+                console.log(`${product.name}をお気に入りリストから削除しました。`);
             }
         } catch (err) {
-            console.error("ウィッシュリスト操作に失敗しました。", err);
+            console.error("お気に入りリスト操作に失敗しました。", err);
             setWished(previousWished); // 롤백
 
             const message = err.response?.data || "不明なエラーが発生しました。";
-            alert(`ウィッシュリスト操作中にエラーが発生しました: ${message}`);
+            alert(`お気に入りリスト操作中にエラーが発生しました: ${message}`);
         }
     };
 
@@ -191,7 +191,7 @@ export default function ProductPage() {
                         <button
                             onClick={handleWishlist}
                             className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-transform"
-                            title="マイリストに追加"
+                            title="お気に入りに追加"
                         >
                             <Heart
                                 size={18}

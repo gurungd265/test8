@@ -1,11 +1,13 @@
 import React, {useState, useEffect, useCallback, useContext} from "react";
 import userApi from "../../api/user";
-import authApi from "../../api/auth";
 import { useAuth } from "../../contexts/AuthContext";
 
 import ProfileInfoSection from "../Profile/ProfileInfoSection";
 import AddressSection from "../Profile/AddressSection";
 import DeleteConfirmationModal from "../Profile/DeleteConfirmationModal";
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 // このコンポーネントは、元の ProfilePage.jsx のプロファイルと住所管理に関するすべてのロジックを含みます。
 export default function ProfileManagementSection({ onLogout }) {
@@ -283,14 +285,16 @@ export default function ProfileManagementSection({ onLogout }) {
                 onDeleteAddress={confirmDeleteAddress}
             />
 
-            <div className="flex justify-end mt-6">
+            <div className="pt-6 border-t border-gray-200 text-right">
                 <button
                     onClick={onLogout}
-                    className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                    className="inline-flex items-center px-6 py-2 border border-red-500 text-red-500 rounded-full font-medium hover:bg-red-50 transition-colors duration-200"
                 >
+                    <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
                     ログアウト
                 </button>
             </div>
+
             {/* 削除確認モーダルレンダリング  */}
             <DeleteConfirmationModal
                 show={showDeleteConfirmationModal}

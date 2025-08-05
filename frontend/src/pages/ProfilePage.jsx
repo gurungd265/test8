@@ -91,7 +91,7 @@ export default function ProfilePage() {
                         currentView === 'wallet' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500'
                     }`}
                 >
-                    My Wallet
+                    ウォレット
                 </button>
             </div>
 

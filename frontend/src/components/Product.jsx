@@ -51,7 +51,7 @@ export default function Product({ product }) {
       }
     }
   };
-  const [wished, setWished] = useState(false); // マイリストに追加するための状態
+  const [wished, setWished] = useState(false); // お気に入りに追加するための状態
   const { isLoggedIn, loading: authLoading } = useAuth();
   useEffect(() => {
     const checkWishStatus = async () => {
@@ -66,7 +66,7 @@ export default function Product({ product }) {
         );
         setWished(isProductWished);
       } catch (err) {
-        console.error("ウィッシュリストの状態を確認できませんでした。", err);
+        console.error("お気に入りリストの状態を確認できませんでした。", err);
       }
     };
     checkWishStatus();
@@ -75,7 +75,7 @@ export default function Product({ product }) {
   const handleWishlist = async (e) => {
     e.preventDefault();
     if (!isLoggedIn) {
-      alert("ウィッシュリスト操作にはログインが必要です。");
+      alert("お気に入りリスト操作にはログインが必要です。");
       return;
     }
 
@@ -85,13 +85,13 @@ export default function Product({ product }) {
     try {
       if (!previousWished) {
         await wishlistApi.addWishlistItem(id);
-        console.log(`${name}をウィッシュリストに追加しました。`);
+        console.log(`${name}をお気に入りリストに追加しました。`);
       } else {
         await wishlistApi.removeWishlistItemByProductId(id);
-        console.log(`${name}をウィッシュリストから削除しました。`);
+        console.log(`${name}をお気に入りリストから削除しました。`);
       }
     } catch (err) {
-      console.error("ウィッシュリスト操作に失敗しました。", err);
+      console.error("お気に入りリスト操作に失敗しました。", err);
       setWished(previousWished);
       if (
         err.response &&
@@ -99,12 +99,12 @@ export default function Product({ product }) {
         err.response.data.message
       ) {
         alert(
-          `ウィッシュリスト操作中にエラーが発生しました: ${err.response.data.message}`
+          `お気に入りリスト操作中にエラーが発生しました: ${err.response.data.message}`
         );
       } else if (err.response && err.response.status === 401) {
-        alert("ウィッシュリスト操作にはログインが必要です。");
+        alert("お気に入りリスト操作にはログインが必要です。");
       } else {
-        alert("ウィッシュリスト操作中に不明なエラーが発生しました。");
+        alert("お気に入りリスト操作中に不明なエラーが発生しました。");
       }
     }
   };
@@ -123,7 +123,7 @@ export default function Product({ product }) {
         <button
           onClick={handleWishlist}
           className="absolute bg-white rounded-full top-2 right-2 z-10 w-9 h-9 flex items-center justify-center hover:scale-110 transition-transform"
-          title="ウィッシュリストに追加"
+          title="お気に入りリストに追加"
         >
           <Heart
             size={18}
