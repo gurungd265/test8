@@ -79,6 +79,9 @@ export default function AddressSectionWrapper({ onClose, setDefaultAddress }) {
     async function handleSetDefaultAddress(addressId) {
         console.log("handleSetDefaultAddress 호출됨, addressId:", addressId);  // ← 이 부분 추가
         try {
+            // api 인스턴스 헤더 확인 (Authorization 포함되어 있는지)
+            console.log("Authorization 헤더:", api.defaults.headers.common.Authorization);
+
             await userApi.setDefaultAddress(addressId);
             const updatedDefaultAddress = await userApi.getAddressById(addressId);
             setDefaultAddress({ ...updatedDefaultAddress });

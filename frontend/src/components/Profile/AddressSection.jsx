@@ -38,12 +38,6 @@ export default function AddressSection({
                         </p>
                     </div>
                     <div className="flex space-x-2">
-                        <button
-                            onClick={() => startEditingAddress(addr)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                        >
-                            編集
-                        </button>
                         {!addr.isDefault && (
                             <button
                                 onClick={() => {
@@ -52,9 +46,15 @@ export default function AddressSection({
                                 }}
                                 className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
                             >
-                                デフォルトに設定
+                                選択
                             </button>
                         )}
+                        <button
+                            onClick={() => startEditingAddress(addr)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                        >
+                            修正
+                        </button>
                         {/* 削除ボタン  */}
                             <button
                                 onClick={() => onDeleteAddress(addr.id)}

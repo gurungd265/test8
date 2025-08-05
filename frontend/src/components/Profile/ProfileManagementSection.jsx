@@ -155,14 +155,9 @@ export default function ProfileManagementSection({ onLogout }) {
 
             await fetchUserData();
 
-            setAddressHasChanges(false);
-            setIsEditingAddress(false);
-            setEditedAddress(initialAddress);
-            setError(null);
-            alert("住所情報を保存しました！");
+            alert("デフォルト住所を設定しました。");
         } catch (error) {
             console.error("住所の保存に失敗しました。", error);
-            setError("住所の保存に失敗しました。");
             alert("住所の保存に失敗しました。");
         } finally {
             setLoadingData(false);
@@ -173,6 +168,7 @@ export default function ProfileManagementSection({ onLogout }) {
         try {
             setLoadingData(true);
             await userApi.setDefaultAddress(addressId);
+
             await fetchUserData();
             alert("デフォルト住所を設定しました。");
         } catch (error) {
