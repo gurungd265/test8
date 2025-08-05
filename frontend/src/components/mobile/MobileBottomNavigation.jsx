@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User, Heart, Search } from "lucide-react";
 import logo from "../../assets/Logo.png";
 import AccountSidebar from "../Header/AccountSidebar.jsx";
@@ -7,6 +7,8 @@ import AccountSidebar from "../Header/AccountSidebar.jsx";
 export default function MobileBottomNavigation({ user, onLogout }) {
   const [isAccountSidebarOpen, setIsAccountSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const navigate = useNavigate();
 
   // 화면 크기 감지
   useEffect(() => {
@@ -26,6 +28,17 @@ export default function MobileBottomNavigation({ user, onLogout }) {
 
   const closeAccountSidebar = () => {
     setIsAccountSidebarOpen(false);
+  };
+
+  // 프로필 버튼 클릭 핸들러
+  const handleProfileClick = () => {
+    if (!user) {
+      // 로그인 안 된 상태면 /login 이동
+      navigate("/login");
+    } else {
+      // 로그인 됐으면 사이드바 열기
+      openAccountSidebar();
+    }
   };
 
   // 모바일이 아닐 때는 아무것도 렌더하지 않음
@@ -51,8 +64,8 @@ export default function MobileBottomNavigation({ user, onLogout }) {
             </Link>
           </button>
 
-          {/* 프로필 버튼 - 클릭 시 사이드바 열림 */}
-          <button onClick={openAccountSidebar}>
+          {/* 프로필 버튼 - 클릭 시 로그인 상태 따라 처리 */}
+          <button onClick={handleProfileClick}>
             <User />
           </button>
         </nav>
