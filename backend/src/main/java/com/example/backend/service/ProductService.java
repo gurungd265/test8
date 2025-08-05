@@ -69,10 +69,15 @@ public class ProductService {
     }
 
     // 개별 상품 조회 (상세페이지용)
-    public ProductDto getProductById(Long id) {
+    public Product getProductById(Long id) {
         Product product = productRepository.findByIdWithImages(id)
-                .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
-        return toDto(product);
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        // 속성 따로 조회해서 세팅 (Lazy 초기화 방지용)
+        productRepository.findByIdWithCharacteristics(id)
+                .ifPresent(pWithChars -> product.setCharacteristics(pWithChars.getCharacteristics()));
+
+        return product;
     }
 
     // 상품 검색 (부분 일치, 대소문자 무시) + 페이징처리

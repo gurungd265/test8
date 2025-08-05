@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import productsApi from '../api/products';
 import cartApi from '../api/cart';
@@ -20,6 +20,32 @@ export default function ProductPage() {
     const { fetchCartCount } = useContext(CartContext);
     const [wished, setWished] = useState(false); // お気に入りに追加するための状態
     const {isLoggedIn,loading: authLoading} = useAuth();
+
+
+    // 1. 상태 추가: 옵션 선택 저장 (예: { Color: 'ブラック', Size: 'Mサイズ' })
+    const [selectedOptions, setSelectedOptions] = useState({});
+
+    // 2. 옵션 선택 핸들러
+    const handleOptionChange = (key, value) => {
+        setSelectedOptions(prev => {
+            const updated = { ...prev, [key]: value };
+            console.log("선택된 옵션:", updated); // ✅ 여기에
+            return updated;
+        });
+    };
+    // 3. 옵션 데이터를 key별로 그룹핑하는 헬퍼 함수
+    const groupedOptionValues = useMemo(() => {
+        if (!product?.characteristics) return {};
+
+        return product.characteristics.reduce((acc, item) => {
+            const key = item.characteristicName || 'Unknown';
+            if (!acc[key]) acc[key] = [];
+            if (!acc[key].includes(item.characteristicValue)) {
+                acc[key].push(item.characteristicValue);
+            }
+            return acc;
+        }, {});
+    }, [product]);
 
     useEffect(() => {
         const checkWishStatus = async () => {
@@ -70,13 +96,14 @@ export default function ProductPage() {
         }
     };
 
-   useEffect(() => {
+    useEffect(() => {
+        console.log("useEffect 실행됨: 상품 데이터 요청 시작, id =", id);
         const fetchProduct = async () => {
             try {
+                console.log("fetchProduct 함수 실행");
                 setLoading(true);
                 setError(null);
 
-                // IDを確認
                 const productIdNum = parseInt(id);
                 if (isNaN(productIdNum)) {
                     setError('無効な商品IDです。');
@@ -84,7 +111,17 @@ export default function ProductPage() {
                     return;
                 }
 
+                console.log("API 호출 시작 - productId:", productIdNum);
                 const data = await productsApi.getProductById(productIdNum);
+                console.log("API 응답:", data);
+
+                console.log("product.id:", data?.id);
+                if (data.characteristics && data.characteristics.length > 0) {
+                    console.log("✔ characteristics 데이터:", data.characteristics);
+                } else {
+                    console.log("⚠ characteristics 없음 또는 비어 있음");
+                }
+
                 setProduct(data);
 
                 if (data && data.images && data.images.length > 0 && mainImage === '') {
@@ -93,16 +130,16 @@ export default function ProductPage() {
             } catch (err) {
                 console.error(`商品ID ${id}の読み込みに失敗しました:`, err);
                 if (err.response && err.response.status === 404) {
-                    setError('商品を見つけることができませんでした。'); // (404 Not Found)
+                    setError('商品を見つけることができませんでした。');
                 } else {
                     setError('商品情報を読み込むことができませんでした。サーバーの状態を確認してください。');
                 }
             } finally {
-                setLoading(false); // success or fail
+                setLoading(false);
             }
         };
         fetchProduct();
-    }, [id]); //idが変更されるたびに再実行
+    }, [id]);
 
     if (loading) {
         return (
@@ -268,36 +305,22 @@ export default function ProductPage() {
                         </div>
                     </div>
 
-                    {/* Color (another Options table need. now hardcoding) */}
-                    <div>
-                        <label htmlFor="color-select" className="block text-sm font-medium">
-                            色
-                            <select id="color-select" className="w-full border rounded p-2">
-                                <option>ブラック</option>
-                                <option>ホワイト</option>
-                                <option>ブルー</option>
+                    {/*/!* Characteristic *!/*/}
+                    {Object.entries(groupedOptionValues).map(([optionGroup, values]) => (
+                        <div key={optionGroup} className="mb-4">
+                            <label className="block font-medium mb-1">{optionGroup}</label>
+                            <select
+                                className="w-full border rounded p-2"
+                                value={selectedOptions[optionGroup] || ''}
+                                onChange={e => handleOptionChange(optionGroup, e.target.value)}
+                            >
+                                <option value="">選択してください</option>
+                                {values.map((value, i) => (
+                                    <option key={i} value={value}>{value}</option>
+                                ))}
                             </select>
-                        </label>
-                    </div>
-
-                    {/* Size (another Options table need. now hardcoding) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            サイズ
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[
-                                "24cm", "24,5cm", "25cm", "25,5cm", "26cm", "26,5cm", "27cm", "27,5cm", "28cm",
-                            ].map((size) => (
-                                <button
-                                    key={size}
-                                    className="border p-2 rounded hover:bg-gray-100"
-                                >
-                                    {size}
-                                </button>
-                            ))}
                         </div>
-                    </div>
+                    ))}
 
                     {/* quantity select */}
                     <div className="mb-6 flex items-center gap-4">

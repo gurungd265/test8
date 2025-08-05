@@ -34,10 +34,11 @@ public class ProductController {
     // 상품 개별 조회 (상세페이지용)
     @GetMapping("/{id}")
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        ProductDto dto = productService.getProductById(id);
-        if (dto == null) {
+        Product product = productService.getProductById(id);
+        if (product == null) {
             return ResponseEntity.notFound().build();
         }
+        ProductDto dto = ProductDto.fromEntity(product);
         return ResponseEntity.ok(dto);
     }
     

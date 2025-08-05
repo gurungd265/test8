@@ -54,7 +54,7 @@ public class Product {
     private Category category;
 
     // ============================= ProductCharacteristic =============================
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "product")
     private List<ProductCharacteristic> characteristics;
 
     // ================================= ProductReview =================================

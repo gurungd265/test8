@@ -15,9 +15,11 @@ api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('jwtToken');
     const tokenType = localStorage.getItem('tokenType')||'Bearer';
+    console.log('Sending request to:', config.url);
+    console.log('Token:', token);
     if (token) {
       config.headers.Authorization = `${tokenType} ${token}`;
-
+      console.log('Authorization header set:', config.headers.Authorization);
     }
     return config;
   },

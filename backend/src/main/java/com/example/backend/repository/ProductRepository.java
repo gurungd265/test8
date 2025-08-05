@@ -6,6 +6,7 @@ import com.example.backend.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,9 +29,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             countQuery = "SELECT COUNT(p) FROM Product p WHERE p.stockQuantity > :stock")
     Page<Product> findByStockQuantityGreaterThanWithImages(@Param("stock") int stock, Pageable pageable);
 
-    // 개별 상품 상세페이지용 + 이미지
+    // 상품 상세 페이지용 개별 조회
+
+    // 1) 이미지만 fetch join
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productImages WHERE p.id = :id")
     Optional<Product> findByIdWithImages(@Param("id") Long id);
+
+    // 2) 속성만 fetch join
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.characteristics WHERE p.id = :id")
+    Optional<Product> findByIdWithCharacteristics(@Param("id") Long id);
 
     // 상품 검색(부분 일치, 대소문자 무시) + 페이징 + 이미지
     @Query(value = "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productImages WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))",

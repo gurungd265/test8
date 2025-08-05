@@ -14,7 +14,7 @@ const productsApi = {
     getProductById: async (productId) => {
         try {
             const response = await api.get(`/api/products/${productId}`);
-            return response.data;
+            return response.data;  // 백엔드에서 보내준 ProductDto JSON
         } catch (error) {
             console.error(`商品 ${productId} 読み込み失敗:`, error);
             throw error;
