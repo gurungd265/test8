@@ -62,12 +62,7 @@ export default function AddressSectionWrapper({ onClose, setDefaultAddress }) {
 
     const handleAddressSave = async () => {
         try {
-            let savedAddress;
-            if (editedAddress.id) {
-                savedAddress = await userApi.updateAddress(editedAddress);
-            } else {
-                savedAddress = await userApi.createAddress(editedAddress);
-            }
+            const savedAddress = await userApi.saveUserAddress(editedAddress);
             // 주소 리스트 갱신
             const addrList = await userApi.getUserAddresses();
             setAddresses(addrList);
@@ -104,11 +99,11 @@ export default function AddressSectionWrapper({ onClose, setDefaultAddress }) {
     const onDeleteAddress = async (id) => {
         if (!window.confirm("本当にこの住所を削除しますか？")) return;
         try {
-            await userApi.deleteAddress(id);
+            await userApi.deleteUserAddress(id);
             const addrList = await userApi.getUserAddresses();
             setAddresses(addrList);
-            const defAddr = addrList.find((a) => a.isDefault);
-            setDefaultAddress(defAddr);
+            const defAddr = addrList.find((a) => a.isDefault) || null;
+            setDefaultAddress(defAddr); // null을 전달 가능하도록
         } catch {
             alert("住所の削除に失敗しました");
         }

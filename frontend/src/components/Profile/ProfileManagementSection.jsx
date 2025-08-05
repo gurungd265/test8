@@ -68,11 +68,11 @@ export default function ProfileManagementSection({ onLogout }) {
             });
             setAddresses(addressList);
 
-            const defaultAddress = addressList.find(addr => addr.isDefault) || addressList[0];
+            const defaultAddress = addressList.find(addr => addr.isDefault) || null;
             if (defaultAddress) {
                 setEditedAddress({
                     id: defaultAddress.id,
-                    postalCode: defaultAddress.postalCode || "",
+                    postalCode: defaultAddress.postalCode|| "",
                     prefecture: defaultAddress.state || "",
                     city: defaultAddress.city || "",
                     streetAddress: defaultAddress.street || "",
@@ -81,6 +81,7 @@ export default function ProfileManagementSection({ onLogout }) {
                 setDefaultAddress(defaultAddress);
             } else {
                 setEditedAddress(initialAddress);
+                setDefaultAddress(null); // ❗ defaultAddress를 명시적으로 null로
             }
 
             setError(null);
