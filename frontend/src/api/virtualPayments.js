@@ -86,6 +86,34 @@ export const processVirtualPayment = async (userId, method, totalAmount) => {
     }
 };
 
+export const processVirtualPayment = async (userId, method, totalAmount) => {
+    console.log(`[API] 仮想決済リクエスト: ${method}, 金額: ${totalAmount} (ユーザーID: ${userId})`);
+    const payload = { userId: userId, amount: totalAmount };
+
+    if (method.toUpperCase() === 'PAYPAY_REFUND') {
+        const response = await refundPointsToPayPay(userId, totalAmount);
+        console.log(`[API] 仮想決済成功:`, response);
+        return response;
+    } else if (method === 'point') {
+        console.log(`[API] ポイント決済: バックエンドでのポイント消費は注文確定時に行われます。`);
+
+        return { message: "ポイント決済処理はフロントエンドで完了しました。" };
+    } else if (method === 'paypay') {
+        console.log(`[API] PayPay仮想残高からの支払い: 金額: ${totalAmount} (ユーザーID: ${userId})`);
+        const response = await api.post('/api/balances/deduct/paypay', payload);
+        return response.data;
+    } else if (method === 'virtual_credit_card') {
+        console.log(`[API] クレジットカード仮想残高からの支払い: 金額: ${totalAmount} (ユーザーID: ${userId})`);
+        const response = await api.post('/api/balances/deduct/card', payload);
+        return response.data;
+    }
+    else {
+        console.error('[API] サポートされていない決済方法です:', method);
+        throw new Error('サポートされていない決済方法です。');
+    }
+};
+
+
 export const topUpPointsWithPayPay = async (userId, amount) => {
     console.log(`[API] PayPayでポイントチャージリクエスト: ${amount}ポイント (ユーザーID: ${userId})`);
     const response = await api.post('/api/balances/charge/paypay', {
