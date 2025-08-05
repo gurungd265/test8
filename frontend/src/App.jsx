@@ -21,8 +21,9 @@ import PaymentRegistrationPage from './pages/PaymentRegistrationPage';
 import ChargePage from './pages/ChargePage';
 import PaypayBalancePage from './pages/PaypayBalancePage.jsx';
 import CardBalancePage from './pages/CardBalancePage.jsx';
+import { AuthContext } from "./contexts/AuthContext";
 
-    const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
+const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
 
         if (loading) {
@@ -46,7 +47,13 @@ import CardBalancePage from './pages/CardBalancePage.jsx';
 
 function AppContent() {
 
+    const { user, logout } = useAuth(); // user 정보와 logout 함수
+
     const [isCatalogOpen, setIsCatalogOpen] = useState(false); // 상태 선언 추가
+
+    const handleLogout = () => {
+        logout();
+    };
 
     return (
       <>
@@ -105,8 +112,12 @@ function AppContent() {
         {/* Footer */}
         {/* <Footer /> */}
 
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNavigation />
+            {/* Mobile Bottom Navigation */}
+          <MobileBottomNavigation
+              user={user}
+              onLogout={handleLogout}
+              setIsCatalogOpen={setIsCatalogOpen}
+          />
       </>
     );
   }

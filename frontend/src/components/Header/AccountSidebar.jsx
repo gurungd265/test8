@@ -1,16 +1,29 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { X } from "lucide-react";
 
 export default function AccountSidebar({ user, onClose, onLogout }) {
+
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        function handleResize() {
+            setIsMobile(window.innerWidth <= 640); // 640px 이하를 모바일로 판단
+        }
+
+        handleResize();
+        window.addEventListener("resize", handleResize);
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     return (
         <div className="fixed inset-0 z-50 overflow-hidden">
-            <div
-                className="absolute inset-0 bg-black bg-opacity-50"
-                onClick={onClose}
-            ></div>
+            <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
             <div className="absolute inset-y-0 right-0 max-w-full flex">
-                <div className="relative w-screen max-w-md">
+                <div
+                    className={`relative w-screen ${isMobile ? "max-w-full" : "max-w-md"}`}
+                >
                     <div className="h-full flex flex-col bg-white shadow-xl">
                         <div className="flex items-center justify-between p-4">
                             <button
