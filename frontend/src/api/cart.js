@@ -86,6 +86,27 @@ const cartApi = {
         }
     },
 
+    removeItemsFromCart: async (itemIds) => {
+            console.log(`[API] カートから複数商品一括削除リクエスト: ${itemIds.join(', ')}`);
+            let url = `/api/cart/items/batch-delete`;
+            if(!isLoggedIn()){
+                const sessionId = Cookies.get('sessionId');
+                if (!sessionId) {
+                    console.error("セッションIDがありません。");
+                    throw new Error("セッションIDがありません。");
+                }
+                url += `?sessionId=${sessionId}`;
+            }
+            try {
+                const response = await api.post(url, { itemIds });
+                return response.data;
+            } catch (error) {
+                console.error('複数のカートアイテムを削除できませんでした。', error);
+                throw error;
+            }
+    },
+
+
     // 買い物かごを空けること
     clearCart: async () => {
         let url = `/api/cart`;

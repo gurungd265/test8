@@ -1,48 +1,89 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCoins, faCreditCard, faMobileAlt, faInfoCircle, faWallet } from '@fortawesome/free-solid-svg-icons';
+import { Link } from 'react-router-dom';
 
-/**
- * 仮想決済方法選択コンポーネント(決済手段別残高管理)
- * @param {object} props
- * @param {object} props.formData - フォームデータ
- * @param {function} props.handleChange - フォームフィールド変更ハンドラー
- * @param {object} props.userBalances - 各決済手段の現在の残高 {point: number, paypay: number, virtualCreditCard: number}
- * @param {number} props.totalAmount - 注文合計金額
- * @param {function} props.handleChargePoints - ポイントチャージハンドラー
- * @param {object} props.cardData - クレジットカード情報
- * @param {function} props.handleCardChange - クレジットカード情報の変更を処理する関数
- * @param {boolean} props.isCharging - チャージ処理中かどうか
- */
 export default function CheckoutPaymentMethods({
     formData,
     handleChange,
     userBalances = { point: 0, paypay: 0, virtualCreditCard: 0 },
     totalAmount = 0,
-    handleChargePoints,
     cardData,
     handleCardChange,
-    isCharging,
+    paymentInfo = { paypayAccount: null, creditCard: null },
+    handleInlinePointCharge,
+    pointChargeAmount,
+    setPointChargeAmount,
+    isInlineCharging,
+    inlineChargeError,
 }) {
 
-    // 現在選択されている支払い手段の残高を取得
-    const selectedMethod = formData.paymentMethod;
-    // userBalancesのキー名とformDataのキー名が異なるため調整
-    const balanceKey = selectedMethod === 'virtual_credit_card' ? 'virtualCreditCard' : selectedMethod;
-    const currentBalance = userBalances[balanceKey] || 0;
+    const paymentOptions = [];
 
-    // 現在選択された方法で決済が可能か確認
+    // ポイント決済は常に利用可能
+    paymentOptions.push({
+        value: 'point',
+        label: 'ポイント',
+        balance: userBalances.point,
+        balanceLabel: 'ポイント',
+        icon: faCoins,
+        chargePath: '/charge'
+    });
+
+    // PayPayアカウントが登録されている場合のみオプションに追加
+    if (paymentInfo.paypayAccount) {
+        paymentOptions.push({
+            value: 'paypay',
+            label: 'PayPay',
+            balance: userBalances.paypay,
+            balanceLabel: '円',
+            icon: faMobileAlt,
+            chargePath: '/paypay-balance-page' // PayPay
+        });
+    }
+
+    // クレジットカードが登録されている場合のみオプションに追加
+    if (paymentInfo.creditCard) {
+        paymentOptions.push({
+            value: 'virtual_credit_card',
+            label: 'クレジットカード',
+            balance: userBalances.virtualCreditCard,
+            balanceLabel: '円',
+            icon: faCreditCard,
+            chargePath: '/card-balance-page'
+        });
+    }
+
+    // 選択中の決済方法の情報を取得
+    const selectedMethod = formData.paymentMethod;
+    const selectedOption = paymentOptions.find(option => option.value === selectedMethod);
+    const currentBalance = selectedOption ? selectedOption.balance : 0;
     const canPayWithSelectedMethod = currentBalance >= totalAmount;
 
-    // 各決済手段が選択されているか確認
-    const isPointSelected = selectedMethod === 'point';
-    const isPayPaySelected = selectedMethod === 'paypay';
-    const isVirtualCreditCardSelected = selectedMethod === 'virtual_credit_card';
+    const hasOnlyPointOption = paymentOptions.length === 1 && paymentOptions[0].value === 'point';
 
-    // 支払い方法のオプション
-    const paymentOptions = [
-        { value: 'point', label: 'ポイントで支払い', balance: userBalances.point, balanceLabel: 'ポイント' },
-        { value: 'paypay', label: 'PayPayで支払い', balance: userBalances.paypay, balanceLabel: '円' },
-        { value: 'virtual_credit_card', label: 'クレジットカード', balance: userBalances.virtualCreditCard, balanceLabel: '円' },
-    ];
+    if (hasOnlyPointOption && !paymentInfo.paypayAccount && !paymentInfo.creditCard) {
+        return (
+            <section className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">お支払い方法</h2>
+                <div className="bg-gray-50 p-6 rounded-md text-center text-gray-600">
+                    <FontAwesomeIcon icon={faInfoCircle} className="text-blue-400 text-3xl mb-3" />
+                    <p className="font-medium">
+                        PayPayまたはクレジットカードが登録されていません。
+                    </p>
+                    <p className="text-sm mt-1">
+                        ポイント以外の方法で決済したい場合は、決済手段を登録してください。
+                    </p>
+                    <Link
+                        to="/payment-registration"
+                        className="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
+                    >
+                        決済手段を登録する
+                    </Link>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md mb-6">
@@ -52,7 +93,6 @@ export default function CheckoutPaymentMethods({
                 {paymentOptions.map(option => (
                     <label
                         key={option.value}
-                        // 選択状態とUIを同期させるためのスタイル
                         className={`flex items-center space-x-2 p-3 rounded-md transition-all cursor-pointer ${
                             selectedMethod === option.value ? 'bg-blue-50 border border-blue-200' : 'bg-white hover:bg-gray-50'
                         }`}
@@ -64,12 +104,12 @@ export default function CheckoutPaymentMethods({
                             checked={selectedMethod === option.value}
                             onChange={handleChange}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                            // 残高に関わらず選択できるように、disabled属性を削除
                         />
-                        <span className="text-gray-700">
+                        <span className="flex-1 text-gray-700 font-medium flex items-center">
+                            <FontAwesomeIcon icon={option.icon} className="mr-2 text-blue-500" />
                             {option.label}
                         </span>
-                        <span className="ml-auto text-sm text-gray-500">
+                        <span className="text-sm text-gray-500">
                             残高: {option.balance.toLocaleString()} {option.balanceLabel}
                         </span>
                     </label>
@@ -77,7 +117,7 @@ export default function CheckoutPaymentMethods({
             </div>
 
             {/* 仮想クレジットカード選択時のフォーム画面 */}
-            {isVirtualCreditCardSelected && (
+            {selectedMethod === 'virtual_credit_card' && (
                 <div className="space-y-4 bg-gray-50 p-4 rounded-md">
                     <div>
                         <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">カード番号</label>
@@ -118,52 +158,81 @@ export default function CheckoutPaymentMethods({
                         </div>
                     </div>
                     <p className="text-sm text-gray-600 mt-2">
-                        ※ このカード情報は保存されず、決済のために使用されます。
+                        ※ このカード情報は決済のためのみに使用され、保存されません。
                     </p>
                 </div>
             )}
 
             {/* 選択された決済手段の決済情報の表示 */}
-            {selectedMethod && (
+            {selectedOption && (
                 <div className="bg-gray-50 p-4 rounded-md mt-4">
                     <div className="flex justify-between items-center text-sm font-medium text-gray-700">
                         <span>現在の残高:</span>
                         <span className="text-blue-600 font-bold">
-                            {currentBalance.toLocaleString()} {isPointSelected ? 'ポイント' : '円'}
+                            {currentBalance.toLocaleString()} {selectedOption.balanceLabel}
                         </span>
                     </div>
                     <div className="flex justify-between items-center text-sm font-medium text-gray-700 mt-2">
                         <span>お支払い金額:</span>
                         <span className="text-red-600 font-bold">
-                            - {totalAmount.toLocaleString()} {isPointSelected ? 'ポイント' : '円'}
+                            - {totalAmount.toLocaleString()} {selectedOption.balanceLabel}
                         </span>
                     </div>
                     {canPayWithSelectedMethod && (
                         <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center text-base font-bold text-gray-800">
                             <span>お支払い後の残高:</span>
                             <span>
-                                {(currentBalance - totalAmount).toLocaleString()} {isPointSelected ? 'ポイント' : '円'}
+                                {(currentBalance - totalAmount).toLocaleString()} {selectedOption.balanceLabel}
                             </span>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* 選択された決済手段で決済するポイントが足りない場合、チャージボタンを表示 */}
-            {!canPayWithSelectedMethod && (
+            {selectedOption && !canPayWithSelectedMethod && (
                 <div className="bg-red-50 p-4 rounded-md mt-6">
                     <p className="text-red-700 text-sm mb-3">
-                        決済に必要な {isPointSelected ? 'ポイント' : '金額'}が {totalAmount.toLocaleString()} {isPointSelected ? 'ポイント' : '円'}に対し、<br />
-                        現在の残高は {currentBalance.toLocaleString()} {isPointSelected ? 'ポイント' : '円'}です。
+                        決済に必要な {selectedOption.balanceLabel}が {totalAmount.toLocaleString()} {selectedOption.balanceLabel}に対し、<br />
+                        現在の残高は {currentBalance.toLocaleString()} {selectedOption.balanceLabel}です。
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => handleChargePoints(balanceKey)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
-                        disabled={isCharging}
-                    >
-                        {isCharging ? 'チャージ中...' : `${isPointSelected ? 'ポイント' : '残高'}をチャージする`}
-                    </button>
+
+                    {selectedMethod === 'point' && paymentInfo.paypayAccount ? (
+                        <div className="space-y-4">
+                            <p className="text-gray-700 text-sm font-medium">PayPay残高からポイントをチャージできます。</p>
+                            {inlineChargeError && (
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
+                                    <span className="block sm:inline">{inlineChargeError}</span>
+                                </div>
+                            )}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="number"
+                                    value={pointChargeAmount}
+                                    onChange={(e) => setPointChargeAmount(Number(e.target.value))}
+                                    placeholder="チャージ金額"
+                                    min="1"
+                                    step="1000"
+                                    className="flex-grow p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleInlinePointCharge}
+                                    disabled={isInlineCharging || pointChargeAmount <= 0}
+                                    className="px-4 py-2 bg-green-600 text-white font-bold rounded-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isInlineCharging ? 'チャージ中...' : 'PayPayでポイントをチャージ'}
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-600">※ PayPay残高: {userBalances.paypay.toLocaleString()} 円</p>
+                        </div>
+                    ) : (
+                        <Link
+                            to={selectedOption.chargePath}
+                            className="w-full text-center inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
+                        >
+                            {selectedOption.label}の残高をチャージする
+                        </Link>
+                    )}
                 </div>
             )}
         </section>

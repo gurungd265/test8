@@ -71,7 +71,7 @@ const useCheckoutData = () => {
                             ...prev,
                             postalCode: defaultAddr.postalCode || '',
                             state: defaultAddr.state || '',
-                            city: defaultAddr.city || '',
+                            city: defaultAddr.city || 'f',
                             street: defaultAddr.street || '',
                         }));
                     }
@@ -91,6 +91,25 @@ const useCheckoutData = () => {
             setAddressStatusChecked(true);
         }
     }, [location.state, isLoggedIn, navigate]); // useCallbackの依存関係にnavigateを追加
+
+    const removePurchasedItems = useCallback(async (itemIds)=>{
+        try{
+            await cartApi.removeItemsFromCart(itemIds);
+            setCartItems(prevItems => prevItems.filter(item =>!itemIds.includes(item.id)));
+
+            setSubtotal(prevSubtotal=> {
+                const removeItemsTotal = cartItems
+                    .filter(item => itemIds.includes(item.id))
+                    .reduce((sum,item) => sum + (item.priceAtAddition * item.quantity), 0);
+                return prevSubtotal - removeItemsTotal;
+            });
+
+            console.log('購入商品がカートから正常に削除されました。');
+        }catch(err){
+            console.error('カートアイテム削除失敗:', err);
+            setError('購入商品削除中にエラーが発生しました。');
+        }
+    },[cartItems]);
 
     // 住所の有無に応じたリダイレクトロジック（このフック内で処理）
     useEffect(() => {
@@ -112,7 +131,8 @@ const useCheckoutData = () => {
         isLoading, // 初期データローディング状態
         error, // データロード中に発生したエラー（fetchErrorとして使用される）
         addressStatusChecked,
-        fetchInitialCheckoutData, // この関数をCheckoutPageから呼び出してformDataを更新する
+        fetchInitialCheckoutData, // この関数をCheckoutPageから呼び出してformDataを更新
+        removePurchasedItems,
     };
 };
 

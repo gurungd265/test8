@@ -16,7 +16,7 @@ export const registerCard = async (cardInfo) => {
     return response.data;
 };
 
-// 登録済みPayPayアカウント情報取得API (新規追加)
+// 登録済みPayPayアカウント情報取得API
 export const fetchRegisteredPayPay = async (userId) => {
     console.log(`[API] 登録済みPayPay情報照会リクエスト (ユーザーID: ${userId})`);
     try {
@@ -33,7 +33,7 @@ export const fetchRegisteredPayPay = async (userId) => {
     }
 };
 
-// 登録済みカード情報取得API (新規追加)
+// 登録済みカード情報取得API
 export const fetchRegisteredCard = async (userId) => {
     console.log(`[API] 登録済みクレジットカード情報照会リクエスト (ユーザーID: ${userId})`);
     try {
@@ -50,14 +50,14 @@ export const fetchRegisteredCard = async (userId) => {
     }
 ;}
 
-    // PayPayアカウント残高を仮想的にチャージするAPI (新規追加)
+    // PayPayアカウント残高を仮想的にチャージするAPI
 export const topUpPaypayBalance = async (userId, amount) => {
     console.log(`[API] PayPay残高仮想チャージリクエスト: 金額: ${amount} (ユーザーID: ${userId})`);
     const response = await api.post('/api/register/paypay/topup', { userId, amount });
     return response.data;
 };
 
-    // クレジットカード利用可能残高を仮想的にチャージするAPI (新規追加)
+    // クレジットカード利用可能残高を仮想的にチャージするAPI
 export const topUpCardBalance = async (userId, amount) => {
     console.log(`[API] クレジットカード残高仮想チャージリクエスト: 金額: ${amount} (ユーザーID: ${userId})`);
     const response = await api.post('/api/register/card/topup', { userId, amount });

@@ -32,7 +32,7 @@ export default function PaymentRegistrationPage() {
             if (!user || !user.email) throw new Error('ユーザー情報がありません。');
             await paymentRegistrationApi.registerPayPay(user.email, paypayId);
             setMessage({ type: 'success', text: `PayPayアカウント (${paypayId}) の登録が完了しました。` });
-            setTimeout(() => navigate('/my-points'), 2000);
+            setTimeout(() => navigate('/my-points'), 500);
         } catch (err) {
             console.error("PayPay登録に失敗しました:", err);
             const errorMsg = err.response?.data?.error || err.message || '登録中にエラーが発生しました。';
@@ -53,7 +53,7 @@ export default function PaymentRegistrationPage() {
             };
             await paymentRegistrationApi.registerCard(fullCardInfo);
             setMessage({ type: 'success', text: 'クレジットカードの登録が完了しました。' });
-            setTimeout(() => navigate('/my-points'), 2000);
+            setTimeout(() => navigate('/my-points'), 500);
         } catch (err) {
             console.error("クレジットカード登録に失敗しました:", err);
             const errorMsg = err.response?.data?.error || err.message || '登録中にエラーが発生しました。';

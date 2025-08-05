@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import * as orderApi from '../api/order';
 import * as virtualPaymentsApi from '../api/virtualPayments';
+import * as paymentRegistrationApi from '../api/paymentRegistration';
 import useCheckoutData from '../hooks/useCheckoutData';
 import useDeliveryOptions from '../hooks/useDeliveryOptions';
 import { generateTransactionId } from '../utils/paymentUtils';
@@ -10,6 +12,8 @@ import CheckoutAddressSelection from '../components/Checkout/CheckoutAddressSele
 import CheckoutDeliveryOptions from '../components/Checkout/CheckoutDeliveryOptions';
 import CheckoutPaymentMethods from '../components/Checkout/CheckoutPaymentMethods';
 import CheckoutOrderSummary from '../components/Checkout/CheckoutOrderSummary';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
@@ -29,7 +33,7 @@ export default function CheckoutPage() {
         street: '',
         phone: '',
         email: '',
-        paymentMethod: 'point',
+        paymentMethod: '',
         deliveryDate: '',
         deliveryTime: ''
     });
@@ -40,8 +44,12 @@ export default function CheckoutPage() {
         cardCvv: '',
     });
 
-    // バックエンドから残高を取得するため、初期値を空のオブジェクトに変更
-    const [userBalances, setUserBalances] = useState({});
+    const [userBalances, setUserBalances] = useState({ point: 0, paypay: 0, virtualCreditCard: 0 });
+    const [paymentInfo, setPaymentInfo] = useState({ paypayAccount: null, creditCard: null });
+
+    const [pointChargeAmount, setPointChargeAmount] = useState(1000);
+    const [isInlineCharging, setIsInlineCharging] = useState(false);
+    const [inlineChargeError, setInlineChargeError] = useState(null);
 
     const {
         cartItems,
@@ -53,6 +61,7 @@ export default function CheckoutPage() {
         error: fetchError,
         addressStatusChecked,
         fetchInitialCheckoutData,
+        removePurchasedItems,
     } = useCheckoutData();
 
     const { deliveryDates, DELIVERY_TIME_SLOTS } = useDeliveryOptions();
@@ -61,63 +70,74 @@ export default function CheckoutPage() {
     const tax = Math.floor(calculatedSubtotal * 0.1);
     const totalAmount = calculatedSubtotal + shippingFee + tax;
 
-    // コンポーネントマウント時に残高をバックエンドから取得
-    useEffect(() => {
-        const loadBalances = async () => {
-            if (!user) {
-                // userがnullの場合はAPIを呼び出さない
-                return;
-            }
-            try {
-                // API呼び出し時にuser.emailを渡す
-                const balances = await virtualPaymentsApi.fetchBalances(user.email);
-                setUserBalances(balances);
-            } catch (err) {
-                console.error("残高の取得に失敗しました。", err);
-                setSubmitError('残高の取得に失敗しました。');
-            }
-        };
+    const fetchUserBalancesAndInfo = useCallback(async () => {
+        if (!isLoggedIn || !user) {
+            navigate('/login');
+            return;
+        }
+        try {
+            const balancesFromVirtualPayments = await virtualPaymentsApi.fetchAllBalances(user.email);
+            const paypayAccount = await paymentRegistrationApi.fetchRegisteredPayPay(user.email);
+            const creditCard = await paymentRegistrationApi.fetchRegisteredCard(user.email);
 
+            setUserBalances(prevBalances => {
+                        return {
+                            ...prevBalances,
+                            point: balancesFromVirtualPayments.pointBalance !== undefined ? balancesFromVirtualPayments.pointBalance : prevBalances.point,
+                            paypay: paypayAccount?.balance !== undefined ? paypayAccount.balance : prevBalances.paypay,
+                            virtualCreditCard: creditCard?.availableCredit !== undefined ? creditCard.availableCredit : prevBalances.virtualCreditCard,
+                        };
+                    });
+            setPaymentInfo({ paypayAccount, creditCard });
+
+            if (paypayAccount) {
+                setFormData(prev => ({ ...prev, paymentMethod: 'paypay' }));
+            } else if (creditCard) {
+                setFormData(prev => ({ ...prev, paymentMethod: 'virtual_credit_card' }));
+            } else {
+                setFormData(prev => ({ ...prev, paymentMethod: 'point' }));
+            }
+
+        } catch (err) {
+            console.error("決済データの読み込みに失敗しました:", err);
+            setSubmitError('決済データの読み込みに失敗しました。');
+        }
+    }, [isLoggedIn, user, navigate]);
+
+    useEffect(() => {
         if (isLoggedIn) {
             fetchInitialCheckoutData(setFormData);
-            loadBalances();
+            fetchUserBalancesAndInfo();
         }
+    }, [isLoggedIn, user, fetchInitialCheckoutData, fetchUserBalancesAndInfo]);
 
-    }, [fetchInitialCheckoutData, isLoggedIn, user]);
-
-
-    // API呼び出しを含むチャージハンドラー
-    const handleChargePoints = useCallback(async (method) => {
-        setSubmitError(null);
-        setIsCharging(true);
-
-        if (!isLoggedIn || !user) {
-            setSubmitError('ログインしていません。');
-            setIsCharging(false);
+    const handleInlinePointCharge = useCallback(async () => {
+        if (!user || !user.email || !paymentInfo.paypayAccount || pointChargeAmount <= 0) {
+            setInlineChargeError('チャージ金額または決済情報が正しくありません。');
             return;
         }
 
-        try {
-            const chargeAmount = 10000;
-            // 'virtual_credit_card'はAPIを呼び出さない
-            const apiMethod = method === 'virtual_credit_card' ? null : method;
-
-            if (apiMethod) {
-                // API呼び出し時にuser.emailを渡す
-                await virtualPaymentsApi.chargePoints(user.email, apiMethod, chargeAmount);
-            }
-
-            // すべてのAPI呼び出し後に残高を再取得してUIを更新
-            const updatedBalances = await virtualPaymentsApi.fetchBalances(user.email);
-            setUserBalances(updatedBalances);
-
-        } catch (err) {
-            console.error('APIチャージ失敗:', err);
-            setSubmitError('チャージに失敗しました。もう一度お試しください。');
-        } finally {
-            setIsCharging(false);
+        if (pointChargeAmount > userBalances.paypay) {
+            setInlineChargeError('PayPay残高が不足しています。');
+            return;
         }
-    }, [isLoggedIn, user]);
+
+        setIsInlineCharging(true);
+        setInlineChargeError(null);
+
+        try {
+            await virtualPaymentsApi.topUpPointsWithPayPay(user.email, pointChargeAmount);
+            await fetchUserBalancesAndInfo();
+            console.log(`${pointChargeAmount}円分のポイントがPayPayでチャージされました。`);
+            setPointChargeAmount(1000);
+        } catch (err) {
+            console.error("ポイントチャージ失敗:", err);
+            setInlineChargeError(err.response?.data?.error || 'ポイントチャージ中にエラーが発生しました。');
+        } finally {
+            setIsInlineCharging(false);
+        }
+    }, [user, paymentInfo.paypayAccount, pointChargeAmount, userBalances.paypay, fetchUserBalancesAndInfo]);
+
 
     // 住所選択変更ハンドラ
     const handleAddressSelect = useCallback((e) => {
@@ -147,7 +167,7 @@ export default function CheckoutPage() {
             return;
         }
 
-        const requiredFields = ['lastName', 'firstName', 'postalCode', 'state', 'city', 'street', 'phone', 'email', 'deliveryDate', 'deliveryTime', 'paymentMethod'];
+        const requiredFields = ['lastName', 'firstName', 'phone', 'email', 'deliveryDate', 'deliveryTime', 'paymentMethod'];
         const missingFields = requiredFields.filter(field => !formData[field]);
 
         if (missingFields.length > 0) {
@@ -156,59 +176,84 @@ export default function CheckoutPage() {
             return;
         }
 
+        if (!selectedAddressId) {
+            const addressFields = ['postalCode', 'state', 'city', 'street'];
+            const missingAddressFields = addressFields.filter(field => !formData[field]);
+            if (missingAddressFields.length > 0) {
+                setSubmitError('配送先情報をすべて入力してください。');
+                setIsOrdering(false);
+                return;
+            }
+        }
+
         const virtualPaymentMethods = ['point', 'paypay', 'virtual_credit_card'];
         const isVirtualPayment = virtualPaymentMethods.includes(formData.paymentMethod);
 
         const balanceKey = formData.paymentMethod === 'virtual_credit_card' ? 'virtualCreditCard' : formData.paymentMethod;
         const currentBalance = userBalances[balanceKey];
 
-        if (isVirtualPayment) {
-            if (currentBalance < totalAmount) {
-                setSubmitError('残高が不足しています。');
-                setIsOrdering(false);
-                return;
-            }
+        if (!isVirtualPayment) {
+            setSubmitError('選択された支払い方法がサポートされていません。');
+            setIsOrdering(false);
+            return;
+        }
 
+        // payment check
+        if (currentBalance === undefined || currentBalance < totalAmount) {
+            setSubmitError('選択された支払い方法の残高が不足しています。');
+            setIsOrdering(false);
+            return;
+        }
+
+        // payment go
             try {
-                // 'virtual_credit_card'はAPIを呼び出さない
-                const apiMethod = formData.paymentMethod === 'virtual_credit_card' ? null : formData.paymentMethod;
+            const orderId = await virtualPaymentsApi.processVirtualPayment(user.email, formData.paymentMethod, totalAmount);
+            await fetchUserBalancesAndInfo();
+            const purchasedItemIds = cartItems.map(item => item.id);
+            await removePurchasedItems(purchasedItemIds);
 
-                if (apiMethod) {
-                    // API呼び出し時にuser.emailを渡す
-                    await virtualPaymentsApi.processVirtualPayment(user.email, apiMethod, totalAmount);
-                }
+            console.log('ご注文が完了しました！');
 
-                // すべてのAPI呼び出し後に残高を再取得してUIを更新
-                const updatedBalances = await virtualPaymentsApi.fetchBalances(user.email);
-                setUserBalances(updatedBalances);
+            const orderDetails = {
+                cartItems: cartItems,
+                totalAmount: totalAmount,
+                paymentMethod: formData.paymentMethod,
+                address: {
+                    postalCode: formData.postalCode,
+                    state: formData.state,
+                    city: formData.city,
+                    street: formData.street,
+                },
+                deliveryDate: formData.deliveryDate,
+            };
 
-                navigate('/order-success');
-
-            } catch (err) {
-                console.error('仮想決済API呼び出し失敗:', err);
-                setSubmitError('仮想決済処理に失敗しました。もう一度お試しください。');
-            } finally {
-                setIsOrdering(false);
-            }
-        } else {
-            // ここは実行されないはずですが、念のため残しておきます。
-            navigate('/order-success');
+            navigate('/order-success', { state: { orderId, orderDetails } });
+        } catch (err) {
+            console.error('仮想決済API呼び出し失敗:', err);
+            setSubmitError(err.response?.data?.error || '仮想決済処理に失敗しました。もう一度お試しください。');
+        } finally {
             setIsOrdering(false);
         }
-    }, [formData, userBalances, totalAmount, navigate, isLoggedIn, user]);
+    }, [formData, userBalances, totalAmount, navigate, isLoggedIn, user, fetchUserBalancesAndInfo, removePurchasedItems, cartItems, selectedAddressId]);
 
     const handleNextStep = useCallback(() => {
         setSubmitError(null);
 
         if (currentStep === 1) {
             const customerFields = ['lastName', 'firstName', 'phone', 'email'];
-            const addressFields = ['postalCode', 'state', 'city', 'street'];
-
             const missingCustomerFields = customerFields.filter(field => !formData[field]);
-            const missingAddressFields = addressFields.filter(field => !formData[field]);
 
-            if (missingCustomerFields.length > 0 || missingAddressFields.length > 0) {
-                setSubmitError('お客様情報と配送先情報をすべて入力してください。');
+            if (!selectedAddressId) {
+                const addressFields = ['postalCode', 'state', 'city', 'street'];
+                const missingAddressFields = addressFields.filter(field => !formData[field]);
+                if (missingAddressFields.length > 0) {
+                    setSubmitError('配送先情報をすべて入力してください。');
+                    return;
+                }
+            }
+
+            if (missingCustomerFields.length > 0) {
+                setSubmitError('お客様情報をすべて入力してください。');
                 return;
             }
         }
@@ -225,7 +270,6 @@ export default function CheckoutPage() {
             if (formData.paymentMethod === 'virtual_credit_card') {
                 const { cardNumber, cardExpiry, cardCvv } = cardData;
 
-                // カード番号の検証 (スペースを削除して検証)
                 const cardNumberCleaned = cardNumber.replace(/\s/g, '');
                 const cardNumberRegex = /^\d{16}$/;
                 if (!cardNumberCleaned || !cardNumberRegex.test(cardNumberCleaned)) {
@@ -233,7 +277,6 @@ export default function CheckoutPage() {
                     return;
                 }
 
-                // 有効期限の検証 (MM/YY)
                 const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
                 if (!cardExpiry || !expiryRegex.test(cardExpiry)) {
                     setSubmitError('有効な有効期限(MM/YY)を入力してください。');
@@ -242,13 +285,11 @@ export default function CheckoutPage() {
                 const [month, year] = cardExpiry.split('/').map(Number);
                 const currentYear = new Date().getFullYear() % 100;
                 const currentMonth = new Date().getMonth() + 1;
-                // 有効期限が過去でないかチェック
                 if (year < currentYear || (year === currentYear && month < currentMonth)) {
                     setSubmitError('有効期限が切れています。');
                     return;
                 }
 
-                // CVVの検証
                 const cvvRegex = /^\d{3,4}$/;
                 if (!cardCvv || !cvvRegex.test(cardCvv)) {
                     setSubmitError('有効なCVVを入力してください。（3または4桁の数字）');
@@ -266,14 +307,14 @@ export default function CheckoutPage() {
         }
 
         setCurrentStep(prev => prev + 1);
-    }, [formData, userBalances, totalAmount, currentStep, cardData]);
+    }, [formData, userBalances, totalAmount, currentStep, cardData, selectedAddressId]);
 
     const handlePrevStep = useCallback(() => {
         setCurrentStep(prev => prev - 1);
         setSubmitError(null);
     }, []);
 
-    const displayError = fetchError || submitError;
+    const displayError = fetchError || submitError || inlineChargeError;
     const isPageLoading = isLoading || authLoading || !addressStatusChecked || (isLoggedIn && Object.keys(userBalances).length === 0);
 
     if (!isLoggedIn) {
@@ -386,9 +427,14 @@ export default function CheckoutPage() {
                                 handleChange={handleChange}
                                 userBalances={userBalances}
                                 totalAmount={totalAmount}
-                                handleChargePoints={handleChargePoints}
                                 cardData={cardData}
                                 handleCardChange={handleCardChange}
+                                paymentInfo={paymentInfo}
+                                handleInlinePointCharge={handleInlinePointCharge}
+                                pointChargeAmount={pointChargeAmount}
+                                setPointChargeAmount={setPointChargeAmount}
+                                isInlineCharging={isInlineCharging}
+                                inlineChargeError={inlineChargeError}
                             />
                         </>
                     )}
@@ -418,8 +464,8 @@ export default function CheckoutPage() {
                                 <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">お支払い方法</h2>
                                 <p className="mb-2"><span className="font-medium">方法:</span> {
                                     formData.paymentMethod === 'point' ? 'ポイント' :
-                                    formData.paymentMethod === 'paypay' ? 'PayPayで支払い (仮想)' :
-                                    formData.paymentMethod === 'virtual_credit_card' ? '仮想クレジットカード' : ''
+                                    formData.paymentMethod === 'paypay' ? 'PayPayで支払い' :
+                                    formData.paymentMethod === 'virtual_credit_card' ? 'クレジットカード' : ''
                                 }</p>
                                 {formData.paymentMethod === 'virtual_credit_card' && (
                                     <p className="text-sm text-gray-600">※カード情報は表示されません。</p>

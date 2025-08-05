@@ -85,3 +85,13 @@ export const processVirtualPayment = async (userId, method, totalAmount) => {
         throw new Error('サポートされていない決済方法です。');
     }
 };
+
+export const topUpPointsWithPayPay = async (userId, amount) => {
+    console.log(`[API] PayPayでポイントチャージリクエスト: ${amount}ポイント (ユーザーID: ${userId})`);
+    const response = await api.post('/api/balances/charge/paypay', {
+        userId,
+        amount
+    });
+    return response.data;
+};
+
