@@ -69,23 +69,6 @@ export const refundPointsToPayPay = async (userId, amount) => {
     }
 };
 
-// バックエンドAPI仕様に合わせて processVirtualPayment 関数を再構成
-export const processVirtualPayment = async (userId, method, totalAmount) => {
-    console.log(`[API] 仮想決済リクエスト: ${method}, 金額: ${totalAmount} (ユーザーID: ${userId})`);
-    const payload = { userId: userId, amount: totalAmount };
-
-    // バックエンドの新しいAPIに合わせたロジック
-    // ここでは'PAYPAY_REFUND'の場合のみを例として提供
-    if (method.toUpperCase() === 'PAYPAY_REFUND') {
-        const response = await refundPointsToPayPay(userId, totalAmount);
-        console.log(`[API] 仮想決済成功:`, response);
-        return response;
-    } else {
-        console.error('[API] サポートされていない決済方法です:', method);
-        throw new Error('サポートされていない決済方法です。');
-    }
-};
-
 export const processVirtualPayment = async (userId, method, totalAmount) => {
     console.log(`[API] 仮想決済リクエスト: ${method}, 金額: ${totalAmount} (ユーザーID: ${userId})`);
     const payload = { userId: userId, amount: totalAmount };

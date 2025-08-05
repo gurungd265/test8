@@ -19,6 +19,8 @@ import java.security.Principal;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.List;
 import java.util.UUID;
 import com.example.backend.repository.UserRepository;
 
@@ -152,6 +154,23 @@ public class CartController {
                 .map(jakarta.servlet.http.Cookie::getValue)
                 .orElse(null);
         cartService.softClearCart(userEmail, sessionIdFromCookie);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/items/batch-delete")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteCartItemsBatch(
+            @RequestBody List<Long> itemIds,
+            Principal principal,
+            HttpServletRequest request
+    ) {
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        cartService.softDeleteCartItemsBatch(userEmail, sessionIdFromCookie, itemIds);
+
         return ResponseEntity.noContent().build();
     }
 

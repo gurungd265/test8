@@ -1,5 +1,6 @@
 package com.example.backend.repository;
 
+import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -24,6 +25,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     // 필요하다면 특정 Cart와 Product에 대한 CartItem을 조회
     Optional<CartItem> findByCartAndProductIdAndDeletedAtIsNull(com.example.backend.entity.Cart cart, Long productId);
+    List<CartItem> findByCartAndIdIn(Cart cart,List<Long> ids);
 
     // 기타 필요한 CartItem 관련 조회, 삭제 메서드들을 추가할 수 있습니다.
     // 예: 특정 카트 아이템을 ID로 찾기 (소프트 삭제되지 않은 것만)

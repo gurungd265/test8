@@ -49,4 +49,19 @@ public class CardService {
         card.addCredit(amount);
         return cardRepository.save(card);
     }
+
+    @Transactional
+    public int deductCreditBalance(String userId, int amount) {
+        Card card = cardRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("登録されたクレジットカードが見つかりませんでした。"));
+
+        if (card.getAvailableCredit() < amount) {
+            throw new IllegalStateException("利用可能残高が足りません。");
+        }
+
+        card.subtractCredit(amount); // CardエンティティのsubtractCreditメソッドを使用
+        cardRepository.save(card); // 変更を保存
+
+        return card.getAvailableCredit();
+    }
 }

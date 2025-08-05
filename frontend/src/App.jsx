@@ -19,8 +19,9 @@ import FilteredProductPage from "./pages/FilteredProductPage.jsx";
 import MyPointPage from './pages/MyPointPage';
 import PaymentRegistrationPage from './pages/PaymentRegistrationPage';
 import ChargePage from './pages/ChargePage';
-import PaypayBalancePage from './pages/PaypayBalancePage.jsx';
-import CardBalancePage from './pages/CardBalancePage.jsx';
+import PaypayBalancePage from './pages/PaypayBalancePage';
+import CardBalancePage from './pages/CardBalancePage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 import { AuthContext } from "./contexts/AuthContext";
 
 const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
@@ -97,6 +98,7 @@ function AppContent() {
                     <Route path="/charge" element={<ChargePage />} />
                     <Route path="/paypay-balance-page" element={<PaypayBalancePage />} />
                     <Route path="/card-balance-page" element={<CardBalancePage />} />
+                    <Route path="/order-success" element={<OrderSuccessPage />} />
 
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}

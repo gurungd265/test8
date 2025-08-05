@@ -1,8 +1,11 @@
 package com.example.backend.controller.payment;
 
 import com.example.backend.dto.payment.BalanceResponseDto;
+import com.example.backend.dto.payment.DeductReqDto;
 import com.example.backend.dto.payment.PointChargeRequestDto;
 import com.example.backend.dto.payment.PointRefundRequestDto;
+import com.example.backend.entity.payment.Card;
+import com.example.backend.service.CardService;
 import com.example.backend.service.PaypayService;
 import com.example.backend.service.PointService;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,18 +24,23 @@ public class UserBalanceController {
 
     private final PointService pointService;
     private final PaypayService paypayService;
+    private final CardService cardService;
 
     @Autowired
-    public UserBalanceController(PointService pointService, PaypayService paypayService) {
+    public UserBalanceController(PointService pointService, PaypayService paypayService,CardService cardService) {
         this.pointService = pointService;
         this.paypayService = paypayService;
+        this.cardService = cardService;
     }
 
     @GetMapping("/{userId}")
     public ResponseEntity<BalanceResponseDto> getBalances(@PathVariable String userId) {
         int pointBalance = pointService.getPointBalance(userId);
         int paypayBalance = paypayService.getPaypayBalance(userId);
-        return ResponseEntity.ok(new BalanceResponseDto(pointBalance, paypayBalance));
+        int virtualCardBalance = cardService.getCardByUserId(userId)
+                .map(Card::getAvailableCredit)
+                .orElse(0);
+        return ResponseEntity.ok(new BalanceResponseDto(pointBalance, paypayBalance,virtualCardBalance));
     }
 
     @PostMapping("/charge/card")
@@ -60,6 +68,26 @@ public class UserBalanceController {
         try {
             BalanceResponseDto balances = pointService.refundPointsToPaypay(requestDto);
             return ResponseEntity.ok(Map.of("message", "ポイントがPayPayに払い戻されました。", "balances", balances));
+        } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/deduct/paypay")
+    public ResponseEntity<Map<String, ?>> deductPaypayBalance(@Valid @RequestBody DeductReqDto requestDto) {
+        try {
+            int newBalance = paypayService.deductPaypayBalance(requestDto.getUserId(), requestDto.getAmount());
+            return ResponseEntity.ok(Map.of("message", "PayPay残高が差し引かれました。", "newPaypayBalance", newBalance));
+        } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/deduct/card")
+    public ResponseEntity<Map<String, ?>> deductVirtualCardBalance(@Valid @RequestBody DeductReqDto requestDto) {
+        try {
+            int newBalance = cardService.deductCreditBalance(requestDto.getUserId(), requestDto.getAmount());
+            return ResponseEntity.ok(Map.of("message", "クレジットカード残高が差し引かれました。", "newVirtualCardBalance", newBalance));
         } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
         }

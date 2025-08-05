@@ -211,6 +211,34 @@ public class CartService {
         cartItemRepository.save(cartItem); // CartItem 직접 저장
     }
 
+    @Transactional
+    public void softDeleteCartItemsBatch(String userEmail, String sessionId, List<Long> itemIds) {
+        Cart cart;
+        if (userEmail != null) {
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("ユーザーが見つかりません。"));
+            cart = cartRepository.findByUserAndDeletedAtIsNull(user)
+                    .orElseThrow(() -> new IllegalArgumentException("ユーザーのカートが見つかりません。"));
+        } else if (sessionId != null) {
+            cart = cartRepository.findBySessionIdAndDeletedAtIsNull(sessionId)
+                    .orElseThrow(() -> new IllegalArgumentException("セッションIDのカートが見つかりません。"));
+        } else {
+            throw new IllegalArgumentException("ユーザー情報またはセッションIDが必要です。");
+        }
+
+        List<CartItem> itemsToDelete = cartItemRepository.findByCartAndIdIn(cart, itemIds);
+
+        if (itemsToDelete.size() != itemIds.size()) {
+            System.err.println("警告: リクエストされた一部のカートアイテムIDが見つかりませんでした。");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (CartItem item : itemsToDelete) {
+            item.setDeletedAt(now);
+            cartItemRepository.save(item);
+        }
+    }
+
     /**
      카트 전체 소프트 삭제
      */
@@ -289,7 +317,7 @@ public class CartService {
         return (int) cart.getCartItems().stream().filter(item -> item.getDeletedAt() == null).count();
     }
 
-    // ⭐ 새로 추가: 카트 카운트 계산 (User 객체를 직접 받는 오버로드 메서드)
+    // 카트 카운트 계산 (User 객체를 직접 받는 오버로드 메서드)
     @Transactional(readOnly = true)
     public int getTotalCartItemCount(User user) {
         Optional<Cart> cartOpt = cartRepository.findByUserAndDeletedAtIsNull(user); // User 객체로 카트 조회

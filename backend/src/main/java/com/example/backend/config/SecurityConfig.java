@@ -79,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/cart/merge").authenticated()
                         .requestMatchers("/api/cart/count").permitAll()
 
+                        .requestMatchers("/api/cart/items/batch-delete").authenticated()
+
                         .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
                         .requestMatchers("/api/addresses/me", "/api/addresses/**").authenticated()
                         .requestMatchers("/api/balances/**").authenticated()

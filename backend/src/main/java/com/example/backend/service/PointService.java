@@ -92,4 +92,6 @@ public class PointService {
 
         return new BalanceResponseDto(pointBalance.getBalance(), paypayAccount.getBalance());
     }
+
+
 }

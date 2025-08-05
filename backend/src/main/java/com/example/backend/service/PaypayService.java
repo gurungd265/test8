@@ -52,4 +52,20 @@ public class PaypayService {
         paypayAccount.addBalance(amount);
         return paypayAccountRepository.save(paypayAccount);
     }
+
+    @Transactional
+    public int deductPaypayBalance(String userId, int amount) {
+        PaypayAccount paypayAccount = paypayAccountRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("PayPayアカウントが見つかりませんでした。"));
+
+        if (paypayAccount.getBalance() < amount) {
+            throw new IllegalStateException("PayPay残高が不足しています。");
+        }
+
+        paypayAccount.setBalance(paypayAccount.getBalance() - amount);
+        paypayAccountRepository.save(paypayAccount);
+
+        return paypayAccount.getBalance();
+    }
+
 }

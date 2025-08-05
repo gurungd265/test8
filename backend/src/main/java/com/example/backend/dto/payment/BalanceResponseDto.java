@@ -10,4 +10,11 @@ import lombok.Setter;
 public class BalanceResponseDto {
     private int pointBalance;
     private int paypayBalance;
+    private int virtualCardBalance;
+
+    public BalanceResponseDto(int pointBalance, int paypayBalance){
+        this.pointBalance = pointBalance;
+        this.paypayBalance = paypayBalance;
+        this.virtualCardBalance =0;
+    }
 }
