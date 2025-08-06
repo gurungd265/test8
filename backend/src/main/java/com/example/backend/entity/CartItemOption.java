@@ -28,8 +28,8 @@ public class CartItemOption {
     @JoinColumn(name = "product_Option_id")
     private ProductOption productOption;
 
-    @Column(name = "Option_value")
-    private String OptionValue;
+    @Column(name = "option_value")
+    private String optionValue;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -21,7 +21,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Query("SELECT ci FROM CartItem ci " +
             "LEFT JOIN FETCH ci.options cic " +
             "LEFT JOIN FETCH cic.productOption " +
-            "WHERE ci.cart.id = :cartId")
+            "WHERE ci.cart.id = :cartId AND ci.deletedAt IS NULL")
     List<CartItem> findByCartIdWithoptions(@Param("cartId") Long cartId);
 
     // 특정 상품(Product) ID에 해당하는 모든 CartItem을 소프트 삭제

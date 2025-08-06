@@ -6,32 +6,37 @@ const isLoggedIn = () => {
 };
 
 const cartApi = {
-    // カートに商品を追加
-    addToCart: async (productId, quantity, selectedoptions) => {
-        // 기본 URL 설정
+    // 카트에 상품을 추가
+    addToCart: async (productId, quantity, options) => {
         let url = `/api/cart/items?productId=${productId}&quantity=${quantity}`;
 
         // 비회원인 경우, sessionId를 쿼리 파라미터로 추가
-        if(!isLoggedIn()){
+        if (!isLoggedIn()) {
             let sessionId = Cookies.get('sessionId');
             if (!sessionId) {
                 sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                Cookies.set('sessionId', sessionId, { expires: 7 , path: '/'});
+                Cookies.set('sessionId', sessionId, { expires: 7, path: '/' });
             }
             url += `&sessionId=${sessionId}`;
         }
 
-        // 선택된 속성들을 쿼리 파라미터로 추가
-        selectedoptions.forEach(attr => {
-            url += `&${encodeURIComponent(attr.optionName)}=${encodeURIComponent(attr.optionValue)}`;
-        });
+        // 옵션들에 대해 productOptionId가 있는지 확인 후 전달
+        if (options && options.length > 0) {
+            options.forEach(attr => {
+                if (!attr.productOptionId) {
+                    console.error("Option ID is missing:", attr);
+                    throw new Error("Option ID must not be null or undefined");
+                }
+                url += `&${encodeURIComponent(attr.optionName)}=${encodeURIComponent(attr.optionValue)}`;
+            });
+        }
 
         // API 호출
         try {
-            const response = await api.post(url);
+            const response = await api.post(url, options);
             return response.data;
         } catch (error) {
-            console.error('カートに商品を追加できませんでした。', error);
+            console.error('Failed to add item to cart:', error);
             throw error;
         }
     },

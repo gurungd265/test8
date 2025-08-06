@@ -154,19 +154,19 @@ export default function ProductPage() {
                     Object.entries(set.options).map(([optionName, optionValue]) => ({
                         optionName,
                         optionValue
-                    }))
+                    }))  // Object.entries로 {optionName, optionValue} 배열로 변환
                 );
             }
             alert('カートに追加されました！');
-            setOptionSets([]);
-            setCurrentSelection({ options: {}, quantity: 1 });
-            fetchCartCount();
+            setOptionSets([]);  // 옵션 세트 리셋
+            setCurrentSelection({ options: {}, quantity: 1 });  // 현재 선택 리셋
+            fetchCartCount();  // 카트 수량 갱신
             const groups = Object.keys(groupedOptionValues);
             const resetOpened = {};
             groups.forEach((group, idx) => {
                 resetOpened[group] = idx === 0;
             });
-            setOpenedOptionGroups(resetOpened);
+            setOpenedOptionGroups(resetOpened);  // 옵션 그룹 초기화
         } catch (err) {
             console.error(err);
             alert('カートに追加できませんでした。');
