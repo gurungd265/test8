@@ -148,10 +148,14 @@ export default function ProductPage() {
         }
         try {
             for (const set of optionSets) {
-                await cartApi.addToCart(product.id, {
-                    options: set.options,
-                    quantity: set.quantity
-                });
+                await cartApi.addToCart(
+                    product.id,
+                    set.quantity,
+                    Object.entries(set.options).map(([optionName, optionValue]) => ({
+                        optionName,
+                        optionValue
+                    }))
+                );
             }
             alert('カートに追加されました！');
             setOptionSets([]);
