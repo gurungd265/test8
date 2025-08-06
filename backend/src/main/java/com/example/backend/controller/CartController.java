@@ -2,9 +2,11 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemDto;
+import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.order.OrderRequestDto;
 import com.example.backend.dto.order.OrderResponseDto;
 import com.example.backend.entity.CartItem;
+import com.example.backend.entity.CartItemOption;
 import com.example.backend.service.CartService;
 import com.example.backend.entity.user.User;
 
@@ -36,13 +38,13 @@ public class CartController {
     /**
      * ADMIN, USER & ANONYMOUS (non-login) accessible
      *
-     * 카트 조회	                GET	    /api/cart
-     * 카트에 상품 추가	        POST	/api/cart/items
-     * 카트 상품 수정	            PUT	    /api/cart/items/{id}
-     * 카트 상품 삭제	            DELETE	/api/cart/items/{id}
-     * 카트 전체 삭제	            DELETE	/api/cart
-     * 비로그인/로그인 카트 병합	POST	/api/cart/merge
-     * 주문 생성	                POST	/api/cart/order
+     * 카트 조회                    GET        /api/cart
+     * 카트에 상품 추가            POST   /api/cart/items
+     * 카트 상품 수정             PUT        /api/cart/items/{id}
+     * 카트 상품 삭제             DELETE /api/cart/items/{id}
+     * 카트 전체 삭제             DELETE /api/cart
+     * 비로그인/로그인 카트 병합   POST   /api/cart/merge
+     * 주문 생성                    POST   /api/cart/order
      */
 
     private final CartService cartService;
@@ -89,6 +91,7 @@ public class CartController {
     public ResponseEntity<CartItemDto> addProductToCart(
             @RequestParam Long productId,
             @RequestParam int quantity,
+            @RequestBody(required = false) List<CartItemOptionDto> optionDtos, // 옵션 DTO 리스트 추가
             Principal principal,
             HttpServletRequest request,
             HttpServletResponse response
@@ -107,7 +110,8 @@ public class CartController {
         }
 
         String finalSessionId = sessionIdFromCookie;
-        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity);
+        // CartService의 addProductToCart 메서드에 optionDtos를 전달하도록 수정
+        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity, optionDtos);
         CartItemDto dto = convertToDto(cartItem);
         return ResponseEntity.ok(dto);
     }
@@ -206,7 +210,7 @@ public class CartController {
     public ResponseEntity<OrderResponseDto> createOrder(
             Principal principal,
             @RequestBody OrderRequestDto requestDto
-            ) {
+    ) {
         if (principal == null) {
             return ResponseEntity.status(401).build(); // 비로그인 접근 차단
         }
@@ -223,10 +227,23 @@ public class CartController {
                 .id(item.getId())
                 .productId(item.getProduct().getId())
                 .productName(item.getProduct().getName())
-                .productPrice(item.getProduct().getPrice())            //정가
-                .priceAtAddition(item.getProduct().getDiscountPrice()) //할인가
+                .productPrice(item.getProduct().getPrice())            //정가 (현재 상품의 최신 정가)
+                .priceAtAddition(item.getPriceAtAddition())            //할인가 (장바구니 담을 당시의 할인가)
                 .productImageUrl(item.getProduct().getMainImageUrl())
                 .quantity(item.getQuantity())
+                .options(item.getOptions().stream() // CartItemOption 리스트를 CartItemOptionDto 리스트로 변환
+                        .map(this::convertOptionToDto)
+                        .toList())
+                .build();
+    }
+
+    // CartItemOption -> CartItemOptionDto 변환 (추가)
+    private CartItemOptionDto convertOptionToDto(CartItemOption option) {
+        return CartItemOptionDto.builder()
+                .id(option.getId())
+                .productOptionId(option.getProductOption().getId())
+                .optionName(option.getProductOption().getOptionName())
+                .optionValue(option.getOptionValue())
                 .build();
     }
 

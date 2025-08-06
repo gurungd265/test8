@@ -13,11 +13,8 @@ import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
-    /*
-        (deleted_at IS NULL 자동 필터링)
-     */
 
-    // 카트 목록 + 상품 속성 조회
+    // 카트 목록 + 상품 속성 조회 (기존 메서드)
     @Query("SELECT ci FROM CartItem ci " +
             "LEFT JOIN FETCH ci.options cic " +
             "LEFT JOIN FETCH cic.productOption " +
@@ -25,7 +22,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     List<CartItem> findByCartIdWithoptions(@Param("cartId") Long cartId);
 
     // 특정 상품(Product) ID에 해당하는 모든 CartItem을 소프트 삭제
-    // 상품이 삭제될 때 해당 상품을 담고 있는 모든 장바구니 아이템을 비활성화 (삭제)하는 기능입니다.
     @Modifying
     @Query("UPDATE CartItem ci SET ci.deletedAt = CURRENT_TIMESTAMP WHERE ci.product.id = :productId AND ci.deletedAt IS NULL")
     void softDeleteByProductId(@Param("productId") Long productId);
@@ -33,6 +29,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     // 필요하다면 특정 Cart와 Product에 대한 CartItem을 조회
     Optional<CartItem> findByCartAndProductIdAndDeletedAtIsNull(com.example.backend.entity.Cart cart, Long productId);
 
-    List<CartItem> findByCartAndIdIn(Cart cart,List<Long> ids);
+    // [추가] 배치 삭제 시 활성 아이템만 조회
+    List<CartItem> findByCartAndIdInAndDeletedAtIsNull(Cart cart,List<Long> ids);
 
+    // [추가] CartId 기반으로 활성 아이템만 조회 (fetch join 없이)
+    List<CartItem> findByCartIdAndDeletedAtIsNull(Long cartId);
 }
