@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemDto;
+import com.example.backend.dto.order.OrderRequestDto;
 import com.example.backend.dto.order.OrderResponseDto;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
@@ -202,12 +203,15 @@ public class CartController {
     }
     @PostMapping("/order")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<OrderResponseDto> createOrder(Principal principal) {
+    public ResponseEntity<OrderResponseDto> createOrder(
+            Principal principal,
+            @RequestBody OrderRequestDto requestDto
+            ) {
         if (principal == null) {
             return ResponseEntity.status(401).build(); // 비로그인 접근 차단
         }
         String userEmail = principal.getName();
-        OrderResponseDto orderResponseDto = orderService.createOrderFromCart(userEmail);
+        OrderResponseDto orderResponseDto = orderService.createOrderFromCart(userEmail, requestDto);
         return ResponseEntity.ok(orderResponseDto);
     }
 
