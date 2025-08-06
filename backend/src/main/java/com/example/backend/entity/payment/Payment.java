@@ -36,6 +36,9 @@ public class Payment {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @Column(name = "user_id",nullable = false)
+    private String userId;
+
     @Column(nullable = false)
     private BigDecimal amount; // 개별 결제 건별 금액
 

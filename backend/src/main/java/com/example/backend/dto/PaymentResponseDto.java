@@ -25,16 +25,19 @@ public class PaymentResponseDto {       // 서버 -> 클라이언트로 데이�
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Payment Entity -> Dto 변환 메서드
+    // Payment 엔티티를 PaymentResponseDto로 변환하는 정적 팩토리 메서드
     public static PaymentResponseDto fromEntity(Payment payment) {
+        if (payment == null) {
+            return null;
+        }
         return PaymentResponseDto.builder()
                 .id(payment.getId())
-                .orderId(payment.getOrder().getId())
+                .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
                 .amount(payment.getAmount())
                 .refundAmount(payment.getRefundAmount())
-                .paymentMethod(payment.getPaymentMethod().name())
+                .paymentMethod(payment.getPaymentMethod().name()) // enum을 String으로 변환
                 .transactionId(payment.getTransactionId())
-                .status(payment.getStatus().name())
+                .status(payment.getStatus().name()) // enum을 String으로 변환
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
                 .build();

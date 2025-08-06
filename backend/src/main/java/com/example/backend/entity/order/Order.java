@@ -44,6 +44,9 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
+    @Column(name = "payment_method",nullable = false)
+    private String paymentMethod;
+
     @Column(nullable = false)
     private BigDecimal subtotal;
 

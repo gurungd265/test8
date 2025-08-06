@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import * as orderApi from '../api/order';
+import orderApi from '../api/order';
 import * as virtualPaymentsApi from '../api/virtualPayments';
 import * as paymentRegistrationApi from '../api/paymentRegistration';
 import useCheckoutData from '../hooks/useCheckoutData';
 import useDeliveryOptions from '../hooks/useDeliveryOptions';
-import { generateTransactionId } from '../utils/paymentUtils';
 import CheckoutCustomerInfo from '../components/Checkout/CheckoutCustomerInfo';
 import CheckoutAddressSelection from '../components/Checkout/CheckoutAddressSelection';
 import CheckoutDeliveryOptions from '../components/Checkout/CheckoutDeliveryOptions';
@@ -19,7 +18,6 @@ export default function CheckoutPage() {
     const navigate = useNavigate();
     const { user, isLoggedIn, loading: authLoading } = useAuth();
     const [isOrdering, setIsOrdering] = useState(false);
-    const [isCharging, setIsCharging] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
@@ -81,21 +79,24 @@ export default function CheckoutPage() {
             const creditCard = await paymentRegistrationApi.fetchRegisteredCard(user.email);
 
             setUserBalances(prevBalances => {
-                        return {
-                            ...prevBalances,
-                            point: balancesFromVirtualPayments.pointBalance !== undefined ? balancesFromVirtualPayments.pointBalance : prevBalances.point,
-                            paypay: paypayAccount?.balance !== undefined ? paypayAccount.balance : prevBalances.paypay,
-                            virtualCreditCard: creditCard?.availableCredit !== undefined ? creditCard.availableCredit : prevBalances.virtualCreditCard,
-                        };
-                    });
+                return {
+                    ...prevBalances,
+                    point: balancesFromVirtualPayments.pointBalance !== undefined ? balancesFromVirtualPayments.pointBalance : prevBalances.point,
+                    paypay: paypayAccount?.balance !== undefined ? paypayAccount.balance : prevBalances.paypay,
+                    virtualCreditCard: creditCard?.availableCredit !== undefined ? creditCard.availableCredit : prevBalances.virtualCreditCard,
+                };
+            });
             setPaymentInfo({ paypayAccount, creditCard });
 
-            if (paypayAccount) {
+            // 초기 결제 수단 설정 (등록된 계정이 있는 경우 우선)
+            if (paypayAccount && paypayAccount.balance > 0) {
                 setFormData(prev => ({ ...prev, paymentMethod: 'paypay' }));
-            } else if (creditCard) {
+            } else if (creditCard && creditCard.availableCredit > 0) {
                 setFormData(prev => ({ ...prev, paymentMethod: 'virtual_credit_card' }));
-            } else {
+            } else if (balancesFromVirtualPayments.pointBalance > 0) {
                 setFormData(prev => ({ ...prev, paymentMethod: 'point' }));
+            } else {
+                setFormData(prev => ({ ...prev, paymentMethod: '' }));
             }
 
         } catch (err) {
@@ -189,25 +190,36 @@ export default function CheckoutPage() {
         const virtualPaymentMethods = ['point', 'paypay', 'virtual_credit_card'];
         const isVirtualPayment = virtualPaymentMethods.includes(formData.paymentMethod);
 
-        const balanceKey = formData.paymentMethod === 'virtual_credit_card' ? 'virtualCreditCard' : formData.paymentMethod;
-        const currentBalance = userBalances[balanceKey];
-
         if (!isVirtualPayment) {
             setSubmitError('選択された支払い方法がサポートされていません。');
             setIsOrdering(false);
             return;
         }
 
-        // payment check
+        const balanceKey = formData.paymentMethod === 'virtual_credit_card' ? 'virtualCreditCard' : formData.paymentMethod;
+        const currentBalance = userBalances[balanceKey];
+
         if (currentBalance === undefined || currentBalance < totalAmount) {
             setSubmitError('選択された支払い方法の残高が不足しています。');
             setIsOrdering(false);
             return;
         }
 
-        // payment go
-            try {
-            const orderId = await virtualPaymentsApi.processVirtualPayment(user.email, formData.paymentMethod, totalAmount);
+        try {
+            const orderPayload = {
+                paymentMethod: formData.paymentMethod,
+                billingAddressId: selectedAddressId,
+                shippingAddressId: selectedAddressId,
+            };
+
+            const orderResponse = await orderApi.createOrderFromCart(
+                orderPayload.paymentMethod,
+                orderPayload.billingAddressId,
+                orderPayload.shippingAddressId
+            );
+
+            const orderId = orderResponse.id;
+
             await fetchUserBalancesAndInfo();
             const purchasedItemIds = cartItems.map(item => item.id);
             await removePurchasedItems(purchasedItemIds);
@@ -229,8 +241,8 @@ export default function CheckoutPage() {
 
             navigate('/order-success', { state: { orderId, orderDetails } });
         } catch (err) {
-            console.error('仮想決済API呼び出し失敗:', err);
-            setSubmitError(err.response?.data?.error || '仮想決済処理に失敗しました。もう一度お試しください。');
+            console.error('注文処理に失敗しました:', err);
+            setSubmitError(err.response?.data?.error || '注文処理中にエラーが発生しました。もう一度お試しください。');
         } finally {
             setIsOrdering(false);
         }

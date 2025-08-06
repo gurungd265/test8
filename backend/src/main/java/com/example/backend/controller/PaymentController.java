@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.PaymentRequestDto;
 import com.example.backend.dto.PaymentResponseDto;
+import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.payment.PaymentStatus;
 import com.example.backend.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -31,12 +32,16 @@ public class PaymentController {
         log.info("Payment request received: orderId={}, paymentMethod={}, amount={}, transactionId={}",
                 paymentRequest.getOrderId(), paymentRequest.getPaymentMethod(),
                 paymentRequest.getAmount(), paymentRequest.getTransactionId());
-        PaymentResponseDto paymentResponseDto = paymentService.processPayment(
+        Payment createdPayment = paymentService.createPayment(
+                paymentRequest.getUserId(),
                 paymentRequest.getOrderId(),
-                paymentRequest.getPaymentMethod(),
                 paymentRequest.getAmount(),
+                paymentRequest.getPaymentMethod(),
                 paymentRequest.getTransactionId()
         );
+
+        PaymentResponseDto paymentResponseDto = PaymentResponseDto.fromEntity(createdPayment);
+
         log.info("Payment processed successfully: {}", paymentResponseDto);
         return new ResponseEntity<>(paymentResponseDto, HttpStatus.CREATED);
     }

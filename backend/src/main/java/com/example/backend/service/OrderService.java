@@ -1,6 +1,8 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.*;
+import com.example.backend.dto.CartDto;
+import com.example.backend.dto.CartItemDto;
+import com.example.backend.dto.PaymentResponseDto;
 import com.example.backend.dto.order.DeliveryRequestDto;
 import com.example.backend.dto.order.OrderRequestDto;
 import com.example.backend.dto.order.OrderResponseDto;
@@ -12,8 +14,10 @@ import com.example.backend.entity.order.OrderStatus;
 import com.example.backend.entity.payment.Payment;
 import com.example.backend.entity.user.Address;
 import com.example.backend.entity.user.User;
+import com.example.backend.repository.AddressRepository;
+import com.example.backend.repository.CartRepository;
 import com.example.backend.repository.OrderRepository;
-import com.example.backend.repository.PaymentRepository;
+import com.example.backend.repository.OrderItemRepository;
 import com.example.backend.repository.ProductRepository;
 import com.example.backend.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -38,10 +43,11 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final PaymentRepository paymentRepository;
     private final CartService cartService;
+    private final OrderItemRepository orderItemRepository;
+    private final PaymentService paymentService;
+    private final AddressRepository addressRepository;
 
-    // 현재 로그인한 유저의 전체 주문 목록 조회
     @Transactional(readOnly = true)
     public List<OrderResponseDto> getOrdersByUserEmail(String userEmail) {
         List<Order> orders = orderRepository.findByUserEmail(userEmail);
@@ -50,16 +56,13 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    // 현재 로그인한 유저의 특정 주문 1건 조회 (상세페이지)
     @Transactional(readOnly = true)
     public OrderResponseDto getOrderByIdAndUserEmail(Long orderId, String userEmail) {
         Order order = orderRepository.findByIdAndUserEmail(orderId, userEmail)
                 .orElseThrow(() -> new EntityNotFoundException("注文が存在しないか、アクセス権限がありません。"));
-
         return convertToDto(order);
     }
 
-    // 주문 상태로 주문 리스트 조회
     @Transactional(readOnly = true)
     public List<OrderResponseDto> getOrdersByStatus(OrderStatus status) {
         List<Order> orders = orderRepository.findByStatus(status);
@@ -68,7 +71,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    // 주문번호로 조회
     @Transactional(readOnly = true)
     public OrderResponseDto getOrderByOrderNumber(String orderNumber) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
@@ -76,59 +78,31 @@ public class OrderService {
         return convertToDto(order);
     }
 
-    // 주문번호로 결제내역 조회
     @Transactional(readOnly = true)
     public List<PaymentResponseDto> getPaymentsByOrderId(Long orderId, String userEmail) {
-        // 1. 주문 존재 및 사용자 권한 확인
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
-
-        if (!order.getUser().getEmail().equals(userEmail)) {
-            throw new AccessDeniedException("No permission to access this order's payments.");
-        }
-
-        // 2. 결제 내역 조회
-        List<Payment> payments = paymentRepository.findByOrder(order);
-
-        // 3. DTO 변환 및 반환
-        return payments.stream()
-                .map(this::paymentToDto)
-                .collect(Collectors.toList());
+        return paymentService.getPaymentsByOrderId(orderId, userEmail);
     }
 
-    // 주문 취소
     @Transactional
     public void cancelOrder(Long orderId, String userEmail) {
         Order order = orderRepository.findByIdAndUserEmail(orderId, userEmail)
                 .orElseThrow(() -> new EntityNotFoundException("注文が存在しないか、アクセス権限がありません。"));
 
-        // 이미 배송 중이거나 완료된 주문은 취소 불가
         if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.COMPLETED) {
             throw new IllegalStateException("この注文はキャンセルできません。");
         }
 
-        // 주문 상태 변경
         order.setStatus(OrderStatus.CANCELLED);
 
-        // 재고 복구 로직 (상품 재고 다시 증가시키기)
         for (OrderItem item : order.getOrderItems()) {
             productRepository.findById(item.getProduct().getId())
                     .ifPresent(product -> {
                         product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
                     });
         }
-
-        // 변경사항 저장
         orderRepository.save(order);
     }
 
-    // 주문 생성 =======================================================================================================
-
-    /**
-     * 공통 메소드
-     */
-
-    //주문 생성 기본 세팅
     private Order baseOrderSetup(User user) {
         Order order = new Order();
         order.setUser(user);
@@ -139,56 +113,48 @@ public class OrderService {
         return order;
     }
 
-    // 주문 번호 생성 메서드 (현재 시각 + UUID 기반)
     public String generateUniqueOrderNumber() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return timestamp + "-" + randomPart;
     }
 
-    // User 조회 (User email 기반, 없으면 예외 발생
     private User getUserOrThrow(String userEmail) {
         return userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("ユーザーが存在しません。"));
     }
 
-    // 배송비 정책
-    private BigDecimal calculateShippingFee(DeliveryRequestDto delivery) {
+    private BigDecimal calculateShippingFee() {
         return BigDecimal.valueOf(600);
     }
 
-    /**
-     * 상세페이지 기반 주문 생성
-     */
     @Transactional
     public OrderResponseDto createOrderFromRequest(String userEmail, OrderRequestDto requestDto) {
         User user = getUserOrThrow(userEmail);
-
         Order order = buildOrderFromRequest(requestDto, user);
         orderRepository.save(order);
-
         return convertToDto(order);
     }
 
     private Order buildOrderFromRequest(OrderRequestDto dto, User user) {
         Order order = baseOrderSetup(user);
-
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        for (CartItemDto item : dto.getCartItems()) {
-            OrderItem orderItem = toOrderItem(item, order);
-            orderItems.add(orderItem);
-            subtotal = subtotal.add(orderItem.getSubtotal());
+        if (dto.getCartItems() != null && !dto.getCartItems().isEmpty()) {
+            for (CartItemDto item : dto.getCartItems()) {
+                OrderItem orderItem = toOrderItem(item, order);
+                orderItems.add(orderItem);
+                // [수정] priceAtAddition이 null일 경우를 대비하여 Optional.ofNullable 사용
+                BigDecimal itemPrice = Optional.ofNullable(item.getPriceAtAddition()).orElse(BigDecimal.ZERO);
+                subtotal = subtotal.add(itemPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
+            }
+        } else {
+            subtotal = BigDecimal.valueOf(Optional.ofNullable(dto.getSubtotal()).orElse(0));
         }
 
-        // 배송비 계산
-        BigDecimal shippingFee = calculateShippingFee(dto.getDelivery());
-
-        // 세금 10% 계산 (버림 처리)
+        BigDecimal shippingFee = calculateShippingFee();
         BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.1)).setScale(0, BigDecimal.ROUND_FLOOR);
-
-        // 총 금액 = 소계 + 배송비 + 세금
         BigDecimal totalAmount = subtotal.add(shippingFee).add(tax);
 
         order.setOrderItems(orderItems);
@@ -197,48 +163,70 @@ public class OrderService {
         order.setTax(tax);
         order.setTotalAmount(totalAmount);
 
-        // 배송지 및 청구지 주소 처리
-        if (dto.getDelivery() != null) {
-            order.setShippingAddress(addressDtoToEntity(dto.getDelivery().getShippingAddress(), user));
-            order.setBillingAddress(addressDtoToEntity(dto.getDelivery().getBillingAddress(), user));
+        if (dto.getShippingAddressId() != null) {
+            Address shippingAddress = addressRepository.findById(dto.getShippingAddressId())
+                    .orElseThrow(() -> new EntityNotFoundException("配送先住所が見つかりません。ID: " + dto.getShippingAddressId()));
+            order.setShippingAddress(shippingAddress);
         }
 
+        if (dto.getBillingAddressId() != null) {
+            Address billingAddress = addressRepository.findById(dto.getBillingAddressId())
+                    .orElseThrow(() -> new EntityNotFoundException("請求先住所が見つかりません。ID: " + dto.getBillingAddressId()));
+            order.setBillingAddress(billingAddress);
+        }
         return order;
     }
 
-    /**
-     * 장바구니 기반 주문 생성
-     */
     @Transactional
-    public OrderResponseDto createOrderFromCart(String userEmail) {
+    public OrderResponseDto createOrderFromCart(String userEmail, OrderRequestDto requestDto) {
         CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, null);
         if (cartDto.getItems().isEmpty()) throw new IllegalStateException("カートが空いています。");
 
         User user = getUserOrThrow(userEmail);
         Order order = buildOrderFromCart(cartDto, user);
+
+        order.setPaymentMethod(requestDto.getPaymentMethod());
+
+        Address shippingAddress = addressRepository.findById(requestDto.getShippingAddressId())
+                .orElseThrow(() -> new EntityNotFoundException("配送先住所が見つかりません。"));
+        order.setShippingAddress(shippingAddress);
+
+        Address billingAddress = addressRepository.findById(requestDto.getBillingAddressId())
+                .orElseThrow(() -> new EntityNotFoundException("請求先住所が見つかりません。"));
+        order.setBillingAddress(billingAddress);
+
         orderRepository.save(order);
+
+        String transactionId = UUID.randomUUID().toString();
+        Payment createdPayment = paymentService.createPayment(
+                user.getEmail(),
+                order.getId(),
+                order.getTotalAmount(),
+                order.getPaymentMethod(),
+                transactionId
+        );
+
+        order.getPayments().add(createdPayment);
         cartService.softClearCart(userEmail, null);
+
         return convertToDto(order);
     }
 
     private Order buildOrderFromCart(CartDto cartDto, User user) {
         Order order = baseOrderSetup(user);
-
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (CartItemDto item : cartDto.getItems()) {
             OrderItem orderItem = toOrderItem(item, order);
             orderItems.add(orderItem);
-            subtotal = subtotal.add(orderItem.getSubtotal());
+            // [수정] priceAtAddition이 null일 경우를 대비하여 Optional.ofNullable 사용
+            BigDecimal itemPrice = Optional.ofNullable(item.getPriceAtAddition()).orElse(BigDecimal.ZERO);
+            subtotal = subtotal.add(itemPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
         }
 
-        // 배송비 계산 (필요시 user의 주소 등 고려)
-        BigDecimal shippingFee = calculateShippingFee(null);
-
-        // 세금 계산 (예: 10% 세금, 버림 처리)
+        BigDecimal shippingFee = calculateShippingFee();
         BigDecimal tax = subtotal.multiply(BigDecimal.valueOf(0.1)).setScale(0, BigDecimal.ROUND_FLOOR);
-
         BigDecimal totalAmount = subtotal.add(shippingFee).add(tax);
 
         order.setOrderItems(orderItems);
@@ -246,32 +234,26 @@ public class OrderService {
         order.setShippingFee(shippingFee);
         order.setTax(tax);
         order.setTotalAmount(totalAmount);
-
         return order;
     }
 
-    // 주문 생성 끝 ====================================================================================================
-
-    /**
-     * 변환 헬퍼 메소드
-     */
-
-    // CartItemDto -> OrderItem
     private OrderItem toOrderItem(CartItemDto item, Order order) {
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
         orderItem.setProduct(productRepository.findById(item.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。")));
         orderItem.setProductName(item.getProductName());
-        orderItem.setProductPrice(item.getPriceAtAddition());
+        // [핵심 수정] priceAtAddition이 null일 경우 BigDecimal.ZERO로 대체
+        BigDecimal priceAtAddition = Optional.ofNullable(item.getPriceAtAddition()).orElse(BigDecimal.ZERO);
+        orderItem.setProductPrice(priceAtAddition);
         orderItem.setQuantity(item.getQuantity());
-        orderItem.setSubtotal(item.getPriceAtAddition().multiply(BigDecimal.valueOf(item.getQuantity())));
+        orderItem.setSubtotal(priceAtAddition.multiply(BigDecimal.valueOf(item.getQuantity()))); // 수정된 priceAtAddition 사용
         return orderItem;
     }
 
-    // Order Entity -> OrderResponseDto
     private OrderResponseDto convertToDto(Order order) {
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
+                .filter(item -> item.getOrder() != null && item.getOrder().getId().equals(order.getId()))
                 .map(item -> new OrderItemDto(
                         item.getId(),
                         item.getProduct().getId(),
@@ -283,6 +265,7 @@ public class OrderService {
                 .toList();
 
         List<PaymentResponseDto> paymentResponseDtos = order.getPayments().stream()
+                .filter(payment -> payment.getOrder() != null && payment.getOrder().getId().equals(order.getId()))
                 .map(this::paymentToDto)
                 .toList();
 
@@ -300,10 +283,8 @@ public class OrderService {
                 .build();
     }
 
-    // Address Entity -> AddressDto
     private AddressDto addressToDto(Address address) {
         if (address == null) return null;
-
         return AddressDto.builder()
                 .id(address.getId())
                 .addressType(address.getAddressType())
@@ -316,7 +297,6 @@ public class OrderService {
                 .build();
     }
 
-    // AddressDto -> Address Entity
     private Address addressDtoToEntity(AddressDto dto, User user) {
         Address address = new Address();
         address.setUser(user);
@@ -330,10 +310,8 @@ public class OrderService {
         return address;
     }
 
-    // Payment Entity -> PaymentResponseDto
     private PaymentResponseDto paymentToDto(Payment payment) {
         if (payment == null) return null;
-
         return PaymentResponseDto.builder()
                 .id(payment.getId())
                 .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)

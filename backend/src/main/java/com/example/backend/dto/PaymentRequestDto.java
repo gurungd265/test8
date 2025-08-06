@@ -12,9 +12,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 public class PaymentRequestDto {    // 클라이언트 -> 서버로 결제 요청할 때 보내는 데이터용
+    private String userId;
     private Long orderId;
     private String paymentMethod; // enum -> String
     private BigDecimal amount;
-    private BigDecimal refundedAmount;
     private String transactionId;
 }

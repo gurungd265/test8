@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -22,8 +23,8 @@ public class PaypayAccount {
     @Column(nullable = false, unique = true)
     private String paypayId;
 
-    @Column(nullable = false)
-    private int balance;
+    @Column(nullable = false,precision = 19, scale = 2)
+    private BigDecimal balance;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -35,6 +36,9 @@ public class PaypayAccount {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.balance == null) {
+            this.balance = BigDecimal.ZERO;
+        }
     }
 
     @PreUpdate
@@ -42,20 +46,21 @@ public class PaypayAccount {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void addBalance(int amount) {
-        if (amount < 0) {
+
+    public void addBalance(BigDecimal amount) {
+        if (BigDecimal.ZERO.compareTo(amount) > 0) {
             throw new IllegalArgumentException("追加金額は0円以上から");
         }
-        this.balance += amount;
+        this.balance = this.balance.add(amount);
     }
 
-    public void subtractBalance(int amount) {
-        if (amount < 0) {
+    public void subtractBalance(BigDecimal amount) {
+        if (BigDecimal.ZERO.compareTo(amount) > 0) {
             throw new IllegalArgumentException("差し引かれる金額は、0円以上から.");
         }
-        if (this.balance < amount) {
+        if (this.balance.compareTo(amount) < 0) {
             throw new IllegalStateException("残高が不足しています。");
         }
-        this.balance -= amount;
+        this.balance = this.balance.subtract(amount);
     }
 }
