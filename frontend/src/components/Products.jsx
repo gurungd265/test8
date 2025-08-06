@@ -55,7 +55,7 @@ export default function Products() {
     <>
       {/* Products */}
        <main className="container mx-auto p-4">
-           <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+           <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 gap-y-10">
                  {products.map((product) => (
                      // ProductコンポーネントにバックエンドAPIから受け取った商品データをpropsで伝達します */}
                     <Product key={product.id} product={product} />
