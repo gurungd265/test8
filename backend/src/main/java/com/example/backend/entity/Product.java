@@ -53,9 +53,9 @@ public class Product {
     @JoinColumn(name = "category_id") //PK(category_id)를 JPA가 자동 관리
     private Category category;
 
-    // ============================= ProductCharacteristic =============================
+    // ============================= ProductOption =============================
     @OneToMany(mappedBy = "product")
-    private List<ProductCharacteristic> characteristics;
+    private List<ProductOption> options;
 
     // ================================= ProductReview =================================
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)

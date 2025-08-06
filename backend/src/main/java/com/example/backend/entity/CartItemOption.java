@@ -8,29 +8,28 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collector;
 
 @Entity
-@Table(name = "product_characteristics")
+@Table(name = "cart_item_options")
 @Where(clause = "deleted_at IS NULL")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductCharacteristic {
-
+public class CartItemOption {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
-    private Product product;
+    @ManyToOne
+    @JoinColumn(name = "cart_item_id")
+    private CartItem cartItem;
 
-    @Column(name = "characteristic_name")
-    private String characteristicName;
+    @ManyToOne
+    @JoinColumn(name = "product_Option_id")
+    private ProductOption productOption;
 
-    @Column(name = "characteristic_value")
-    private String characteristicValue;
+    @Column(name = "Option_value")
+    private String OptionValue;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -38,5 +37,4 @@ public class ProductCharacteristic {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
 }

@@ -24,7 +24,7 @@ public class ProductDto {
     private String categoryName;
     private String categorySlug;
 
-    private List<ProductCharacteristicDto> characteristics;
+    private List<ProductOptionDto> options;
     private List<ProductImageResponseDto> images;
 
     public static ProductDto fromEntity(Product product) {
@@ -42,13 +42,13 @@ public class ProductDto {
             dto.setCategorySlug(product.getCategory().getSlug());
         }
 
-        if (product.getCharacteristics() != null) {
-            List<ProductCharacteristicDto> charDtos = product.getCharacteristics().stream()
-                    .map(c -> new ProductCharacteristicDto(c.getCharacteristicName(), c.getCharacteristicValue()))
+        if (product.getOptions() != null) {
+            List<ProductOptionDto> charDtos = product.getOptions().stream()
+                    .map(c -> new ProductOptionDto(c.getOptionName(), c.getOptionValue()))
                     .toList();
-            dto.setCharacteristics(charDtos);
+            dto.setOptions(charDtos);
         } else {
-            dto.setCharacteristics(List.of());
+            dto.setOptions(List.of());
         }
 
         // 이미지 리스트 매핑

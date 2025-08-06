@@ -74,8 +74,8 @@ public class ProductService {
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
 
         // 속성 따로 조회해서 세팅 (Lazy 초기화 방지용)
-        productRepository.findByIdWithCharacteristics(id)
-                .ifPresent(pWithChars -> product.setCharacteristics(pWithChars.getCharacteristics()));
+        productRepository.findByIdWithoptions(id)
+                .ifPresent(pWithChars -> product.setOptions(pWithChars.getOptions()));
 
         return product;
     }

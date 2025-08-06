@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import productsApi from '../api/products';
 import cartApi from '../api/cart';
 import wishlistApi from '../api/wishlist';
-import { Heart } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { CartContext } from '../contexts/CartContext';
 import { useAuth } from "../contexts/AuthContext.jsx";
 import ImageSlider from "../components/ImageSlider.jsx";
@@ -13,39 +13,181 @@ export default function ProductPage() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [quantity, setQuantity] = useState(1);
+    // const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
+    const { fetchCartCount } = useContext(CartContext);
+    const [wished, setWished] = useState(false);
+    const { isLoggedIn, loading: authLoading } = useAuth();
     const productRating = product?.rating ?? 0;
     const productReviewCount = product?.reviewCount ?? 0;
-    const { fetchCartCount } = useContext(CartContext);
-    const [wished, setWished] = useState(false); // お気に入りに追加するための状態
-    const {isLoggedIn,loading: authLoading} = useAuth();
 
+    const [optionSets, setOptionSets] = useState([]);
 
-    // 1. 상태 추가: 옵션 선택 저장 (예: { Color: 'ブラック', Size: 'Mサイズ' })
-    const [selectedOptions, setSelectedOptions] = useState({});
+    const [currentSelection, setCurrentSelection] = useState({
+        options: {},
+        quantity: 1
+    });
 
-    // 2. 옵션 선택 핸들러
+    const groupedOptionValues = useMemo(() => {
+        const grouped = {};
+        product?.options?.forEach(option => {
+            if (!grouped[option.optionName]) {
+                grouped[option.optionName] = [];
+            }
+            if (!grouped[option.optionName].includes(option.optionValue)) {
+                grouped[option.optionName].push(option.optionValue);
+            }
+        });
+        return grouped;
+    }, [product]);
+
+    const [openedOptionGroups, setOpenedOptionGroups] = useState(() => {
+        const groups = Object.keys(groupedOptionValues);
+        const initialState = {};
+        groups.forEach((group, idx) => {
+            initialState[group] = idx === 0;
+        });
+        return initialState;
+    });
+
+    useEffect(() => {
+        const groups = Object.keys(groupedOptionValues);
+        const initialState = {};
+        groups.forEach((group, idx) => {
+            initialState[group] = idx === 0;
+        });
+        setOpenedOptionGroups(initialState);
+    }, [groupedOptionValues])
+
     const handleOptionChange = (key, value) => {
-        setSelectedOptions(prev => {
-            const updated = { ...prev, [key]: value };
-            console.log("선택된 옵션:", updated); // ✅ 여기에
+        // 새 옵션 조합 미리 계산
+        const newOptions = {
+            ...currentSelection.options,
+            [key]: value
+        };
+
+        const groups = Object.keys(groupedOptionValues);
+
+        const allSelected = groups.every(optionKey => newOptions[optionKey]);
+        if (allSelected) {
+            // 중복 체크
+            const isDuplicate = optionSets.some(set =>
+                groups.every(k => set.options[k] === newOptions[k])
+            );
+            if (isDuplicate) {
+                alert("既に選択されたオプションです。");
+                return;  // 상태 변경 없이 함수 종료
+            }
+
+            // 중복이 아니면 새 옵션 세트 추가
+            setOptionSets(prevSets => [...prevSets, { options: newOptions, quantity: 1 }]);
+            setCurrentSelection({ options: {}, quantity: 1 });
+
+            // 다음 그룹 오픈 초기화
+            const resetOpened = {};
+            groups.forEach((group, idx) => {
+                resetOpened[group] = idx === 0;
+            });
+            setOpenedOptionGroups(resetOpened);
+            return;
+        }
+
+        // 아직 모든 옵션 선택 안됐으면 단순히 currentSelection만 갱신
+        setCurrentSelection(prev => ({
+            ...prev,
+            options: newOptions
+        }));
+
+        // 다음 옵션 그룹 오픈 (옵션 선택에 따라)
+        const currentIndex = groups.indexOf(key);
+        if (currentIndex !== -1 && currentIndex + 1 < groups.length) {
+            const nextGroup = groups[currentIndex + 1];
+            setOpenedOptionGroups(prevOpened => ({
+                ...prevOpened,
+                [nextGroup]: true
+            }));
+        }
+    };
+
+    const handleDecreaseQuantity = (index) => {
+        setOptionSets(prev => {
+            const updated = [...prev];
+            const currentQty = updated[index].quantity;
+            if (currentQty > 1) {
+                updated[index] = {
+                    ...updated[index],
+                    quantity: currentQty - 1
+                };
+            }
             return updated;
         });
     };
-    // 3. 옵션 데이터를 key별로 그룹핑하는 헬퍼 함수
-    const groupedOptionValues = useMemo(() => {
-        if (!product?.characteristics) return {};
 
-        return product.characteristics.reduce((acc, item) => {
-            const key = item.characteristicName || 'Unknown';
-            if (!acc[key]) acc[key] = [];
-            if (!acc[key].includes(item.characteristicValue)) {
-                acc[key].push(item.characteristicValue);
+    const handleIncreaseQuantity = (index) => {
+        setOptionSets(prev => {
+            const updated = [...prev];
+            const currentQty = updated[index].quantity;
+            if (currentQty < product.stockQuantity) {
+                updated[index] = {
+                    ...updated[index],
+                    quantity: currentQty + 1
+                };
             }
-            return acc;
-        }, {});
-    }, [product]);
+            return updated;
+        });
+    };
+
+    const handleRemoveOptionSet = (index) => {
+        setOptionSets(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAddToCart = async () => {
+        if (optionSets.length === 0) {
+            alert('最低でも1つのオプションセットを追加してください。');
+            return;
+        }
+        try {
+            for (const set of optionSets) {
+                await cartApi.addToCart(product.id, {
+                    options: set.options,
+                    quantity: set.quantity
+                });
+            }
+            alert('カートに追加されました！');
+            setOptionSets([]);
+            setCurrentSelection({ options: {}, quantity: 1 });
+            fetchCartCount();
+            const groups = Object.keys(groupedOptionValues);
+            const resetOpened = {};
+            groups.forEach((group, idx) => {
+                resetOpened[group] = idx === 0;
+            });
+            setOpenedOptionGroups(resetOpened);
+        } catch (err) {
+            console.error(err);
+            alert('カートに追加できませんでした。');
+        }
+    };
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                setLoading(true);
+                const data = await productsApi.getProductById(parseInt(id));
+                console.log("Product data fetched:", data);
+                console.log("Product options:", data.options);
+                setProduct(data);
+                if (data.images && data.images.length > 0) {
+                    setMainImage(data.images[0].imageUrl);
+                }
+            } catch (err) {
+                setError('商品情報を読み込むことができませんでした。');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProduct();
+    }, [id]);
 
     useEffect(() => {
         const checkWishStatus = async () => {
@@ -53,7 +195,6 @@ export default function ProductPage() {
                 setWished(false);
                 return;
             }
-
             try {
                 const wishlistItems = await wishlistApi.getWishlistItems();
                 const isProductWished = wishlistItems.some(item => item.productId === parseInt(id));
@@ -62,21 +203,17 @@ export default function ProductPage() {
                 console.error("お気に入りリストの状態を確認できませんでした。", err);
             }
         };
-
         checkWishStatus();
-    }, [id, isLoggedIn, authLoading])
+    }, [id, isLoggedIn, authLoading]);
 
     const handleWishlist = async (e) => {
         e.preventDefault();
-
         if (!isLoggedIn) {
             alert("お気に入りリスト操作にはログインが必要です。");
             return;
         }
-
         const previousWished = wished;
         setWished(!previousWished); // optimistic update
-
         try {
             if (!previousWished) {
                 // 추가 요청
@@ -90,118 +227,26 @@ export default function ProductPage() {
         } catch (err) {
             console.error("お気に入りリスト操作に失敗しました。", err);
             setWished(previousWished); // 롤백
-
             const message = err.response?.data || "不明なエラーが発生しました。";
             alert(`お気に入りリスト操作中にエラーが発生しました: ${message}`);
         }
     };
-
-    useEffect(() => {
-        console.log("useEffect 실행됨: 상품 데이터 요청 시작, id =", id);
-        const fetchProduct = async () => {
-            try {
-                console.log("fetchProduct 함수 실행");
-                setLoading(true);
-                setError(null);
-
-                const productIdNum = parseInt(id);
-                if (isNaN(productIdNum)) {
-                    setError('無効な商品IDです。');
-                    setLoading(false);
-                    return;
-                }
-
-                console.log("API 호출 시작 - productId:", productIdNum);
-                const data = await productsApi.getProductById(productIdNum);
-                console.log("API 응답:", data);
-
-                console.log("product.id:", data?.id);
-                if (data.characteristics && data.characteristics.length > 0) {
-                    console.log("✔ characteristics 데이터:", data.characteristics);
-                } else {
-                    console.log("⚠ characteristics 없음 또는 비어 있음");
-                }
-
-                setProduct(data);
-
-                if (data && data.images && data.images.length > 0 && mainImage === '') {
-                    setMainImage(data.images[0].imageUrl);
-                }
-            } catch (err) {
-                console.error(`商品ID ${id}の読み込みに失敗しました:`, err);
-                if (err.response && err.response.status === 404) {
-                    setError('商品を見つけることができませんでした。');
-                } else {
-                    setError('商品情報を読み込むことができませんでした。サーバーの状態を確認してください。');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProduct();
-    }, [id]);
 
     if (loading) {
         return (
             <div className="p-6 text-center text-gray-700">商品情報を読み込み中...</div>
         );
     }
-
     if (error) {
         return (
             <div className="p-6 text-center text-red-600">{error}</div>
         );
     }
-
     if (!product) {
         return (
             <div className="p-6 text-center text-gray-500">商品情報がありません。</div>
         );
     }
-
-    // DBテーブルのstock_quantity変更
-    const handleQuantityChange = (e) => {
-        const value = parseInt(e.target.value);
-        // 1個以上、そして在庫数量(product.stock Quantity)以下のみ選択可能
-        if (!isNaN(value) && value >= 1 && value <= product.stockQuantity) {
-            setQuantity(value);
-        } else if (value > product.stockQuantity) {
-            setQuantity(product.stockQuantity); // 最大在庫数量に設定
-            alert(`最大${product.stockQuantity}個まで注文可能です。`);
-        } else if (value < 1) {
-            setQuantity(1);
-            alert('数量は1以上である必要があります。');
-        }
-    };
-
-    //カートに追加ハンドラー
-    const handleAddToCart = async() => {
-        if (product.stockQuantity <= 0) {
-            alert("この商品は現在、在庫がありません。");
-            return;
-        }
-        if (quantity <= 0) {
-            alert("数量は1以上である必要があります。");
-            return;
-        }
-        try {
-            // 実際のショッピングカートAPI呼び出し
-            await cartApi.addToCart(product.id, quantity);
-            alert(`${product.name} ${quantity}個がカートに追加されました！`);
-            fetchCartCount();
-            // 成功的に追加されると、ショッピングカートページに移動したり、ショッピングカートアイコンのアップデートなど
-            // navigate('/cart'); // 必要に応じてショッピングカートページへ自動移動
-        } catch (err) {
-            console.error('カートに追加できませんでした。', err);
-            if (err.response && err.response.status === 401) {
-                alert('カートに追加するにはログインが必要です。');
-            } else if (err.response && err.response.data && err.response.data.message) {
-                alert(`カートに追加中にエラーが発生しました: ${err.response.data.message}`); // backend error
-            } else {
-                alert('カートに追加中に不明なエラーが発生しました。');
-            }
-        }
-    };
 
     //表示される価格計算(割引価格があれば割引価格、なければ原価)
     const displayPrice = product.discountPrice !== null && product.discountPrice !== undefined
@@ -289,71 +334,101 @@ export default function ProductPage() {
                     </div>
 
                     {/* Price */}
-                    <div>
-                        {product.discountPrice !== null && product.discountPrice !== undefined && (
-                            <div className="text-xl text-gray-500 line-through mb-1">
-                                {/* 割引前の価格 */}
-                                {product.price.toLocaleString()}円
+                    {product.discountPrice !== null && product.discountPrice !== undefined && (
+                        <div className="text-xl text-gray-500 line-through mb-1">
+                            {/* 割引前の価格 */}
+                            {product.price.toLocaleString()}円
                             </div>
                         )}
-                        <div className="text-4xl font-bold text-purple-700 mb-2">
-                            {/* displayPrice */}
-                            {displayPrice.toLocaleString()}円
-                        </div>
-                        <div className="text-2xl text-gray-500">
-                            {Math.floor(displayPrice / 24).toLocaleString()}円/月 24回払い
-                        </div>
+                    <div className="text-4xl font-bold text-purple-700 mb-2">
+                        {/* displayPrice */}
+                        {displayPrice.toLocaleString()}円
                     </div>
-
-                    {/*/!* Characteristic *!/*/}
-                    {Object.entries(groupedOptionValues).map(([optionGroup, values]) => (
-                        <div key={optionGroup} className="mb-4">
-                            <label className="block font-medium mb-1">{optionGroup}</label>
-                            <select
-                                className="w-full border rounded p-2"
-                                value={selectedOptions[optionGroup] || ''}
-                                onChange={e => handleOptionChange(optionGroup, e.target.value)}
+                    <div className="text-2xl text-gray-500">
+                        {Math.floor(displayPrice / 24).toLocaleString()}円/月 24回払い
+                    </div>
+                    {/* Options */}
+                    {Object.entries(groupedOptionValues).map(([optionName, values]) => (
+                        <div key={optionName} className="mb-4 border rounded p-4">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setOpenedOptionGroups(prev => ({
+                                        ...prev,
+                                        [optionName]: !prev[optionName],
+                                    }))
+                                }
+                                className="w-full text-left font-medium text-lg flex justify-between items-center"
                             >
-                                <option value="">選択してください</option>
-                                {values.map((value, i) => (
-                                    <option key={i} value={value}>{value}</option>
-                                ))}
-                            </select>
+                                {optionName}
+                            </button>
+                            {openedOptionGroups[optionName] && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {values.map(value => (
+                                        <button
+                                            key={value}
+                                            onClick={() => handleOptionChange(optionName, value)}
+                                            className={`px-3 py-1 border rounded ${
+                                                currentSelection.options[optionName] === value
+                                                    ? "bg-purple-600 text-white"
+                                                    : "bg-gray-100 text-gray-700"
+                                            }`}
+                                        >
+                                            {value}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
+                    {/* Added Option Sets */}
+                    <div className="mt-6">
+                        {optionSets.map((set, index) => (
+                            <div
+                                key={index}
+                                className="p-3 mb-2 rounded flex justify-between items-center"
+                            >
+                                <div>
+                                    {Object.entries(set.options).map(([key, value]) => (
+                                        <span key={key} className="mr-2">
+                                            {value}
+                                        </span>
+                                    ))}
+                                </div>
 
-                    {/* quantity select */}
-                    <div className="mb-6 flex items-center gap-4">
-                        <label htmlFor="quantity" className="text-lg font-semibold">数量:</label>
-                        <input
-                            type="number"
-                            id="quantity"
-                            min="1"
-                            max={product.stockQuantity} // DB stock_quantity
-                            value={quantity}
-                            onChange={handleQuantityChange}
-                            className="w-20 p-2 border rounded-md text-center"
-                        />
-                    </div>
-
-                    {/* Stock Info (DB Table: stock_quantity) */}
-                    {product.stockQuantity > 0 ? ( // DB stock_quantity
-                        <div className="text-sm text-green-600">
-                            残り{product.stockQuantity}点 ご注文はお早めに
-                        </div>
-                    ) : (
-                        <div className="text-sm text-red-600">在庫切れ</div>
-                    )}
-                    <div className="text-sm text-gray-500">今週109人が購入しました</div>
-
-                    {/* Buttons */}
-                    <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-1">
+                                        <button
+                                            onClick={() => handleDecreaseQuantity(index)}
+                                            className="px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300"
+                                            aria-label="수량 감소"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="w-10 text-center">{set.quantity}</span>
+                                        <button
+                                            onClick={() => handleIncreaseQuantity(index)}
+                                            className="px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300"
+                                            aria-label="수량 증가"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRemoveOptionSet(index)}
+                                        className="ml-4 text-gray-700 font-bold"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                         <button
-                            onClick={handleAddToCart} // 장바구니 추가 핸들러 연결
+                            onClick={handleAddToCart}
                             className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
                             disabled={product.stockQuantity <= 0}
                         >
-                            カートに入れる
+                            カートに追加
                         </button>
                     </div>
                 </div>

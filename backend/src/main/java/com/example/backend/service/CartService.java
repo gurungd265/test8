@@ -1,9 +1,11 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.CartDto;
+import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.CartItemDto;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.CartItem;
+import com.example.backend.entity.CartItemOption;
 import com.example.backend.entity.Product;
 import com.example.backend.entity.user.User;
 import com.example.backend.repository.CartRepository;
@@ -36,7 +38,7 @@ public class CartService {
      * - 로그인 유저(userEmail) 또는 비회원(sessionId) 기준 카트 조회 및 생성
      * - 재고 수량 체크 후, 기존 아이템 수량 업데이트 또는 신규 아이템 추가
      */
-     @Transactional
+    @Transactional
     public CartItem addProductToCart(String userEmail, String sessionId, Long productId, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("追加する数量は1以上である必要があります。");
@@ -129,7 +131,7 @@ public class CartService {
             if (existingItemOpt.isPresent()) { // 중복 상품 수량 합산
                 CartItem existingItem = existingItemOpt.get();
                 existingItem.setQuantity(existingItem.getQuantity() + sessionItem.getQuantity());
-                // ⭐ 재고 확인 추가
+                // 재고 확인 추가
                 if (existingItem.getProduct().getStockQuantity() == null ||
                         existingItem.getProduct().getStockQuantity() < (existingItem.getQuantity())) {
                     // 재고 부족 시 예외 발생 또는 가능한 만큼만 추가하는 로직 구현
@@ -170,7 +172,10 @@ public class CartService {
     @Transactional(readOnly = true)
     public CartDto getCartByUserEmailOrSessionId(String userEmail, String sessionId) {
         Cart cart = getOrCreateCart(userEmail, sessionId);
-        return convertToDto(cart);
+        List<CartItem> cartItemsWithChars = cartItemRepository.findByCartIdWithoptions(cart.getId());
+
+        // CartItem을 CartItemDto로 변환하여 반환
+        return convertToDto(cartItemsWithChars);
     }
 
     /**
@@ -285,18 +290,37 @@ public class CartService {
     }
 
     // Cart -> CartDto 변환
-    private CartDto convertToDto(Cart cart) {
-        List<CartItemDto> items = cart.getCartItems().stream()
+    private CartDto convertToDto(List<CartItem> cartItems) {
+        if (cartItems.isEmpty()) {
+            return new CartDto(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    0
+            );
+        }
+
+        Cart cart = cartItems.get(0).getCart(); // 모든 CartItem은 같은 Cart에 속하니까 첫 아이템에서 Cart 가져옴
+
+        // CartItemDto 리스트 생성
+        List<CartItemDto> items = cartItems.stream()
                 .filter(item -> item.getDeletedAt() == null)
-                .map(item -> new CartItemDto(
-                        item.getId(),
-                        item.getProduct().getId(),
-                        item.getProduct().getName(),
-                        item.getProduct().getPrice(),           // 정가
-                        item.getPriceAtAddition(),              // 할인가 (카트 담긴 시점)
-                        item.getProduct().getMainImageUrl(),
-                        item.getQuantity()
-                ))
+                .map(item -> CartItemDto.builder()
+                        .id(item.getId())
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getName())
+                        .productPrice(item.getProduct().getPrice())
+                        .priceAtAddition(item.getPriceAtAddition())
+                        .productImageUrl(item.getProduct().getMainImageUrl())
+                        .quantity(item.getQuantity())
+                        .options(item.getOptions().stream() // 상품 속성 정보까지 포함
+                                .map(this::convertOptionToDto)
+                                .toList())
+                        .build()
+                )
                 .toList();
 
         return new CartDto(
@@ -308,6 +332,16 @@ public class CartService {
                 items,
                 items.size()
         );
+    }
+
+    // option -> optionDto
+    private CartItemOptionDto convertOptionToDto(CartItemOption option) {
+        return CartItemOptionDto.builder()
+                .id(option.getId())
+                .productOptionId(option.getProductOption().getId())
+                .optionName(option.getProductOption().getOptionName())  // 속성 이름 추가
+                .optionValue(option.getOptionValue())
+                .build();
     }
 
     //카트 카운트 계산

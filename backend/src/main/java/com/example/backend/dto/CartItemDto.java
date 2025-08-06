@@ -1,11 +1,13 @@
 package com.example.backend.dto;
 
+import com.example.backend.entity.CartItemOption;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -22,4 +24,6 @@ public class CartItemDto {
     private String productImageUrl;
 
     private int quantity;
+
+    private List<CartItemOptionDto> options;
 }
