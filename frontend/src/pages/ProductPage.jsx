@@ -388,16 +388,14 @@ export default function ProductPage() {
                                 key={index}
                                 className="p-3 mb-2 rounded flex justify-between items-center"
                             >
-                                <div>
+                                <div className="text-gray-500">
                                     {Object.entries(set.options).map(([key, value]) => (
-                                        <span key={key} className="mr-2">
-                                            {value}
-                                        </span>
+                                        <div key={key} className="mb-1">{value}</div>
                                     ))}
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-1">
+                                    <div className="flex items-center space-x-0.25">
                                         <button
                                             onClick={() => handleDecreaseQuantity(index)}
                                             className="px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300"
@@ -405,7 +403,7 @@ export default function ProductPage() {
                                         >
                                             -
                                         </button>
-                                        <span className="w-10 text-center">{set.quantity}</span>
+                                        <span className="w-10 text-center text-gray-700">{set.quantity}</span>
                                         <button
                                             onClick={() => handleIncreaseQuantity(index)}
                                             className="px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300"
@@ -416,7 +414,7 @@ export default function ProductPage() {
                                     </div>
                                     <button
                                         onClick={() => handleRemoveOptionSet(index)}
-                                        className="ml-4 text-gray-700 font-bold"
+                                        className="ml-4 text-gray-500 font-bold"
                                     >
                                         <X size={20} />
                                     </button>
