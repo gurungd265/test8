@@ -118,7 +118,7 @@ export default function Product({ product }) {
   return (
     <>
       {/* Product */}
-      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative pb-16">
+      <div className="bg-white rounded overflow-hidden flex flex-col justify-between hover:shadow-lg duration-500 group relative">
         {/* Add To Wishes */}
         <button
           onClick={handleWishlist}
