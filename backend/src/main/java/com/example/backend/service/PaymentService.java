@@ -9,94 +9,113 @@ import com.example.backend.entity.payment.PaymentStatus;
 import com.example.backend.repository.OrderRepository;
 import com.example.backend.repository.PaymentRepository;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
-    private final ExternalPaymentService externalPaymentService;
 
+    private final CardService cardService;
+    private final PaypayService paypayService;
+    private final PointService pointService;
+
+    /**
+     * 결제 트랜잭션을 생성하고 처리합니다. (내부 가상 결제 시스템 사용)
+     * @param userId 사용자 식별자 (이메일 또는 ID)
+     * @param orderId 관련 주문의 ID
+     * @param amount 결제 금액
+     * @param paymentMethodStr 결제 방법의 문자열 (예: "PAYPAY", "VIRTUAL_CREDIT_CARD", "POINT")
+     * @return 생성되고 처리된 Payment 엔티티
+     */
     @Transactional
-    public PaymentResponseDto processPayment(
-            Long orderId, String paymentMethodStr, BigDecimal amount, String transactionId) {
-
-        // 1. 주문 조회
+    public Payment createPayment(
+            String userId,
+            Long orderId,
+            BigDecimal amount,
+            String paymentMethodStr,
+            String transactionId
+    ) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("注文が見つかりません。"));
 
-        // 2. 중복 결제 방지
-        if (paymentRepository.findByTransactionId(transactionId).isPresent()) {
-            throw new IllegalArgumentException("トランザクションIDが既に存在します。");
-        }
-
-        // 3. 결제 금액 확인
-        if (order.getTotalAmount().compareTo(amount) != 0) {
-            throw new IllegalArgumentException("決済金額が注文金額と一致しません。");
-        }
-
-        // 4. String -> PaymentMethod enum 변환
         PaymentMethod paymentMethod;
-        if (paymentMethodStr == null || paymentMethodStr.isEmpty()) {
-            throw new IllegalArgumentException("결제 수단이 비어있습니다");
-        }
         try {
             paymentMethod = PaymentMethod.valueOf(paymentMethodStr.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("無効な決済手段です: " + paymentMethodStr);
         }
 
-        // 5. 결제 초기 상태로 생성
         Payment payment = new Payment();
         payment.setOrder(order);
+        payment.setUserId(userId);
         payment.setAmount(amount);
-        payment.setPaymentMethod(paymentMethod); // enum
+        payment.setPaymentMethod(paymentMethod);
         payment.setTransactionId(transactionId);
         payment.setStatus(PaymentStatus.INITIATED);
 
-        // 6. 외부 결제 API 호출 (모킹으로 대체)
+        boolean paymentSuccess = false;
+        String errorMessage = null;
+
         try {
-            boolean paymentSuccess = externalPaymentService.charge(paymentMethod.name(), amount, transactionId);
-
-            if (paymentSuccess) {
-                payment.setStatus(PaymentStatus.COMPLETED);
-                order.setStatus(OrderStatus.COMPLETED);
-            } else {
-                payment.setStatus(PaymentStatus.FAILED);
-                order.setStatus(OrderStatus.PAYMENT_FAILED);
+            switch (paymentMethod) {
+                case PAYPAY:
+                    paypayService.deductPaypayBalance(userId, amount);
+                    paymentSuccess = true;
+                    break;
+                case CREDIT_CARD:
+                    cardService.deductCreditBalance(userId, amount.intValue());
+                    paymentSuccess = true;
+                    break;
+                case POINT:
+                    pointService.deductPoints(userId, amount);
+                    paymentSuccess = true;
+                    break;
+                default:
+                    throw new IllegalArgumentException("サポートされていない決済手段です: " + paymentMethodStr);
             }
-
-        } catch (Exception ex) {
-            payment.setStatus(PaymentStatus.FAILED);
-            order.setStatus(OrderStatus.PAYMENT_FAILED);
+        } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
+            errorMessage = e.getMessage();
+            log.error("内部決済処理中にエラーが発生しました: {}", errorMessage);
+            paymentSuccess = false;
+        } catch (Exception e) {
+            errorMessage = "決済処理中に予期せぬエラーが発生しました。";
+            log.error("内部決済処理中に予期せぬエラーが発生しました: {}", e.getMessage(), e);
+            paymentSuccess = false;
         }
 
-        // 7. 저장
+        if (paymentSuccess) {
+            payment.setStatus(PaymentStatus.COMPLETED);
+            order.setStatus(OrderStatus.COMPLETED);
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            order.setStatus(OrderStatus.PAYMENT_FAILED);
+            throw new RuntimeException("決済処理に失敗しました: " + errorMessage);
+        }
+
         paymentRepository.save(payment);
         orderRepository.save(order);
 
-        // 8. DTO 반환 (enum -> String 변환)
-        return PaymentResponseDto.builder()
-                .id(payment.getId())
-                .orderId(order.getId())
-                .amount(payment.getAmount())
-                .paymentMethod(payment.getPaymentMethod().name())
-                .transactionId(payment.getTransactionId())
-                .status(payment.getStatus().name())
-                .createdAt(payment.getCreatedAt())
-                .updatedAt(payment.getUpdatedAt())
-                .build();
+        return payment;
     }
 
-    // 결제 취소
+    /**
+     * 결제를 취소합니다.
+     * @param transactionId 취소할 결제의 트랜잭션 ID
+     * @return 취소된 결제의 DTO
+     */
     @Transactional
     public PaymentResponseDto cancelPayment(String transactionId) {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
@@ -106,25 +125,32 @@ public class PaymentService {
             throw new IllegalStateException("取り消しされた決済です。");
         }
 
-        // 외부 결제 시스템에 취소 요청
-        boolean cancelSuccess = externalPaymentService.cancel(transactionId);
+        // [변경] 외부 결제 시스템 취소 요청 대신, 내부 잔액 복구 로직 필요 (예: 포인트/페이페이/가상카드 잔액 복구)
+        // 여기서는 간단히 성공으로 가정하고, 실제 구현에서는 각 서비스의 복구 메서드 호출
+        boolean cancelSuccess = true; // externalPaymentService.cancel(transactionId);
+
         if (!cancelSuccess) {
             throw new RuntimeException("決済取り消しに失敗しました。");
         }
 
-        payment.setStatus(PaymentStatus.CANCELED); //결제 상태 변경
+        payment.setStatus(PaymentStatus.CANCELED); // 결제 상태 변경
         paymentRepository.save(payment);
 
         Order order = payment.getOrder();
         if (order != null) {
-            order.setStatus(OrderStatus.CANCELLED); //주문 상태 변경
+            order.setStatus(OrderStatus.CANCELLED); // 주문 상태 변경
             orderRepository.save(order);
         }
 
         return PaymentResponseDto.fromEntity(payment);
     }
 
-    // 환불 처리
+    /**
+     * 결제를 환불합니다.
+     * @param transactionId 환불할 결제의 트랜잭션 ID
+     * @param refundAmount 환불 금액
+     * @return 환불된 결제의 DTO
+     */
     @Transactional
     public PaymentResponseDto refundPayment(String transactionId, BigDecimal refundAmount) {
         // 1. transactionId로 결제 내역 조회, 없으면 예외 발생
@@ -146,8 +172,9 @@ public class PaymentService {
             throw new IllegalArgumentException("返金額が支払額を超えています。");
         }
 
-        // 5. 외부 결제 시스템에 환불 요청 (모킹 처리: 무조건 true 반환)
-        boolean refundSuccess = externalPaymentService.refund(transactionId, refundAmount);
+        // [변경] 외부 결제 시스템 환불 요청 대신, 내부 잔액 복구 로직 필요
+        // 여기서는 간단히 성공으로 가정하고, 실제 구현에서는 각 서비스의 복구 메서드 호출
+        boolean refundSuccess = true; // externalPaymentService.refund(transactionId, refundAmount);
         if (!refundSuccess) {
             throw new RuntimeException("返金処理に失敗しました。");
         }
@@ -181,11 +208,22 @@ public class PaymentService {
         return PaymentResponseDto.fromEntity(payment);
     }
 
-    // 특정 주문별 결제내역 조회
+    /**
+     * 특정 주문별 결제 내역을 조회합니다.
+     * @param orderId 주문 ID
+     * @param userEmail 사용자 이메일
+     * @return 결제 내역 DTO 목록
+     */
+    @Transactional(readOnly = true)
     public List<PaymentResponseDto> getPaymentsByOrderId(Long orderId, String userEmail) {
         // 주문이 해당 유저의 주문인지 확인
-        Order order = orderRepository.findByIdAndUserEmail(orderId, userEmail)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found or access denied"));
+
+        // 사용자 권한 확인 (OrderService에서 넘어온 userEmail과 비교)
+        if (!order.getUser().getEmail().equals(userEmail)) {
+            throw new AccessDeniedException("No permission to access this order's payments.");
+        }
 
         List<Payment> payments = paymentRepository.findByOrder(order);
 
@@ -194,7 +232,9 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
-    // 결제상태별 결제내역 목록 조회
+    /**
+     * 결제 상태별 결제 내역 목록을 조회합니다.
+     */
     @Transactional(readOnly = true)
     public List<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status) {
         List<Payment> payments = paymentRepository.findByStatus(status);
@@ -202,5 +242,4 @@ public class PaymentService {
                 .map(PaymentResponseDto::fromEntity)
                 .collect(Collectors.toList());
     }
-
 }

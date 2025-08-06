@@ -4,10 +4,11 @@ import com.example.backend.dto.payment.PaypayRegistrationRequestDto;
 import com.example.backend.entity.payment.PaypayAccount;
 import com.example.backend.repository.payment.PaypayAccountRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -16,10 +17,10 @@ public class PaypayService {
     @Autowired
     private PaypayAccountRepository paypayAccountRepository;
 
-    public int getPaypayBalance(String userId) {
+    public BigDecimal getPaypayBalance(String userId) {
         return paypayAccountRepository.findByUserId(userId)
                 .map(PaypayAccount::getBalance)
-                .orElse(0);
+                .orElse(BigDecimal.ZERO);
     }
 
     public Optional<PaypayAccount> getPaypayAccountByUserId(String userId){
@@ -36,33 +37,30 @@ public class PaypayService {
         PaypayAccount newPaypayAccount = new PaypayAccount();
         newPaypayAccount.setUserId(requestDto.getUserId());
         newPaypayAccount.setPaypayId(requestDto.getPaypayId());
-        newPaypayAccount.setBalance(0);
+        newPaypayAccount.setBalance(BigDecimal.ZERO);
 
         return paypayAccountRepository.save(newPaypayAccount);
     }
 
-    // PayPayアカウントの残高を仮想的にチャージするメソッド (新規追加)
     @Transactional
-    public PaypayAccount topUpPaypayBalance(String userId, int amount) {
-        if (amount <= 0) {
+    public PaypayAccount topUpPaypayBalance(String userId, int amountInt) {
+        BigDecimal amount = BigDecimal.valueOf(amountInt);
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("チャージ金額は0より大きくなければなりません。");
         }
         PaypayAccount paypayAccount = paypayAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("PayPayアカウントが見つかりません。"));
+
         paypayAccount.addBalance(amount);
         return paypayAccountRepository.save(paypayAccount);
     }
 
     @Transactional
-    public int deductPaypayBalance(String userId, int amount) {
+    public BigDecimal deductPaypayBalance(String userId, BigDecimal amount) {
         PaypayAccount paypayAccount = paypayAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("PayPayアカウントが見つかりませんでした。"));
 
-        if (paypayAccount.getBalance() < amount) {
-            throw new IllegalStateException("PayPay残高が不足しています。");
-        }
-
-        paypayAccount.setBalance(paypayAccount.getBalance() - amount);
+        paypayAccount.subtractBalance(amount);
         paypayAccountRepository.save(paypayAccount);
 
         return paypayAccount.getBalance();

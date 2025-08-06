@@ -117,13 +117,16 @@ public class OrderController {
 
     // 2) 장바구니 기반 주문 생성
     @PostMapping("/cart")
-    public ResponseEntity<OrderResponseDto> createOrderFromCart(Principal principal) {
+    public ResponseEntity<OrderResponseDto> createOrderFromCart(
+            Principal principal,
+            @Valid @RequestBody OrderRequestDto requestDto
+    ) {
         log.info("Create order from cart request by user: {}", principal != null ? principal.getName() : "anonymous");
         if (principal == null) {
             return ResponseEntity.status(401).build();
         }
         String userEmail = principal.getName();
-        OrderResponseDto orderResponseDto = orderService.createOrderFromCart(userEmail);
+        OrderResponseDto orderResponseDto = orderService.createOrderFromCart(userEmail, requestDto);
         log.info("Order created from cart successfully: orderId={}, user={}", orderResponseDto.getId(), userEmail);
         return ResponseEntity.status(201).body(orderResponseDto);
     }
