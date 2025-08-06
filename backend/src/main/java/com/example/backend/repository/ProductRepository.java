@@ -6,7 +6,6 @@ import com.example.backend.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,8 +35,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdWithImages(@Param("id") Long id);
 
     // 2) 속성만 fetch join
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.characteristics WHERE p.id = :id")
-    Optional<Product> findByIdWithCharacteristics(@Param("id") Long id);
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.options WHERE p.id = :id")
+    Optional<Product> findByIdWithoptions(@Param("id") Long id);
 
     // 상품 검색(부분 일치, 대소문자 무시) + 페이징 + 이미지
     @Query(value = "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productImages WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))",

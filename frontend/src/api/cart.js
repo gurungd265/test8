@@ -7,8 +7,11 @@ const isLoggedIn = () => {
 
 const cartApi = {
     // カートに商品を追加
-    addToCart: async (productId, quantity) => {
+    addToCart: async (productId, quantity, selectedoptions) => {
+        // 기본 URL 설정
         let url = `/api/cart/items?productId=${productId}&quantity=${quantity}`;
+
+        // 비회원인 경우, sessionId를 쿼리 파라미터로 추가
         if(!isLoggedIn()){
             let sessionId = Cookies.get('sessionId');
             if (!sessionId) {
@@ -17,6 +20,13 @@ const cartApi = {
             }
             url += `&sessionId=${sessionId}`;
         }
+
+        // 선택된 속성들을 쿼리 파라미터로 추가
+        selectedoptions.forEach(attr => {
+            url += `&${encodeURIComponent(attr.optionName)}=${encodeURIComponent(attr.optionValue)}`;
+        });
+
+        // API 호출
         try {
             const response = await api.post(url);
             return response.data;

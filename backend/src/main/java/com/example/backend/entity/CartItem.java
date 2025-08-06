@@ -10,6 +10,8 @@ import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "cart_items")
@@ -44,5 +46,26 @@ public class CartItem {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt; // 삭제 처리한 시간
+
+    // ============================================ CartItemOption ============================================
+    @OneToMany(mappedBy = "cartItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItemOption> options = new ArrayList<>();
+
+    public void addOption(ProductOption productOption, String value) {
+        // Check if the Option already exists
+        for (CartItemOption cic : options) {
+            if (cic.getProductOption().getId().equals(productOption.getId())) {
+                // If exists, update the value
+                cic.setOptionValue(value);
+                return; // Exit the method
+            }
+        }
+        // If not exists, add a new Option
+        CartItemOption cic = new CartItemOption();
+        cic.setCartItem(this);
+        cic.setProductOption(productOption);
+        cic.setOptionValue(value);
+        this.options.add(cic);
+    }
 
 }

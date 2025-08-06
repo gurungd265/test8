@@ -29,6 +29,12 @@ export default function CartPage() {
                   discountPrice: item.priceAtAddition !== null && item.priceAtAddition !== undefined
                       ? Number(item.priceAtAddition)
                       : Number(item.productPrice || 0),
+                  totalPrice: item.priceAtAddition * item.quantity,
+                  options: item.options.map(option => ({
+                      ...option,
+                      optionName: option.optionName || '未設定',
+                      optionValue: option.optionValue || '未設定',
+                  }))
               }));
 
               setCart({ ...cartData, items: normalizedItems });
@@ -249,6 +255,13 @@ export default function CartPage() {
                                                 })()}
                                             </p>
                                         </Link>
+                                        <div className="mt-2">
+                                            {item.options && item.options.length > 0 && item.options.map((char, index) => (
+                                                <p key={index} className="text-sm text-gray-600">
+                                                    <strong>{char.optionName}:</strong> {char.optionValue}
+                                                </p>
+                                            ))}
+                                        </div>
                                         {/*Quantity Controls*/}
                                         <div className="mt-2 flex items-center gap-2">
                                             <button
