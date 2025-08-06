@@ -3,15 +3,9 @@ package com.example.backend.service;
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.CartItemDto;
-import com.example.backend.entity.Cart;
-import com.example.backend.entity.CartItem;
-import com.example.backend.entity.CartItemOption;
-import com.example.backend.entity.Product;
+import com.example.backend.entity.*;
 import com.example.backend.entity.user.User;
-import com.example.backend.repository.CartRepository;
-import com.example.backend.repository.CartItemRepository;
-import com.example.backend.repository.ProductRepository;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.repository.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -30,16 +24,12 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final ProductOptionRepository productOptionRepository;
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
 
-    /**
-     * 카트에 상품 추가
-     * - 로그인 유저(userEmail) 또는 비회원(sessionId) 기준 카트 조회 및 생성
-     * - 재고 수량 체크 후, 기존 아이템 수량 업데이트 또는 신규 아이템 추가
-     */
     @Transactional
-    public CartItem addProductToCart(String userEmail, String sessionId, Long productId, int quantity) {
+    public CartItem addProductToCart(String userEmail, String sessionId, Long productId, int quantity, List<CartItemOptionDto> optionDtos) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("追加する数量は1以上である必要があります。");
         }
@@ -51,14 +41,14 @@ public class CartService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
 
-        // 카트에 이미 존재하는 아이템 확인
+        // 카트에 이미 존재하는 아이템 확인 (옵션까지 고려하는 로직 필요하면 확장 가능)
         Optional<CartItem> existingItemOpt = cart.getCartItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct().getId().equals(productId)
+                        && optionsMatch(item.getOptions(), optionDtos))
                 .findFirst();
 
         int newQuantity = quantity;
         if (existingItemOpt.isPresent()) {
-            // 기존 수량에 추가
             newQuantity += existingItemOpt.get().getQuantity();
         }
 
@@ -68,22 +58,65 @@ public class CartService {
         }
 
         CartItem cartItem;
-         if (existingItemOpt.isPresent()) {
-             cartItem = existingItemOpt.get();
-             cartItem.setQuantity(newQuantity);
-         } else {
-             cartItem = new CartItem();
-             cartItem.setCart(cart);
-             cartItem.setProduct(product);
-             cartItem.setQuantity(quantity);
-             cartItem.setPriceAtAddition(product.getDiscountPrice()); // ✔ 할인 가격 저장
-             cart.addCartItem(cartItem);
-         }
+        if (existingItemOpt.isPresent()) {
+            cartItem = existingItemOpt.get();
+            cartItem.setQuantity(newQuantity);
+        } else {
+            cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
+            cartItem.setQuantity(quantity);
+            cartItem.setPriceAtAddition(product.getDiscountPrice());
+            cart.addCartItem(cartItem);
 
-        // 변경사항 저장
+            // 옵션 추가
+            if (optionDtos != null && !optionDtos.isEmpty()) {  // 옵션이 null이거나 빈 배열인지 체크
+                for (CartItemOptionDto optionDto : optionDtos) {
+                    // 상품 옵션 조회
+                    ProductOption productOption = productOptionRepository.findById(optionDto.getProductOptionId())
+                            .orElseThrow(() -> new EntityNotFoundException("Product option not found"));
+
+                    // CartItemOption 생성
+                    CartItemOption option = new CartItemOption();
+                    option.setCartItem(cartItem);
+                    option.setProductOption(productOption);
+                    option.setOptionValue(optionDto.getOptionValue());
+
+                    // CartItem에 옵션 추가
+                    cartItem.getOptions().add(option);
+                }
+            }
+        }
+
         cartItemRepository.save(cartItem);
 
         return cartItem;
+    }
+
+    /**
+     * 옵션 리스트 비교 (두 리스트가 같은 옵션을 가지고 있는지 간단 비교)
+     * 필요에 따라 비교 로직 확장 가능
+     */
+    private boolean optionsMatch(List<CartItemOption> existingOptions, List<CartItemOptionDto> newOptions) {
+        if ((existingOptions == null || existingOptions.isEmpty()) && (newOptions == null || newOptions.isEmpty())) {
+            return true;
+        }
+        if (existingOptions == null || newOptions == null) {
+            return false;
+        }
+        if (existingOptions.size() != newOptions.size()) {
+            return false;
+        }
+
+        // 간단히 모든 옵션이 같은지 확인 (productOptionId와 optionValue 기준)
+        for (CartItemOption existingOption : existingOptions) {
+            boolean matched = newOptions.stream().anyMatch(newOption ->
+                    newOption.getProductOptionId().equals(existingOption.getProductOption().getId()) &&
+                            newOption.getOptionValue().equals(existingOption.getOptionValue())
+            );
+            if (!matched) return false;
+        }
+        return true;
     }
 
     /**

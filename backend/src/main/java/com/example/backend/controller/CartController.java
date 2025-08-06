@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemDto;
+import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.order.OrderResponseDto;
 import com.example.backend.entity.CartItem;
 import com.example.backend.service.CartService;
@@ -64,22 +65,25 @@ public class CartController {
     public ResponseEntity<CartDto> getCart(
             Principal principal,
             HttpServletRequest request,
-            HttpServletResponse response
+            HttpServletResponse response,
+            @RequestParam(value = "sessionId", required = false) String sessionIdFromRequestParam
     ) {
-        // principal : JwtAuthenticationFilter가 JWT 검증 후 SecurityContext에 세팅한 인증 정보
-        // principal이 null 아니면 로그인한 이메일 반환, null이면 비로그인 상태
         String userEmail = (principal != null) ? principal.getName() : null;
-        String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
                 .map(jakarta.servlet.http.Cookie::getValue)
                 .orElse(null);
 
-        if(userEmail==null && sessionIdFromCookie ==null){
+        // 쿼리 파라미터가 있으면 우선 사용, 없으면 쿠키에서 조회
+        String sessionId = (sessionIdFromRequestParam != null) ? sessionIdFromRequestParam : sessionIdFromCookie;
+
+        if (userEmail == null && sessionId == null) {
             String newSessionId = UUID.randomUUID().toString();
             CookieUtil.addCookie(response, CART_SESSION_ID, newSessionId, 60 * 60 * 24 * 7);
             CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, newSessionId);
             return ResponseEntity.ok(cartDto);
         }
-        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionIdFromCookie);
+
+        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionId);
         return ResponseEntity.ok(cartDto);
     }
 
@@ -88,6 +92,7 @@ public class CartController {
     public ResponseEntity<CartItemDto> addProductToCart(
             @RequestParam Long productId,
             @RequestParam int quantity,
+            @RequestBody(required = false) List<CartItemOptionDto> optionDtos,
             Principal principal,
             HttpServletRequest request,
             HttpServletResponse response
@@ -106,7 +111,7 @@ public class CartController {
         }
 
         String finalSessionId = sessionIdFromCookie;
-        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity);
+        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity, optionDtos);
         CartItemDto dto = convertToDto(cartItem);
         return ResponseEntity.ok(dto);
     }
@@ -223,6 +228,14 @@ public class CartController {
                 .priceAtAddition(item.getProduct().getDiscountPrice()) //할인가
                 .productImageUrl(item.getProduct().getMainImageUrl())
                 .quantity(item.getQuantity())
+                .options(item.getOptions().stream()
+                        .map(option -> CartItemOptionDto.builder()
+                                .id(option.getId())
+                                .productOptionId(option.getProductOption().getId())
+                                .optionName(option.getProductOption().getOptionName())
+                                .optionValue(option.getOptionValue())
+                                .build())
+                        .toList())
                 .build();
     }
 

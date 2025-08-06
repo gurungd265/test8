@@ -30,14 +30,17 @@ export default function CartPage() {
                       ? Number(item.priceAtAddition)
                       : Number(item.productPrice || 0),
                   totalPrice: item.priceAtAddition * item.quantity,
-                  options: item.options.map(option => ({
-                      ...option,
-                      optionName: option.optionName || '未設定',
-                      optionValue: option.optionValue || '未設定',
-                  }))
+                  options: Array.isArray(item.options)
+                      ? item.options.map(option => ({
+                          ...option,
+                          optionName: option.optionName || '未設定',
+                          optionValue: option.optionValue || '未設定',
+                      }))
+                      : [],  // options가 없으면 빈 배열로 초기화
               }));
 
               setCart({ ...cartData, items: normalizedItems });
+              console.log('normalizedItems', normalizedItems);
 
               // 초기엔 전체 선택 해제 상태
               setSelectedItems(new Set());
@@ -48,8 +51,8 @@ export default function CartPage() {
               setLoading(false);
           }
       };
-    fetchCart();
-  }, []);
+      fetchCart();
+      }, []);
 
   if (loading) return <div className="p-6 text-center text-gray-700">カート情報を読み込み中...</div>;
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;

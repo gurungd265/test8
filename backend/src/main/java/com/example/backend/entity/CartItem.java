@@ -48,7 +48,7 @@ public class CartItem {
     private LocalDateTime deletedAt; // 삭제 처리한 시간
 
     // ============================================ CartItemOption ============================================
-    @OneToMany(mappedBy = "cartItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "cartItem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<CartItemOption> options = new ArrayList<>();
 
     public void addOption(ProductOption productOption, String value) {
