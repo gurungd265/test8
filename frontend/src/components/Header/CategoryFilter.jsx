@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 export default function CategoryFilter({ categories, selectedCategory, onFilter }) {
 
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true);
 
     return (
         <div className={"mb-6"}>
@@ -21,7 +21,9 @@ export default function CategoryFilter({ categories, selectedCategory, onFilter 
                     <button
                         onClick={() => onFilter(null)}
                         className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                            !selectedCategory ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
+                            !selectedCategory 
+                                ? "bg-purple-600 text-white" 
+                                : "hover:bg-gray-100 text-gray-800"
                         }`}
                     >
                         すべて
@@ -32,7 +34,9 @@ export default function CategoryFilter({ categories, selectedCategory, onFilter 
                             key={category.id}
                             onClick={() => onFilter(category.id)}
                             className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                                selectedCategory === category.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
+                                selectedCategory === category.id 
+                                    ? "bg-purple-600 text-white" 
+                                    : "hover:bg-gray-100 text-gray-800"
                             }`}
                         >
                             {category.name}
