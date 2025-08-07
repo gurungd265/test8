@@ -42,21 +42,19 @@ export default function MobileSearch({ setIsCatalogOpen }) {
         <div className="p-3 bg-white fixed top-0 left-0 w-full z-30 shadow">
             <div className="flex items-center gap-3">
                 {/* 검색창 */}
-                <div className="flex items-center border rounded bg-gray-50 flex-grow" style={{height: 32}}>
+                <div className="flex w-full items-center border rounded overflow-hidden bg-gray-50 flex-grow h-10">
                     <input
                         type="text"
                         placeholder="探す..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        className="flex-1 px-3 py-1 bg-gray-50 outline-none text-sm"
-                        style={{height: 28}}
+                        className="w-full px-3 py-0 bg-gray-50 outline-none text-sm h-10"
                     />
                     <button
-                        className="bg-purple-600 text-white px-3 flex items-center justify-center rounded-r"
+                        className="h-10 bg-purple-600 text-white px-3 flex items-center justify-center hover:bg-purple-700"
                         onClick={handleSearch}
                         aria-label="Submit search"
-                        style={{height: 28, minWidth: 32}}
                     >
                         <Search size={14}/>
                     </button>

@@ -82,15 +82,19 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
 
           </div>
 
-          {/* Search, Wishlist, Cart, Profile 영역 */}
-          <div className="flex items-center gap-3">
-
+          {/* Search */}
+          <div className="flex-1 mx-4 max-w-2xl">
             <SearchBox
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 onSearch={handleSearch}
                 onKeyPress={handleKeyPress}
             />
+          </div>
+
+          {/* Wishlist, Cart, Profile 영역 */}
+          <div className="flex items-center gap-3">
+
 
             <WishlistButton />
 
