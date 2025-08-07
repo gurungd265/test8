@@ -9,18 +9,27 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
         cardCompanyName: '',
         cardNumber: '',
         cardHolderName: '',
-        expiryDate: '',
+        expiryMonth: '',
+        expiryYear: '',
         cvv: ''
     });
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setCardInfo(prev => ({ ...prev, [name]: value }));
+
+        if (['cardNumber', 'cvv', 'expiryMonth', 'expiryYear'].includes(name)) {
+            const onlyDigits = value.replace(/\D/g, '');
+            setCardInfo(prev => ({ ...prev, [name]: onlyDigits }));
+        } else {
+            setCardInfo(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit(cardInfo);
+        onSubmit({
+            ...cardInfo,
+        });
     };
 
     return (
@@ -36,16 +45,20 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
             )}
             <div className="mb-4">
                 <label htmlFor="cardCompanyName" className="block text-sm font-medium text-gray-700 mb-2">カード会社名</label>
-                <input
-                    type="text"
+                <select
                     id="cardCompanyName"
                     name="cardCompanyName"
                     value={cardInfo.cardCompanyName}
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="例: Visa, Mastercard"
                     required
-                />
+                >
+                    <option value="">選択</option>
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="JCB">JCB</option>
+                    <option value="American Express">American Express</option>
+                </select>
             </div>
             <div className="mb-4">
                 <label htmlFor="cardHolderName" className="block text-sm font-medium text-gray-700 mb-2">カード名義人名</label>
@@ -70,23 +83,43 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="16桁のカード番号"
-                    maxLength="16"
+                    maxLength={16}
                     required
+                    pattern="\d{16}"
+                    title="16桁の数字で入力してください"
                 />
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
                 <div>
-                    <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-2">有効期限 (MM/YY)</label>
+                    <label htmlFor="expiryMonth" className="block text-sm font-medium text-gray-700 mb-2">有効期限（月）</label>
                     <input
                         type="text"
-                        id="expiryDate"
-                        name="expiryDate"
-                        value={cardInfo.expiryDate}
+                        id="expiryMonth"
+                        name="expiryMonth"
+                        value={cardInfo.expiryMonth}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="MM/YY"
-                        maxLength="5"
+                        placeholder="MM"
+                        maxLength={2}
                         required
+                        pattern="^(0[1-9]|1[0-2])$"
+                        title="01～12の2桁の月を入力してください"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="expiryYear" className="block text-sm font-medium text-gray-700 mb-2">有効期限（年）</label>
+                    <input
+                        type="text"
+                        id="expiryYear"
+                        name="expiryYear"
+                        value={cardInfo.expiryYear}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="YY"
+                        maxLength={2}
+                        required
+                        pattern="^\d{2}$"
+                        title="2桁の年（例：25）を入力してください"
                     />
                 </div>
                 <div>
@@ -99,8 +132,10 @@ export default function CreditCardRegistrationForm({ onSubmit, isLoading, messag
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="3桁"
-                        maxLength="3"
+                        maxLength={3}
                         required
+                        pattern="\d{3}"
+                        title="3桁の数字で入力してください"
                     />
                 </div>
             </div>

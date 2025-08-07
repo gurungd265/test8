@@ -1,92 +1,143 @@
 import api from './index';
-// 複数のAPIを一つに統合して、ポイントとPayPayの残高を同時に取得する関数
+
+/**
+ * ユーザーのすべての残高（ポイント、PayPay、バーチャルカード）を一度に照会するAPI
+ * @param {string} userId - ユーザーID
+ * @returns {Promise<object>} BalanceResponseDtoオブジェクト
+ */
 export const fetchAllBalances = async (userId) => {
-    console.log(`[API] ポイント・PayPay残高一括照会リクエスト (ユーザーID: ${userId})`);
+    console.log(`[API] ポイント・PayPay・バーチャルカード残高の一括照会リクエスト (ユーザーID: ${userId})`);
     try {
-        // バックエンドの新しいエンドポイントに合わせて修正: /api/balances/{userId}
         const response = await api.get(`/api/balances/${userId}`);
-        return response.data; // { pointBalance, paypayBalance } オブジェクトを返します
+        return response.data; // { pointBalance, paypayBalance, virtualCardBalance } オブジェクトを返します。
     } catch (error) {
         if (error.response?.status === 404) {
-            console.warn('[API] 残高情報なし。初期値0で処理。');
-            return { pointBalance: 0, paypayBalance: 0 };
+            console.warn('[API] 残高情報がありません。初期値0として処理します。');
+            return { pointBalance: 0, paypayBalance: 0, virtualCardBalance: 0 };
         }
-        console.error('[API] 残高照会失敗:', error);
+        console.error('[API] 残高照会に失敗しました:', error);
         throw error;
     }
 };
 
-// 既存の関数を新しい fetchAllBalances 関数を使用して再構成
+/**
+ * すべての残高照会関数を使用してポイント残高を取得します。
+ * @param {string} userId - ユーザーID
+ * @returns {Promise<number>} ポイント残高
+ */
 export const fetchPointBalance = async (userId) => {
     const balances = await fetchAllBalances(userId);
     return balances.pointBalance;
 };
 
+/**
+ * すべての残高照会関数を使用してPayPay残高を取得します。
+ * @param {string} userId - ユーザーID
+ * @returns {Promise<number>} PayPay残高
+ */
 export const fetchPayPayBalance = async (userId) => {
     const balances = await fetchAllBalances(userId);
     return balances.paypayBalance;
 };
 
-// PayPayでポイントチャージ
+/**
+ * PayPayでポイントをチャージします。
+ * @param {string} userId - ユーザーID
+ * @param {number} amount - チャージ金額
+ * @returns {Promise<object>} 更新された全体の残高を含むBalanceResponseDto
+ */
 export const chargePointsWithPayPay = async (userId, amount) => {
-    console.log(`[API] PayPayでポイントチャージ: 金額: ${amount} (ユーザーID: ${userId})`);
+    console.log(`[API] PayPayでポイントをチャージ: 金額: ${amount} (ユーザーID: ${userId})`);
     const payload = { userId, amount };
     try {
-        // バックエンドの新しいエンドポイントに合わせて修正
+        // バックエンドが更新された全体の残高(BalanceResponseDto)を返します。
         const response = await api.post('/api/balances/charge/paypay', payload);
         return response.data;
     } catch (error) {
-        console.error('[API] ポイントチャージ失敗:', error);
+        console.error('[API] ポイントチャージに失敗しました:', error);
         throw error;
     }
 };
 
-// クレジットカードでポイントチャージ
+/**
+ * クレジットカードでポイントをチャージします。
+ * @param {string} userId - ユーザーID
+ * @param {number} amount - チャージ金額
+ * @returns {Promise<object>} 新しいポイント残高を含むオブジェクト
+ */
 export const chargePointsWithCreditCard = async (userId, amount) => {
-    console.log(`[API] クレジットカードでポイントチャージ: 金額: ${amount} (ユーザーID: ${userId})`);
+    console.log(`[API] クレジットカードでポイントをチャージ: 金額: ${amount} (ユーザーID: ${userId})`);
     const payload = { userId, amount };
     try {
-        // バックエンドの新しいエンドポイントに合わせて修正
         const response = await api.post('/api/balances/charge/card', payload);
         return response.data;
     } catch (error) {
-        console.error('[API] ポイントチャージ失敗:', error);
+        console.error('[API] ポイントチャージに失敗しました:', error);
         throw error;
     }
 };
 
-// ポイントをPayPayに返金
+/**
+ * ポイントをPayPayに払い戻します。
+ * @param {string} userId - ユーザーID
+ * @param {number} amount - 払い戻し金額
+ * @returns {Promise<object>} 更新された全体の残高を含むBalanceResponseDto
+ */
 export const refundPointsToPayPay = async (userId, amount) => {
-    console.log(`[API] ポイントをPayPayに返金: 金額: ${amount} (ユーザーID: ${userId})`);
+    console.log(`[API] ポイントをPayPayに払い戻し: 金額: ${amount} (ユーザーID: ${userId})`);
     const payload = { userId, amount };
     try {
-        // バックエンドの新しいエンドポイントに合わせて修正
         const response = await api.post('/api/balances/refund/paypay', payload);
         return response.data;
     } catch (error) {
-        console.error('[API] ポイント返金失敗:', error);
+        console.error('[API] ポイント払い戻しに失敗しました:', error);
         throw error;
     }
 };
 
+/**
+ * ポイントを差し引きます (新しい関数)。
+ * @param {string} userId - ユーザーID
+ * @param {number} amount - 差し引き金額
+ * @returns {Promise<object>} 新しいポイント残高を含むオブジェクト
+ */
+export const deductPoints = async (userId, amount) => {
+    console.log(`[API] ポイント残高から差し引き: 金額: ${amount} (ユーザーID: ${userId})`);
+    const payload = { userId, amount };
+    try {
+        const response = await api.post('/api/balances/deduct/point', payload);
+        return response.data;
+    } catch (error) {
+        console.error('[API] ポイントの差し引きに失敗しました:', error);
+        throw error;
+    }
+};
+
+/**
+ * バーチャル決済を統合する関数
+ * @param {string} userId - ユーザーID
+ * @param {string} method - 決済方法 ('point', 'paypay', 'virtual_credit_card', 'PAYPAY_REFUND')
+ * @param {number} totalAmount - 決済金額
+ * @returns {Promise<object>} 決済後の残高情報
+ */
 export const processVirtualPayment = async (userId, method, totalAmount) => {
-    console.log(`[API] 仮想決済リクエスト: ${method}, 金額: ${totalAmount} (ユーザーID: ${userId})`);
+    console.log(`[API] バーチャル決済リクエスト: ${method}, 金額: ${totalAmount} (ユーザーID: ${userId})`);
     const payload = { userId: userId, amount: totalAmount };
 
     if (method.toUpperCase() === 'PAYPAY_REFUND') {
         const response = await refundPointsToPayPay(userId, totalAmount);
-        console.log(`[API] 仮想決済成功:`, response);
+        console.log(`[API] バーチャル決済成功:`, response);
         return response;
     } else if (method === 'point') {
-        console.log(`[API] ポイント決済: バックエンドでのポイント消費は注文確定時に行われます。`);
-
-        return { message: "ポイント決済処理はフロントエンドで完了しました。" };
+        const response = await deductPoints(userId, totalAmount);
+        console.log(`[API] ポイント決済成功:`, response);
+        return response;
     } else if (method === 'paypay') {
-        console.log(`[API] PayPay仮想残高からの支払い: 金額: ${totalAmount} (ユーザーID: ${userId})`);
+        console.log(`[API] PayPayバーチャル残高で決済: 金額: ${totalAmount} (ユーザーID: ${userId})`);
         const response = await api.post('/api/balances/deduct/paypay', payload);
         return response.data;
     } else if (method === 'virtual_credit_card') {
-        console.log(`[API] クレジットカード仮想残高からの支払い: 金額: ${totalAmount} (ユーザーID: ${userId})`);
+        console.log(`[API] クレジットカードバーチャル残高で決済: 金額: ${totalAmount} (ユーザーID: ${userId})`);
         const response = await api.post('/api/balances/deduct/card', payload);
         return response.data;
     }
@@ -96,13 +147,13 @@ export const processVirtualPayment = async (userId, method, totalAmount) => {
     }
 };
 
-
+/**
+ * PayPayでポイントをチャージします。
+ * @param {string} userId - ユーザーID
+ * @param {number} amount - チャージ金額
+ * @returns {Promise<object>} 更新された全体の残高を含むBalanceResponseDto
+ */
 export const topUpPointsWithPayPay = async (userId, amount) => {
     console.log(`[API] PayPayでポイントチャージリクエスト: ${amount}ポイント (ユーザーID: ${userId})`);
-    const response = await api.post('/api/balances/charge/paypay', {
-        userId,
-        amount
-    });
-    return response.data;
+    return chargePointsWithPayPay(userId, amount);
 };
-

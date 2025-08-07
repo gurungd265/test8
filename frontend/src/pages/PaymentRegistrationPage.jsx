@@ -42,16 +42,30 @@ export default function PaymentRegistrationPage() {
         }
     };
 
+    function maskCardNumber(number) {
+        if (!number || number.length < 4) return '**** **** **** ****';
+        const last4 = number.slice(-4);
+        return '**** **** **** ' + last4;
+    }
+
     const handleCreditCardSubmit = async (cardInfo) => {
         setIsLoading(true);
         setMessage(null);
         try {
             if (!user || !user.email) throw new Error('ユーザー情報がありません。');
+
+            const expiryDate = `${cardInfo.expiryMonth.padStart(2, '0')}${cardInfo.expiryYear.padStart(2, '0')}`; // MMYY 형식
             const fullCardInfo = {
                 userId: user.email,
-                ...cardInfo,
+                cardCompanyName: cardInfo.cardCompanyName,
+                cardNumber: cardInfo.cardNumber,  // 실제 16자리 숫자
+                cardHolderName: cardInfo.cardHolderName,
+                expiryDate,
+                cvv: cardInfo.cvv,
             };
+
             await paymentRegistrationApi.registerCard(fullCardInfo);
+
             setMessage({ type: 'success', text: 'クレジットカードの登録が完了しました。' });
             setTimeout(() => navigate('/my-points'), 500);
         } catch (err) {

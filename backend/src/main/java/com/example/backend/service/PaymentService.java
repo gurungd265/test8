@@ -76,7 +76,7 @@ public class PaymentService {
                     paymentSuccess = true;
                     break;
                 case CREDIT_CARD:
-                    cardService.deductCreditBalance(userId, amount.intValue());
+                    cardService.deductCreditBalance(userId, amount);
                     paymentSuccess = true;
                     break;
                 case POINT:
