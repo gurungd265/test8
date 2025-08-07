@@ -80,9 +80,25 @@ public class ProductService {
         return product;
     }
 
+    private String convertKatakanaToHiragana(String input) {
+        if (input == null) return null;
+        StringBuilder sb = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            if (c >= '\u30A1' && c <= '\u30F6') {
+                sb.append((char)(c - 0x60));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     // 상품 검색 (부분 일치, 대소문자 무시) + 페이징처리
     public Page<ProductDto> searchProductsByName(String keyword, Pageable pageable) {
-        Page<Product> products = productRepository.findByNameContainingIgnoreCaseWithImages(keyword, pageable);
+        // 키워드를 히라가나로 변환
+        String convertedKeyword = convertKatakanaToHiragana(keyword);
+        // 원본 키워드와 변환 키워드를 모두 넘겨서 리포지토리에서 OR 조건으로 검색
+        Page<Product> products = productRepository.findByNameOrConvertedName(keyword, convertedKeyword, pageable);
         return products.map(this::toDto);
     }
 

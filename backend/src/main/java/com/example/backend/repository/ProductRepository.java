@@ -39,9 +39,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdWithoptions(@Param("id") Long id);
 
     // 상품 검색(부분 일치, 대소문자 무시) + 페이징 + 이미지
-    @Query(value = "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productImages WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))",
-            countQuery = "SELECT COUNT(p) FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<Product> findByNameContainingIgnoreCaseWithImages(@Param("keyword") String keyword, Pageable pageable);
+    @Query(value = """
+    SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productImages
+    WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword1, '%'))
+       OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword2, '%'))
+    """,
+            countQuery = """
+    SELECT COUNT(p) FROM Product p
+    WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword1, '%'))
+       OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword2, '%'))
+    """)
+    Page<Product> findByNameOrConvertedName(@Param("keyword1") String keyword1,
+                                            @Param("keyword2") String keyword2,
+                                            Pageable pageable);
 
     // 카테고리별 조회 + 페이징 + 이미지
     @Query(value = "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productImages WHERE p.category.id = :categoryId",
