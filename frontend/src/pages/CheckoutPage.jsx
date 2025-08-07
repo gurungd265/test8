@@ -63,7 +63,10 @@ export default function CheckoutPage() {
     } = useCheckoutData();
 
     const { deliveryDates, DELIVERY_TIME_SLOTS } = useDeliveryOptions();
-    const calculatedSubtotal = subtotal || cartItems.reduce((sum, item) => sum + (item.priceAtAddition * item.quantity), 0);
+    const calculatedSubtotal = cartItems.reduce((sum, item) => {
+        const price = item.priceAtAddition != null && item.priceAtAddition !== 0 ? item.priceAtAddition : item.productPrice;
+        return sum + price * item.quantity;
+    }, 0);
     const shippingFee = 600;
     const tax = Math.floor(calculatedSubtotal * 0.1);
     const totalAmount = calculatedSubtotal + shippingFee + tax;

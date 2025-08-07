@@ -40,11 +40,11 @@ export default function OrderSuccess() {
                     <CheckCircle className="w-20 h-20 text-green-500 animate-check-icon" strokeWidth={1.2} />
                 </div>
 
-                <h1 className="text-4xl font-extrabold text-gray-800 mb-4 animate-fade-in">
+                <h1 className="text-3xl font-extrabold text-gray-800 mb-4 animate-fade-in">
                     {isLoggedIn && user ? `${user.lastName}${user.firstName}様、ご注文ありがとうございます！` : 'ご注文ありがとうございます！'}
                 </h1>
 
-                <p className="text-xl text-gray-600 mb-8 animate-fade-in-delay-100">
+                <p className="text-lg text-gray-600 mb-8 animate-fade-in-delay-100">
                     ご注文が正常に処理されました。注文確認メールを送信しました。
                 </p>
 
@@ -52,19 +52,42 @@ export default function OrderSuccess() {
                 <div className="bg-gray-50 rounded-xl p-6 mb-8 text-left shadow-inner">
                     <div className="flex items-center gap-3 border-b border-gray-200 pb-4 mb-4">
                         <ShoppingBag className="text-gray-700 w-6 h-6" />
-                        <span className="text-2xl font-bold text-gray-800">注文番号: {orderId}</span>
+                        <span className="text-lg font-bold text-gray-800">注文番号: {orderId}</span>
                     </div>
 
-                    {/* 注文した商品リスト */}
+                    {/* Ordered product list */}
                     <div className="mb-4">
-                        <h3 className="text-lg font-bold text-gray-700 mb-2">ご注文商品</h3>
-                        <ul className="space-y-2">
+                        <h3 className="text-lm font-bold text-gray-700 mb-4">ご注文商品</h3>
+                        <ul className="space-y-4">
                             {orderDetails.cartItems.map(item => (
-                                <li key={item.id} className="flex justify-between items-center text-gray-600 border-b border-gray-100 pb-2 last:border-b-0">
-                                    <span className="truncate">{item.name}</span>
-                                    <span className="font-medium text-gray-800">
-                                        ¥{(item.priceAtAddition * item.quantity).toLocaleString()} ({item.quantity}点)
-                                    </span>
+                                <li key={item.id} className="flex gap-4 items-start border-b border-gray-200 pb-4 last:border-b-0">
+                                    {/* Image */}
+                                    <img
+                                        src={item.productImageUrl}
+                                        alt={item.productName}
+                                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md flex-shrink-0"
+                                    />
+
+                                    {/* Product name and options */}
+                                    <div className="flex flex-col flex-grow">
+                                        <span className="text-sm font-semibold text-gray-800">{item.productName}</span>
+                                        {/* Options */}
+                                        {item.options && item.options.length > 0 && (
+                                            <ul className="mt-2 text-xs text-gray-600 space-y-1">
+                                                {item.options.map(opt => (
+                                                    <li key={opt.id}>
+                                                        <span className="font-medium">{opt.optionName}:</span> {opt.optionValue}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+
+                                    {/* Price and quantity */}
+                                    <div className="text-right text-sm text-gray-800 font-medium whitespace-nowrap">
+                                        ¥{(item.priceAtAddition * item.quantity).toLocaleString()} <br />
+                                        <span className="text-xs text-gray-500">({item.quantity}点)</span>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -74,18 +97,18 @@ export default function OrderSuccess() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-4 border-t border-gray-200">
                         {isLoggedIn && user && (
                             <div>
-                                <h3 className="text-lg font-bold text-gray-700 mb-2 flex items-center gap-2"><User size={20} className="text-blue-500"/>お客様情報</h3>
+                                <h3 className="text-lm font-bold text-gray-700 mb-2 flex items-center gap-2"><User size={20} className="text-blue-500"/>お客様情報</h3>
                                 <p className="text-sm text-gray-600">{user.lastName} {user.firstName} 様</p>
                                 <p className="text-sm text-gray-600">{user.email}</p>
                             </div>
                         )}
                         <div>
-                            <h3 className="text-lg font-bold text-gray-700 mb-2 flex items-center gap-2"><CreditCard size={20} className="text-blue-500"/>お支払い情報</h3>
+                            <h3 className="text-lm font-bold text-gray-700 mb-2 flex items-center gap-2"><CreditCard size={20} className="text-blue-500"/>お支払い情報</h3>
                             <p className="text-sm text-gray-600">お支払い方法: {orderDetails.paymentMethod === 'paypay' ? 'PayPay' : 'ポイント'}</p>
-                            <p className="text-xl font-bold text-gray-800 mt-2">合計金額: ¥{orderDetails.totalAmount.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-gray-800 mt-2">合計金額: ¥{orderDetails.totalAmount.toLocaleString()}</p>
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-700 mb-2 flex items-center gap-2"><Truck size={20} className="text-blue-500"/>配送先情報</h3>
+                            <h3 className="text-lm font-bold text-gray-700 mb-2 flex items-center gap-2"><Truck size={20} className="text-blue-500"/>配送先情報</h3>
                             <p className="text-sm text-gray-600">〒{orderDetails.address.postalCode}</p>
                             <p className="text-sm text-gray-600">{orderDetails.address.state} {orderDetails.address.city} {orderDetails.address.street}</p>
                             <p className="text-sm text-gray-600 mt-1">お届け予定日: {orderDetails.deliveryDate}</p>

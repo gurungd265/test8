@@ -1,6 +1,7 @@
 import React from 'react';
 
 export default function CheckoutOrderSummary({ cartItems, calculatedSubtotal, shippingFee, tax, totalAmount }) {
+    console.log('cartItems:', cartItems);
     return (
         <div className="bg-white p-6 rounded-lg shadow-md sticky top-4">
             <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">注文内容</h2>
@@ -23,8 +24,20 @@ export default function CheckoutOrderSummary({ cartItems, calculatedSubtotal, sh
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="font-medium text-gray-800">{item.productName}</h3>
+
+                                    {/* 옵션 목록 추가 */}
+                                    {item.options && item.options.length > 0 && (
+                                        <ul className="text-sm text-gray-500 mb-1">
+                                            {item.options.map((opt) => (
+                                                <li key={opt.id}>
+                                                    {opt.optionName}: {opt.optionValue}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+
                                     <p className="text-sm text-gray-600">
-                                        ¥{Number(item.priceAtAddition ?? 0).toLocaleString()} × {item.quantity}
+                                        ¥{Number(item.priceAtAddition != null && item.priceAtAddition !== 0 ? item.priceAtAddition : item.productPrice).toLocaleString()} × {item.quantity}
                                     </p>
                                 </div>
                             </div>
