@@ -24,6 +24,7 @@ import CardBalancePage from './pages/CardBalancePage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import { AuthContext } from "./contexts/AuthContext";
 import OrderHistoryPage from './pages/Orders/OrderHistoryPage.jsx';
+import OrderDetailPage from './pages/Orders/OrderDetailPage';
 
 const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();
@@ -101,6 +102,7 @@ function AppContent() {
                     <Route path="/card-balance-page" element={<CardBalancePage />} />
                     <Route path="/order-success" element={<OrderSuccessPage />} />
                     <Route path="/orders" element={<OrderHistoryPage />} />
+                    <Route path="/my-orders/:orderId" element={<OrderDetailPage />} />
 
                     {/*  + login need page(ex: /profile, /dashboard) */}
                     {/* <Route path="/profile" element={<ProfilePage />} /> */}

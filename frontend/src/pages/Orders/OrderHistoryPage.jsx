@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import ordersData from "../../data/orders.json";
+import orderApi from "../../api/order";
 
 export default function OrderHistoryPage() {
     const [orders, setOrders] = useState([]);
@@ -10,18 +10,19 @@ export default function OrderHistoryPage() {
     const [expandedOrders, setExpandedOrders] = useState({});
 
     useEffect(() => {
-        const loadOrders = () => {
+        const loadOrders = async () => {
             try {
-                setOrders(ordersData);
+                const fetchedOrders = await orderApi.getUserOrders();
+                setOrders(fetchedOrders);
 
                 const initialExpanded = {};
-                ordersData.forEach(order => {
+                fetchedOrders.forEach(order => {
                     initialExpanded[order.id] = false;
                 });
                 setExpandedOrders(initialExpanded);
             } catch (err) {
-                console.log("注文の読み込み中にエラーが発生しました：", err);
-                setError("注文の読み込み中にエラーが発生しました。");
+                console.error("注文履歴の読み込み中にエラーが発生しました：", err);
+                setError("注文履歴の読み込み中にエラーが発生しました。ログイン状態を確認してください。");
             } finally {
                 setLoading(false);
             }
@@ -37,6 +38,23 @@ export default function OrderHistoryPage() {
         }));
     };
 
+    const getStatusText = (status) => {
+        switch (status) {
+            case 'PENDING':
+                return '処理中';
+            case 'SHIPPED':
+                return '発送済み';
+            case 'DELIVERED':
+                return 'お届け済み';
+            case 'CANCELLED':
+                return 'キャンセル済み';
+            case 'COMPLETED':
+                return '完了';
+            default:
+                return '不明';
+        }
+    };
+
     if (loading) {
         return <div className="p-6 text-center">読み込み中...</div>;
     }
@@ -50,7 +68,7 @@ export default function OrderHistoryPage() {
             <div className="p-6 text-center">
                 <h2 className="text-2xl font-bold mb-6">注文履歴</h2>
                 <p>まだ注文はありません</p>
-                <Link to="/" className="text-purple-600 hover:underline mt-4 inline-block">
+                <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
                     ホームページに移動
                 </Link>
             </div>
@@ -67,58 +85,52 @@ export default function OrderHistoryPage() {
                         {/* General information of the order */}
                         <div className="flex justify-between items-start flex-wrap gap-4">
                             <div>
-                                <h3 className="font-semibold">注文ID：＃{order.id}</h3>
+                                <Link to={`/my-orders/${order.id}`} className="font-semibold text-blue-600 hover:underline">
+                                    注文ID：＃{order.orderNumber}
+                                </Link>
                                 <p className={`text-sm ${
-                                    order.status === "お届け済み" ? "text-green-600" :
-                                    order.status === "お届け中" ? "text-yellow-600" :
+                                    order.status === "COMPLETED" ? "text-green-600" :
+                                    order.status === "SHIPPED" ? "text-yellow-600" :
                                     "text-red-600"
                                 }`}>
-                                    注文状況：{order.status}
+                                    注文状況：{getStatusText(order.status)}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    注文した日付：{new Date(order.orderDate).toLocaleDateString()}
+                                    注文した日付：{new Date(order.createdAt).toLocaleDateString()}
                                 </p>
                             </div>
 
                             <div className="text-right">
                                 <p className="text-sm text-gray-600">
-                                    配送日：{
-                                        order.deliveryDate ? 
-                                        new Date(order.deliveryDate).toLocaleDateString() :
-                                        "未指定"
-                                    }
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    お届け先住所：{order.deliveryAddress || "未指定"}
+                                    お届け先住所：{order.shippingAddress?.street || "未指定"}
                                 </p>
                                 <p className="font-bold text-lg">
-                                    合計金額：{order.totalPrice.toLocaleString()}円
+                                    合計金額：{order.totalAmount?.toLocaleString()}円
                                 </p>
                             </div>
                         </div>
                         <div className="mt-4 flex items-center">
                             <div className="text-gray-600">
-                                {order.items.length} 商品
+                                {order.orderItems?.length || 0} 商品
                             </div>
-                            <button 
+                            <button
                                 onClick={() => toggleOrder(order.id)}
-                                className="flex items-center gap-1 text-purple-600 ml-auto"
+                                className="flex items-center gap-1 text-blue-600 ml-auto"
                             >
                                 商品詳細
                                 {expandedOrders[order.id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </button>
                         </div>
-                        
 
                         {/* Product list (toggle section) */}
                         {expandedOrders[order.id] && (
                             <div className="mt-4 border-t pt-4">
-                                {order.items.map(item => (
+                                {order.orderItems?.map(item => (
                                     <div key={item.id} className="flex gap-4 py-3 border-b last:border-b-0">
                                         <div className="w-20 h-20 flex-shrink-0">
-                                            <img 
-                                                src={item.imageUrl || "https://via.placeholder.com/80"} 
-                                                alt={item.name} 
+                                            <img
+                                                src={item.productImageUrl || "https://placehold.co/80x80/000000/ffffff?text=No+Image"}
+                                                alt={item.productName}
                                                 className="w-full h-full object-cover rounded"
                                             />
                                         </div>
@@ -126,19 +138,14 @@ export default function OrderHistoryPage() {
                                         <div className="flex-grow">
                                             <Link
                                                 to={`/product/${item.productId}`}
-                                                className="font-medium hover:text-purple-600 hover:underline"
+                                                className="font-medium hover:text-blue-600 hover:underline"
                                             >
-                                                {item.name}
+                                                {item.productName}
                                             </Link>
                                             <div className="text-sm text-gray-600">
                                                 <p>注文数量：{item.quantity}</p>
-                                                <p>金額：{item.price.toLocaleString()}円</p>
+                                                <p>金額：{item.productPrice?.toLocaleString()}円</p>
                                             </div>
-                                            {/* {item.discountPrice && (
-                                                <p className="text-xs text-purple-600">
-                                                    割引：{item.discountPrice.toLocaleString()}円
-                                                </p>
-                                            )} */}
                                         </div>
                                     </div>
                                 ))}
