@@ -78,12 +78,14 @@ public class ProductController {
         int zeroBased = Math.max(page - 1, 0);
         Pageable pageable = PageRequest.of(zeroBased, size);
 
-        Page<ProductDto> products = productService.searchProductsByName(keyword, pageable);
-        if (products.isEmpty()) {
-            return ResponseEntity.ok(Page.empty(pageable));
+        // keyword가 비어있지 않다면 부분 일치 검색
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            Page<ProductDto> products = productService.searchProductsByName(keyword, pageable);
+            return ResponseEntity.ok(products);
         }
 
-        return ResponseEntity.ok(products);
+        // keyword가 없을 경우 빈 페이지 반환
+        return ResponseEntity.ok(Page.empty(pageable));
     }
 
     // 상품 수정

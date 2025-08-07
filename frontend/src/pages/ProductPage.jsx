@@ -155,36 +155,25 @@ export default function ProductPage() {
     };
 
     const handleAddToCart = async () => {
-        // 옵션 세트가 없는 경우, 옵션이 없는 상품은 바로 카트에 추가하도록 처리
-        if (optionSets.length === 0 && !product.hasOptions) {  // 상품에 옵션이 없는 경우 추가
-            try {
-                await cartApi.addToCart(product.id, 1, null);  // 옵션 없이 카트에 추가
-                alert('カートに追加されました！');
-                fetchCartCount();  // 카트 수량 갱신 (한 번만 호출)
-            } catch (err) {
-                console.error(err);
-                alert('カートに追加できませんでした。');
+        // 옵션을 반드시 요구하는 상품인지 확인
+        if (product.requiresOptions) {  // 상품이 옵션을 요구한다면
+            // 메인 페이지에서 옵션 세트가 비어 있으면 알림을 띄우고 리턴
+            if (optionSets.length === 0 || optionSets.some(set => !set.options || Object.keys(set.options).length === 0)) {
+                alert('オプションを選択してください。');
+                return;
             }
-            return; // 바로 리턴
-        }
-
-        // 옵션이 있는 경우 옵션 세트를 처리
-        if (optionSets.length === 0) {
-            alert('オプションを選択してください。');
-            return;
         }
 
         try {
-            // 카트에 상품 추가 전에 옵션 세트가 비어있는 경우 처리
+            // 옵션이 선택되었으면 상품을 카트에 추가
             for (const set of optionSets) {
-                // 옵션이 없으면 optionsToSend를 빈 배열로 설정하거나 아예 생략할 수 있음
                 let optionsToSend = set.options && Object.keys(set.options).length > 0
                     ? Object.values(set.options).map(opt => ({
                         productOptionId: opt.productOptionId,
                         optionName: opt.optionName,
                         optionValue: opt.optionValue
                     }))
-                    : null; // 옵션이 없다면 null로 처리
+                    : null; // 옵션이 없으면 null로 처리
 
                 // 상품 ID와 수량, 옵션들을 콘솔에 출력해서 확인
                 console.log("Adding to cart:", {
