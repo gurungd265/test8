@@ -57,7 +57,6 @@ public class CardRegistrationController {
         }
 
         try {
-            // Number 타입을 BigDecimal로 변환하여 서비스에 전달합니다.
             BigDecimal amount = BigDecimal.valueOf(amountNumber.doubleValue());
             Card updatedCard = cardService.topUpCardBalance(userId, amount);
             return ResponseEntity.ok(Map.of("message", "クレジットカード残高が正常にチャージされました。", "newAvailableCredit", updatedCard.getAvailableCredit()));

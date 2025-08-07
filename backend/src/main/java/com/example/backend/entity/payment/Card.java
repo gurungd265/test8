@@ -2,6 +2,8 @@ package com.example.backend.entity.payment;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,7 +30,7 @@ public class Card {
     private String expiryDate;
 
     @Column(nullable = false)
-    private int availableCredit;
+    private BigDecimal availableCredit;
 
 
     private LocalDateTime createdAt;
@@ -38,6 +40,9 @@ public class Card {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.availableCredit == null) {
+            this.availableCredit = BigDecimal.ZERO; // 초기 잔액을 0으로 설정
+        }
     }
 
     @PreUpdate
@@ -45,20 +50,23 @@ public class Card {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void addCredit(int amount) {
-        if (amount < 0) {
+    public void addCredit(BigDecimal amount) {
+        // 금액이 0보다 큰지 BigDecimal의 compareTo 메서드로 확인
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("チャージ金額は0より大きくなければなりません。");
         }
-        this.availableCredit += amount;
+        this.availableCredit = this.availableCredit.add(amount);
     }
 
-    public void subtractCredit(int amount) {
-        if (amount < 0) {
+
+    public void subtractCredit(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("減額金額は0より大きくなければなりません。");
         }
-        if (this.availableCredit < amount) {
+
+        if (this.availableCredit.compareTo(amount) < 0) {
             throw new IllegalStateException("利用可能残高が足りません。");
         }
-        this.availableCredit -= amount;
+        this.availableCredit = this.availableCredit.subtract(amount);
     }
 }
