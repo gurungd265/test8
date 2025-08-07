@@ -15,7 +15,7 @@ api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('jwtToken');
     const tokenType = localStorage.getItem('tokenType')||'Bearer';
-    console.log('Sending request to:', config.url);
+    // console.log('Sending request to:', config.url);
     // console.log('Token:', token);
     if (token) {
       config.headers.Authorization = `${tokenType} ${token}`;
@@ -48,6 +48,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 export default api;

@@ -41,7 +41,7 @@ export default function ProductPage() {
                 });
             }
         });
-        console.log("groupedOptionValues:", grouped);
+        // console.log("groupedOptionValues:", grouped);
         return grouped;
     }, [product]);
 
@@ -155,34 +155,59 @@ export default function ProductPage() {
     };
 
     const handleAddToCart = async () => {
+        // 옵션 세트가 없는 경우, 옵션이 없는 상품은 바로 카트에 추가하도록 처리
+        if (optionSets.length === 0 && !product.hasOptions) {  // 상품에 옵션이 없는 경우 추가
+            try {
+                await cartApi.addToCart(product.id, 1, null);  // 옵션 없이 카트에 추가
+                alert('カートに追加されました！');
+                fetchCartCount();  // 카트 수량 갱신 (한 번만 호출)
+            } catch (err) {
+                console.error(err);
+                alert('カートに追加できませんでした。');
+            }
+            return; // 바로 리턴
+        }
+
+        // 옵션이 있는 경우 옵션 세트를 처리
         if (optionSets.length === 0) {
-            alert('最低でも1つのオプションセットを追加してください。');
+            alert('オプションを選択してください。');
             return;
         }
-        try {
-            for (const set of optionSets) {
-                const optionsToSend = Object.values(set.options).map(opt => ({
-                    productOptionId: opt.productOptionId,
-                    optionName: opt.optionName,
-                    optionValue: opt.optionValue
-                }));
 
+        try {
+            // 카트에 상품 추가 전에 옵션 세트가 비어있는 경우 처리
+            for (const set of optionSets) {
+                // 옵션이 없으면 optionsToSend를 빈 배열로 설정하거나 아예 생략할 수 있음
+                let optionsToSend = set.options && Object.keys(set.options).length > 0
+                    ? Object.values(set.options).map(opt => ({
+                        productOptionId: opt.productOptionId,
+                        optionName: opt.optionName,
+                        optionValue: opt.optionValue
+                    }))
+                    : null; // 옵션이 없다면 null로 처리
+
+                // 상품 ID와 수량, 옵션들을 콘솔에 출력해서 확인
                 console.log("Adding to cart:", {
                     productId: product.id,
                     quantity: set.quantity,
                     options: optionsToSend
                 });
 
+                // 카트에 상품 추가
                 await cartApi.addToCart(
                     product.id,
                     set.quantity,
                     optionsToSend
                 );
             }
+
+            // 성공적인 추가 후 처리
             alert('カートに追加されました！');
             setOptionSets([]);  // 옵션 세트 리셋
             setCurrentSelection({ options: {}, quantity: 1 });  // 현재 선택 리셋
-            fetchCartCount();  // 카트 수량 갱신
+            fetchCartCount();  // 카트 수량 갱신 (한 번만 호출)
+
+            // 옵션 그룹 초기화
             const groups = Object.keys(groupedOptionValues);
             const resetOpened = {};
             groups.forEach((group, idx) => {
@@ -200,8 +225,8 @@ export default function ProductPage() {
             try {
                 setLoading(true);
                 const data = await productsApi.getProductById(parseInt(id));
-                console.log("Product data fetched:", data);
-                console.log("Product options:", data.options);
+                // console.log("Product data fetched:", data);
+                // console.log("Product options:", data.options);
                 setProduct(data);
                 if (data.images && data.images.length > 0) {
                     setMainImage(data.images[0].imageUrl);
@@ -391,7 +416,7 @@ export default function ProductPage() {
                             {openedOptionGroups[optionName] && (
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {values.map(({ productOptionId, optionValue }, idx) => {
-                                        console.log(`Rendering option button key: ${productOptionId}, value: ${optionValue}`);
+                                        // console.log(`Rendering option button key: ${productOptionId}, value: ${optionValue}`);
                                         return (
                                             <button
                                                 key={productOptionId ?? `fallback-${optionValue}-${idx}`}
