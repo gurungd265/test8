@@ -8,6 +8,10 @@ import wishlistApi from "../api/wishlist";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Product({ product }) {
+  useEffect(() => {
+    console.log("✅ product 확인:", product);
+  }, [product]);
+
   const { id, name, price, description, discountPrice, stockQuantity, images } =
     product;
   const mainImageUrl =
@@ -168,13 +172,27 @@ export default function Product({ product }) {
             </div>
           </div>
           {/* Button of Product Details */}
-          <Link to={`/product/${id}`}>
-            <button
-                className="w-full bg-purple-600 text-white px-4 py-2 rounded mt-2 hover:bg-purple-700"
-            >
-              詳細を見る
-            </button>
-          </Link>
+          {
+            // 옵션이 없으면 카트에 직접 추가
+            (!product.options || product.options.length === 0) ? (
+                <button
+                    onClick={handleAddToCart}
+                    className="w-full bg-purple-600 text-white px-4 py-2 rounded mt-2 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={stockQuantity <= 0}
+                >
+                  {stockQuantity > 0 ? "カートに入れる" : "在庫切れ"}
+                </button>
+            ) : (
+                // 옵션이 있으면 상세페이지로 이동
+                <Link to={`/product/${id}`}>
+                  <button
+                      className="w-full bg-purple-600 text-white px-4 py-2 rounded mt-2 hover:bg-purple-700"
+                  >
+                    詳細を見る
+                  </button>
+                </Link>
+            )
+          }
         </div>
       </div>
     </>
