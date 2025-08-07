@@ -1,11 +1,13 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.AddCartItemDto;
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemDto;
 import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.order.OrderRequestDto;
 import com.example.backend.dto.order.OrderResponseDto;
 import com.example.backend.entity.CartItem;
+import com.example.backend.entity.CartItemOption;
 import com.example.backend.service.CartService;
 import com.example.backend.entity.user.User;
 
@@ -88,28 +90,37 @@ public class CartController {
     // 카트에 상품 추가
     @PostMapping("/items")
     public ResponseEntity<CartItemDto> addProductToCart(
-            @RequestParam Long productId,
-            @RequestParam int quantity,
-            @RequestBody List<CartItemOptionDto> optionDtos,
+            @RequestBody AddCartItemDto addCartItemDto,
+            @RequestParam(required = false) String sessionId,  // sessionId 쿼리 파라미터 받기
             Principal principal,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
         String userEmail = null;
+
+        // 로그인된 사용자의 이메일을 확인
         if (principal != null) {
             userEmail = principal.getName();
         }
+
+        // 비로그인 상태에서는 쿠키에서 sessionId를 가져오거나 새로 생성
         String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
                 .map(jakarta.servlet.http.Cookie::getValue)
                 .orElse(null);
 
-        if (userEmail == null && sessionIdFromCookie == null) {
-            sessionIdFromCookie = UUID.randomUUID().toString();
+        // 세션 아이디가 없으면 새로 생성하여 쿠키에 저장
+        if (userEmail == null && sessionIdFromCookie == null && sessionId != null) {
+            sessionIdFromCookie = sessionId;  // 쿼리 파라미터로 전달된 sessionId 사용
             CookieUtil.addCookie(response, CART_SESSION_ID, sessionIdFromCookie, 60 * 60 * 24 * 7);
         }
 
+        // 최종적으로 사용할 sessionId
         String finalSessionId = sessionIdFromCookie;
-        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, productId, quantity, optionDtos);
+
+        // 카트에 상품을 추가하는 서비스 호출
+        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, addCartItemDto);
+
+        // DTO 변환 후 응답
         CartItemDto dto = convertToDto(cartItem);
         return ResponseEntity.ok(dto);
     }
@@ -219,16 +230,23 @@ public class CartController {
 
     // 편의 메소드 =====================================================================================================
 
-    // CartItem -> DTO 변환
     private CartItemDto convertToDto(CartItem item) {
         return CartItemDto.builder()
                 .id(item.getId())
                 .productId(item.getProduct().getId())
                 .productName(item.getProduct().getName())
-                .productPrice(item.getProduct().getPrice())            //정가
-                .priceAtAddition(item.getProduct().getDiscountPrice()) //할인가
+                .productPrice(item.getProduct().getPrice())
+                .priceAtAddition(item.getPriceAtAddition())
                 .productImageUrl(item.getProduct().getMainImageUrl())
                 .quantity(item.getQuantity())
+                .options(item.getOptions().stream()
+                        .map(opt -> CartItemOptionDto.builder()
+                                .id(opt.getId())
+                                .productOptionId(opt.getProductOption().getId())
+                                .optionName(opt.getProductOption().getOptionName())
+                                .optionValue(opt.getOptionValue())
+                                .build())
+                        .toList())
                 .build();
     }
 

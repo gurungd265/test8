@@ -1,5 +1,6 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.AddCartItemDto;
 import com.example.backend.dto.CartDto;
 import com.example.backend.dto.CartItemOptionDto;
 import com.example.backend.dto.CartItemDto;
@@ -31,17 +32,20 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
 
     @Transactional
-    public CartItem addProductToCart(String userEmail, String sessionId, Long productId, int quantity, List<CartItemOptionDto> optionDtos) {
+    public CartItem addProductToCart(String userEmail, String sessionId, AddCartItemDto addCartItemDto) {
+        int quantity = addCartItemDto.getQuantity();
         if (quantity <= 0) {
             throw new IllegalArgumentException("追加する数量は1以上である必要があります。");
         }
 
         Cart cart = getOrCreateCart(userEmail, sessionId);
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findById(addCartItemDto.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("商品が見つかりません。"));
 
+        List<CartItemOptionDto> optionDtos = addCartItemDto.getOptions();
+
         Optional<CartItem> existingItemOpt = cart.getCartItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId)
+                .filter(item -> item.getProduct().getId().equals(addCartItemDto.getProductId())
                         && item.getDeletedAt() == null
                         && optionsMatch(item.getOptions(), optionDtos))
                 .findFirst();
@@ -316,19 +320,7 @@ public class CartService {
         Cart cart = cartItems.get(0).getCart();
         List<CartItemDto> items = cartItems.stream()
                 .filter(item -> item.getDeletedAt() == null)
-                .map(item -> CartItemDto.builder()
-                        .id(item.getId())
-                        .productId(item.getProduct().getId())
-                        .productName(item.getProduct().getName())
-                        .productPrice(item.getProduct().getPrice())
-                        .priceAtAddition(item.getPriceAtAddition())
-                        .productImageUrl(item.getProduct().getMainImageUrl())
-                        .quantity(item.getQuantity())
-                        .options(item.getOptions().stream()
-                                .map(this::convertOptionToDto)
-                                .toList())
-                        .build()
-                )
+                .map(this::convertToDto)  // 단일 CartItem 변환 메서드 재사용
                 .toList();
 
         return new CartDto(
@@ -340,6 +332,21 @@ public class CartService {
                 items,
                 items.size()
         );
+    }
+
+    private CartItemDto convertToDto(CartItem item) {
+        return CartItemDto.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .productPrice(item.getProduct().getPrice())
+                .priceAtAddition(item.getPriceAtAddition())
+                .productImageUrl(item.getProduct().getMainImageUrl())
+                .quantity(item.getQuantity())
+                .options(item.getOptions().stream()
+                        .map(this::convertOptionToDto)
+                        .toList())
+                .build();
     }
 
     private CartItemOptionDto convertOptionToDto(CartItemOption option) {

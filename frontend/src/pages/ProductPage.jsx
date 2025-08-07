@@ -13,7 +13,6 @@ export default function ProductPage() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    // const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
     const { fetchCartCount } = useContext(CartContext);
     const [wished, setWished] = useState(false);
@@ -34,10 +33,15 @@ export default function ProductPage() {
             if (!grouped[option.optionName]) {
                 grouped[option.optionName] = [];
             }
-            if (!grouped[option.optionName].includes(option.optionValue)) {
-                grouped[option.optionName].push(option.optionValue);
+            // 중복된 optionValue가 없을 때만 추가
+            if (!grouped[option.optionName].some(o => o.optionValue === option.optionValue)) {
+                grouped[option.optionName].push({
+                    productOptionId: option.id,  // 여기에 productOptionId 넣기
+                    optionValue: option.optionValue
+                });
             }
         });
+        console.log("groupedOptionValues:", grouped);
         return grouped;
     }, [product]);
 
@@ -60,29 +64,38 @@ export default function ProductPage() {
     }, [groupedOptionValues])
 
     const handleOptionChange = (key, value) => {
-        // 새 옵션 조합 미리 계산
+        // 선택된 옵션에 대해 productOptionId 찾기
+        const matchedOption = product.options.find(
+            (opt) => opt.optionName === key && opt.optionValue === value
+        );
+        console.log("handleOptionChange - key, value:", key, value);
+        console.log("handleOptionChange - matchedOption:", matchedOption);
+        if (!matchedOption) {
+            alert("選択されたオプションは無効です。");
+            return;
+        }
         const newOptions = {
             ...currentSelection.options,
-            [key]: value
+            [key]: {
+                productOptionId: matchedOption.id,
+                optionName: key,
+                optionValue: value
+            }
         };
-
         const groups = Object.keys(groupedOptionValues);
-
         const allSelected = groups.every(optionKey => newOptions[optionKey]);
         if (allSelected) {
             // 중복 체크
             const isDuplicate = optionSets.some(set =>
-                groups.every(k => set.options[k] === newOptions[k])
+                groups.every(k => set.options[k].productOptionId === newOptions[k].productOptionId)
             );
             if (isDuplicate) {
                 alert("既に選択されたオプションです。");
                 return;  // 상태 변경 없이 함수 종료
             }
-
             // 중복이 아니면 새 옵션 세트 추가
             setOptionSets(prevSets => [...prevSets, { options: newOptions, quantity: 1 }]);
             setCurrentSelection({ options: {}, quantity: 1 });
-
             // 다음 그룹 오픈 초기화
             const resetOpened = {};
             groups.forEach((group, idx) => {
@@ -148,13 +161,22 @@ export default function ProductPage() {
         }
         try {
             for (const set of optionSets) {
+                const optionsToSend = Object.values(set.options).map(opt => ({
+                    productOptionId: opt.productOptionId,
+                    optionName: opt.optionName,
+                    optionValue: opt.optionValue
+                }));
+
+                console.log("Adding to cart:", {
+                    productId: product.id,
+                    quantity: set.quantity,
+                    options: optionsToSend
+                });
+
                 await cartApi.addToCart(
                     product.id,
                     set.quantity,
-                    Object.entries(set.options).map(([optionName, optionValue]) => ({
-                        optionName,
-                        optionValue
-                    }))  // Object.entries로 {optionName, optionValue} 배열로 변환
+                    optionsToSend
                 );
             }
             alert('カートに追加されました！');
@@ -342,8 +364,8 @@ export default function ProductPage() {
                         <div className="text-xl text-gray-500 line-through mb-1">
                             {/* 割引前の価格 */}
                             {product.price.toLocaleString()}円
-                            </div>
-                        )}
+                        </div>
+                    )}
                     <div className="text-4xl font-bold text-purple-700 mb-2">
                         {/* displayPrice */}
                         {displayPrice.toLocaleString()}円
@@ -368,19 +390,22 @@ export default function ProductPage() {
                             </button>
                             {openedOptionGroups[optionName] && (
                                 <div className="mt-2 flex flex-wrap gap-2">
-                                    {values.map(value => (
-                                        <button
-                                            key={value}
-                                            onClick={() => handleOptionChange(optionName, value)}
-                                            className={`px-3 py-1 border rounded ${
-                                                currentSelection.options[optionName] === value
-                                                    ? "bg-purple-600 text-white"
-                                                    : "bg-gray-100 text-gray-700"
-                                            }`}
-                                        >
-                                            {value}
-                                        </button>
-                                    ))}
+                                    {values.map(({ productOptionId, optionValue }, idx) => {
+                                        console.log(`Rendering option button key: ${productOptionId}, value: ${optionValue}`);
+                                        return (
+                                            <button
+                                                key={productOptionId ?? `fallback-${optionValue}-${idx}`}
+                                                onClick={() => handleOptionChange(optionName, optionValue)}
+                                                className={`px-3 py-1 border rounded ${
+                                                    currentSelection.options[optionName]?.optionValue === optionValue
+                                                        ? "bg-purple-600 text-white"
+                                                        : "bg-gray-100 text-gray-700"
+                                                }`}
+                                            >
+                                                {optionValue}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -393,8 +418,8 @@ export default function ProductPage() {
                                 className="p-3 mb-2 rounded flex justify-between items-center"
                             >
                                 <div className="text-gray-500">
-                                    {Object.entries(set.options).map(([key, value]) => (
-                                        <div key={key} className="mb-1">{value}</div>
+                                    {Object.entries(set.options).map(([key, option]) => (
+                                        <div key={key} className="mb-1">{option.optionValue}</div>
                                     ))}
                                 </div>
 

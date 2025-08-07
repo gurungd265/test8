@@ -33,8 +33,9 @@ export default function CartPage() {
                   options: Array.isArray(item.options)
                       ? item.options.map(option => ({
                           ...option,
-                          optionName: option.optionName || '未設定',
-                          optionValue: option.optionValue || '未設定',
+                          optionName: option.optionName || '',
+                          optionValue: option.optionValue || '',
+                          optionId: option.optionId || `${option.optionName}-${option.optionValue}`, // 임시 ID 추가
                       }))
                       : [],  // options가 없으면 빈 배열로 초기화
               }));

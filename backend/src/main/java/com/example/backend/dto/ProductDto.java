@@ -43,10 +43,10 @@ public class ProductDto {
         }
 
         if (product.getOptions() != null) {
-            List<ProductOptionDto> charDtos = product.getOptions().stream()
-                    .map(c -> new ProductOptionDto(c.getOptionName(), c.getOptionValue()))
+            List<ProductOptionDto> optionDtos = product.getOptions().stream()
+                    .map(c -> new ProductOptionDto(c.getId(), c.getOptionName(), c.getOptionValue()))
                     .toList();
-            dto.setOptions(charDtos);
+            dto.setOptions(optionDtos);
         } else {
             dto.setOptions(List.of());
         }

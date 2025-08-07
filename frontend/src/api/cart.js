@@ -33,7 +33,8 @@ const cartApi = {
 
         // API 호출
         try {
-            const response = await api.post(url, options);
+            // GET 방식에서 쿼리 파라미터를 URL에 담아서 호출하기
+            const response = await api.post(url, { productId, quantity, options });
             return response.data;
         } catch (error) {
             console.error('Failed to add item to cart:', error);
