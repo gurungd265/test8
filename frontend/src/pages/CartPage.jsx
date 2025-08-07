@@ -23,22 +23,26 @@ export default function CartPage() {
 
               const cartData = await cartApi.getCartItems();
 
-              const normalizedItems = cartData.items.map(item => ({
-                  ...item,
-                  price: item.productPrice ? Number(item.productPrice) : 0,
-                  discountPrice: item.priceAtAddition !== null && item.priceAtAddition !== undefined
+              const normalizedItems = cartData.items.map(item => {
+                  const basePrice = item.priceAtAddition != null
                       ? Number(item.priceAtAddition)
-                      : Number(item.productPrice || 0),
-                  totalPrice: item.priceAtAddition * item.quantity,
-                  options: Array.isArray(item.options)
-                      ? item.options.map(option => ({
-                          ...option,
-                          optionName: option.optionName || '',
-                          optionValue: option.optionValue || '',
-                          optionId: option.optionId || `${option.optionName}-${option.optionValue}`, // 임시 ID 추가
-                      }))
-                      : [],  // options가 없으면 빈 배열로 초기화
-              }));
+                      : Number(item.productPrice || 0);
+
+                  return {
+                      ...item,
+                      price: item.productPrice ? Number(item.productPrice) : 0,
+                      discountPrice: basePrice,
+                      totalPrice: basePrice * item.quantity,
+                      options: Array.isArray(item.options)
+                          ? item.options.map(option => ({
+                              ...option,
+                              optionName: option.optionName || '',
+                              optionValue: option.optionValue || '',
+                              optionId: option.optionId || `${option.optionName}-${option.optionValue}`,
+                          }))
+                          : [],
+                  };
+              });
 
               setCart({ ...cartData, items: normalizedItems });
               console.log('normalizedItems', normalizedItems);
@@ -110,7 +114,7 @@ export default function CartPage() {
     // 전체 상품 주문 버튼
     const handleCheckout = () => {
         const subtotal = cart.items.reduce(
-            (sum, item) => sum + item.priceAtAddition * item.quantity, 0
+            (sum, item) => sum + item.discountPrice * item.quantity, 0
         );
         navigate('/checkout', {
             state: {
@@ -286,7 +290,7 @@ export default function CartPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold">
-                                        {(item.priceAtAddition * item.quantity).toLocaleString()}円
+                                        {(item.discountPrice * item.quantity).toLocaleString()}円
                                     </p>
                                     <button
                                         onClick={() => handleRemove(item.id)}
