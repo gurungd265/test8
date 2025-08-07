@@ -32,6 +32,7 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
 
   // Trigger search action
   const handleSearch = () => {
+    console.log("handleSearch called, navigating to:", `/products?keyword=${encodeURIComponent(searchTerm.trim())}`);
     if (searchTerm.trim()) {
       navigate(`/products?keyword=${encodeURIComponent(searchTerm.trim())}`);
       setSearchTerm('');
@@ -40,6 +41,7 @@ export default function Index({ isCatalogOpen, setIsCatalogOpen }) {
 
   // Trigger search on Enter key press
   const handleKeyPress = (e) => {
+    console.log("Key pressed:", e.key);
     if (e.key === 'Enter') {
       handleSearch();
     }

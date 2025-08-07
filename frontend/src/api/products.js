@@ -38,7 +38,11 @@ const productsApi = {
             if (keyword) params.keyword = keyword;
             if (page) params.page = page;
 
-            const response = await api.get('/api/products', { params });
+            // 검색어가 있을 경우 '/api/products/search'로 호출
+            const response = keyword
+                ? await api.get('/api/products/search', { params })  // search 엔드포인트로 변경
+                : await api.get('/api/products', { params });  // 검색어가 없으면 기본 상품 목록
+
             return response.data;
         } catch (error) {
             console.error('フィルター付き商品読み込み失敗:', error);
