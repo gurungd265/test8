@@ -17,11 +17,13 @@ public class PaypayService {
     @Autowired
     private PaypayAccountRepository paypayAccountRepository;
 
+
     public BigDecimal getPaypayBalance(String userId) {
         return paypayAccountRepository.findByUserId(userId)
                 .map(PaypayAccount::getBalance)
                 .orElse(BigDecimal.ZERO);
     }
+
 
     public Optional<PaypayAccount> getPaypayAccountByUserId(String userId){
         return paypayAccountRepository.findByUserId(userId);
@@ -57,13 +59,22 @@ public class PaypayService {
 
     @Transactional
     public BigDecimal deductPaypayBalance(String userId, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("差し引く金額は0より大きくなければなりません。");
+        }
+
         PaypayAccount paypayAccount = paypayAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("PayPayアカウントが見つかりませんでした。"));
 
+        // 残高が十分にあるか確認
+        if (paypayAccount.getBalance().compareTo(amount) < 0) {
+            throw new IllegalStateException("PayPay残高が不足しています。");
+        }
+
+        // 残高を差し引き、保存
         paypayAccount.subtractBalance(amount);
         paypayAccountRepository.save(paypayAccount);
 
         return paypayAccount.getBalance();
     }
-
 }

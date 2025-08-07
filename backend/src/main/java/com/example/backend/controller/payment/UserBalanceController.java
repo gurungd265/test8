@@ -11,7 +11,6 @@ import com.example.backend.service.PointService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,11 +38,8 @@ public class UserBalanceController {
     public ResponseEntity<BalanceResponseDto> getBalances(@PathVariable String userId) {
         BigDecimal pointBalance = pointService.getPointBalance(userId);
         BigDecimal paypayBalance = paypayService.getPaypayBalance(userId);
-
-
-        int virtualCardBalance = cardService.getCardByUserId(userId)
-                .map(Card::getAvailableCredit)
-                .orElse(0);
+        Optional<Card> card = cardService.getCardByUserId(userId);
+        BigDecimal virtualCardBalance = card.map(Card::getAvailableCredit).orElse(BigDecimal.ZERO);
 
         return ResponseEntity.ok(new BalanceResponseDto(pointBalance, paypayBalance, virtualCardBalance));
     }
@@ -59,21 +55,32 @@ public class UserBalanceController {
     }
 
     @PostMapping("/charge/paypay")
-    public ResponseEntity<Map<String, ?>> chargePointsWithPaypay(@Valid @RequestBody PointChargeRequestDto requestDto) {
+    public ResponseEntity<BalanceResponseDto> chargePointsWithPaypay(@Valid @RequestBody PointChargeRequestDto requestDto) {
         try {
             BalanceResponseDto balances = pointService.chargePointsWithPaypay(requestDto);
-            return ResponseEntity.ok(Map.of("message", "PayPayでポイントがチャージされました。", "balances", balances));
+            return ResponseEntity.ok(balances);
         } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(new BalanceResponseDto(null, null, null));
         }
     }
 
     @PostMapping("/refund/paypay")
-    public ResponseEntity<Map<String, ?>> refundPointsToPaypay(@Valid @RequestBody PointRefundRequestDto requestDto) {
+    public ResponseEntity<BalanceResponseDto> refundPointsToPaypay(@Valid @RequestBody PointRefundRequestDto requestDto) {
         try {
             BalanceResponseDto balances = pointService.refundPointsToPaypay(requestDto);
-            return ResponseEntity.ok(Map.of("message", "ポイントがPayPayに払い戻されました。", "balances", balances));
+            return ResponseEntity.ok(balances);
         } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body(new BalanceResponseDto(null, null, null));
+        }
+    }
+
+    @PostMapping("/deduct/point")
+    public ResponseEntity<Map<String, ?>> deductPoints(@Valid @RequestBody DeductReqDto requestDto) {
+        try {
+            pointService.deductPoints(requestDto.getUserId(), requestDto.getAmount());
+            BigDecimal newBalance = pointService.getPointBalance(requestDto.getUserId());
+            return ResponseEntity.ok(Map.of("message", "ポイントが差し引かれました。", "newPointBalance", newBalance));
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -81,7 +88,7 @@ public class UserBalanceController {
     @PostMapping("/deduct/paypay")
     public ResponseEntity<Map<String, ?>> deductPaypayBalance(@Valid @RequestBody DeductReqDto requestDto) {
         try {
-            BigDecimal newBalance = paypayService.deductPaypayBalance(requestDto.getUserId(), BigDecimal.valueOf(requestDto.getAmount()));
+            BigDecimal newBalance = paypayService.deductPaypayBalance(requestDto.getUserId(), requestDto.getAmount());
             return ResponseEntity.ok(Map.of("message", "PayPay残高が差し引かれました。", "newPaypayBalance", newBalance));
         } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
@@ -91,7 +98,7 @@ public class UserBalanceController {
     @PostMapping("/deduct/card")
     public ResponseEntity<Map<String, ?>> deductVirtualCardBalance(@Valid @RequestBody DeductReqDto requestDto) {
         try {
-            int newBalance = cardService.deductCreditBalance(requestDto.getUserId(), requestDto.getAmount());
+            BigDecimal newBalance = cardService.deductCreditBalance(requestDto.getUserId(), requestDto.getAmount());
             return ResponseEntity.ok(Map.of("message", "クレジットカード残高が差し引かれました。", "newVirtualCardBalance", newBalance));
         } catch (IllegalArgumentException | IllegalStateException | EntityNotFoundException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));

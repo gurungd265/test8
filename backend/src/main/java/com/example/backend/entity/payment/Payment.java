@@ -45,6 +45,9 @@ public class Payment {
     @Column(name = "refund_amount", nullable = true)
     private BigDecimal refundAmount;  // 환불된 금액을 저장
 
+    @Column(name = "card_amount", nullable = true,precision = 19,scale = 2)
+    private BigDecimal cardAmount;
+
     /**
      * 복수결제 허용 시 별도 관리 테이블 필요 (ex: 카드 + 포인트 결제 -> 포인트 관리 테이블 필요)
      */
