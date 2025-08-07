@@ -13,7 +13,7 @@ export default function MobileBottomNavigation({ user, onLogout }) {
   // 화면 크기 감지
   useEffect(() => {
     function handleResize() {
-      setIsMobile(window.innerWidth <= 640); // 640px 이하 모바일로 판단
+      setIsMobile(window.innerWidth <= 1024); // 640px 이하 모바일로 판단
     }
 
     handleResize(); // 초기 실행

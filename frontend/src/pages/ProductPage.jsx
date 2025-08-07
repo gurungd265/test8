@@ -301,7 +301,9 @@ export default function ProductPage() {
                     <span className="hover:underline cursor-pointer">ホーム</span> /{" "}
                 </Link>
                 {/* Category back end data in category_id, name another API or Join*/}
-                <span className="hover:underline cursor-pointer">カテゴリー</span> /{" "}
+                <Link to={`/products`}>
+                    <span className="hover:underline cursor-pointer">カテゴリー</span> /{" "}
+                </Link>
                 <span className="text-gray-700 font-semibold">{product.name}</span>
             </div>
 
