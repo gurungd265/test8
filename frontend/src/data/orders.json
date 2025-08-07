@@ -4,7 +4,7 @@
     "status": "お届け済み",
     "orderDate": "2023-05-15T10:30:00Z",
     "deliveryDate": "2023-05-20T14:00:00Z",
-    "deliveryAddress": "Toshkent sh., Yunusobod t., 12-uy, 45-xonadon",
+    "deliveryAddress": "〒164-0001 東京都 中野区 中野 1-2-3",
     "totalPrice": 450000,
     "items": [
       {
@@ -31,7 +31,7 @@
     "status": "お届け中",
     "orderDate": "2023-06-01T09:15:00Z",
     "deliveryDate": null,
-    "deliveryAddress": "Toshkent sh., Mirzo Ulug'bek t., 5-uy, 12-xonadon",
+    "deliveryAddress": "〒143-0016 東京都 大田区 大森北 4-5-6",
     "totalPrice": 320000,
     "items": [
       {
