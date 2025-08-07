@@ -30,7 +30,6 @@ public class Card {
     @Column(nullable = false)
     private int availableCredit;
 
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
