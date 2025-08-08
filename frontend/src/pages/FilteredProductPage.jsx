@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import productsApi from '../api/products.js';  // productsApi import
 
 import Product from '../components/Product.jsx';
-import CategoryFilter from '../components/Header/CategoryFilter.jsx';
+import CategoryFilter from '../components/header/CategoryFilter.jsx';
 import Pagination from '../components/Pagination.jsx';
 
 export default function FilteredProductPage() {

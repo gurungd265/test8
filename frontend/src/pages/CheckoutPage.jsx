@@ -6,11 +6,11 @@ import * as virtualPaymentsApi from '../api/virtualPayments';
 import * as paymentRegistrationApi from '../api/paymentRegistration';
 import useCheckoutData from '../hooks/useCheckoutData';
 import useDeliveryOptions from '../hooks/useDeliveryOptions';
-import CheckoutCustomerInfo from '../components/Checkout/CheckoutCustomerInfo';
-import CheckoutAddressSelection from '../components/Checkout/CheckoutAddressSelection';
-import CheckoutDeliveryOptions from '../components/Checkout/CheckoutDeliveryOptions';
-import CheckoutPaymentMethods from '../components/Checkout/CheckoutPaymentMethods';
-import CheckoutOrderSummary from '../components/Checkout/CheckoutOrderSummary';
+import CheckoutCustomerInfo from '../components/checkout/CheckoutCustomerInfo';
+import CheckoutAddressSelection from '../components/checkout/CheckoutAddressSelection';
+import CheckoutDeliveryOptions from '../components/checkout/CheckoutDeliveryOptions';
+import CheckoutPaymentMethods from '../components/checkout/CheckoutPaymentMethods';
+import CheckoutOrderSummary from '../components/checkout/CheckoutOrderSummary';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 

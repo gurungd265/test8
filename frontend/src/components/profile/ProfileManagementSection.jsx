@@ -2,9 +2,9 @@ import React, {useState, useEffect, useCallback, useContext} from "react";
 import userApi from "../../api/user";
 import { useAuth } from "../../contexts/AuthContext";
 
-import ProfileInfoSection from "../Profile/ProfileInfoSection";
-import AddressSection from "../Profile/AddressSection";
-import DeleteConfirmationModal from "../Profile/DeleteConfirmationModal";
+import ProfileInfoSection from ".//ProfileInfoSection";
+import AddressSection from ".//AddressSection";
+import DeleteConfirmationModal from ".//DeleteConfirmationModal";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';

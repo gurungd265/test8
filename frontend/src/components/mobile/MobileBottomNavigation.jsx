@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Heart, Search } from "lucide-react";
 import logo from "../../assets/Logo.png";
-import AccountSidebar from "../Header/AccountSidebar.jsx";
+import AccountSidebar from "../header/AccountSidebar.jsx";
 
 export default function MobileBottomNavigation({ user, onLogout }) {
   const [isAccountSidebarOpen, setIsAccountSidebarOpen] = useState(false);

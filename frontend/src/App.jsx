@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
-import Header from './components/Header';
+import Header from './components/header/Index.jsx';
 import MobileBottomNavigation from './components/mobile/MobileBottomNavigation.jsx';
 import MobileSearchPage from './pages/MobileSearchPage';
 import ProductPage from './pages/ProductPage';
@@ -23,8 +23,8 @@ import PaypayBalancePage from './pages/PaypayBalancePage';
 import CardBalancePage from './pages/CardBalancePage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import { AuthContext } from "./contexts/AuthContext";
-import OrderHistoryPage from './pages/Orders/OrderHistoryPage.jsx';
-import OrderDetailPage from './pages/Orders/OrderDetailPage';
+import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
+import OrderDetailPage from './pages/orders/OrderDetailPage';
 
 const ProtectedRoute = ({ requiresAuth = false, onlyUnauthenticated = false, redirectPath = '/' }) => {
         const { isLoggedIn,loading } = useAuth();

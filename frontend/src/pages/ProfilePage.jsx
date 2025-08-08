@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 import userApi from "../api/user";
 import { useAuth } from "../contexts/AuthContext";
-import PasswordConfirmationModal from "../components/Profile/PasswordConfirmationModal";
+import PasswordConfirmationModal from "../components/profile/PasswordConfirmationModal";
 
 // プロファイルと住所管理ロジックを持つ新しいコンポーネント
-import ProfileManagementSection from "../components/Profile/ProfileManagementSection";
+import ProfileManagementSection from "../components/profile/ProfileManagementSection";
 
 // My Walletのロジックを持つ新しいコンポーネント
-import WalletSection from "../components/Profile/WalletSection";
+import WalletSection from "../components/profile/WalletSection";
 
 export default function ProfilePage() {
     const { isLoggedIn, logout, loading: authLoading } = useAuth();

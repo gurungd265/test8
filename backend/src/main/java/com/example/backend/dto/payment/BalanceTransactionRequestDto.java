@@ -1,4 +1,4 @@
-package com.example.backend.dto.user;
+package com.example.backend.dto.payment;
 
 import com.example.backend.entity.payment.PaymentMethod;
 import lombok.Data;
