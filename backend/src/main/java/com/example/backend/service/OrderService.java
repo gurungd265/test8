@@ -50,7 +50,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponseDto> getOrdersByUserEmail(String userEmail) {
-        List<Order> orders = orderRepository.findByUserEmail(userEmail);
+        List<Order> orders = orderRepository.findByUserEmailWithItemsAndUsers(userEmail);
         return orders.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -254,14 +254,15 @@ public class OrderService {
     private OrderResponseDto convertToDto(Order order) {
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
                 .filter(item -> item.getOrder() != null && item.getOrder().getId().equals(order.getId()))
-                .map(item -> new OrderItemDto(
-                        item.getId(),
-                        item.getProduct().getId(),
-                        item.getProductName(),
-                        item.getProductPrice(),
-                        item.getQuantity(),
-                        item.getSubtotal()
-                ))
+                .map(item -> OrderItemDto.builder()
+                        .id(item.getId())
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProductName())
+                        .productPrice(item.getProductPrice())
+                        .quantity(item.getQuantity())
+                        .productImageUrl(item.getProduct().getMainImageUrl())
+                        .build()
+                )
                 .toList();
 
         List<PaymentResponseDto> paymentResponseDtos = order.getPayments().stream()

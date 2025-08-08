@@ -91,7 +91,6 @@ export default function CheckoutPage() {
             });
             setPaymentInfo({ paypayAccount, creditCard });
 
-            // 초기 결제 수단 설정 (등록된 계정이 있는 경우 우선)
             if (paypayAccount && paypayAccount.balance > 0) {
                 setFormData(prev => ({ ...prev, paymentMethod: 'paypay' }));
             } else if (creditCard && creditCard.availableCredit > 0) {

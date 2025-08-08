@@ -3,6 +3,8 @@ package com.example.backend.repository;
 import com.example.backend.entity.order.Order;
 import com.example.backend.entity.order.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,7 +17,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
 
     // 특정 사용자의 이메일로 주문 목록 조회
-    List<Order> findByUserEmail(String userEmail);
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.orderItems oi JOIN FETCH o.user u WHERE u.email = :userEmail")
+    List<Order> findByUserEmailWithItemsAndUsers(@Param("userEmail") String userEmail);
 
     // 특정 ID와 사용자 이메일로 단건 주문 조회
     Optional<Order> findByIdAndUserEmail(Long id, String email);
