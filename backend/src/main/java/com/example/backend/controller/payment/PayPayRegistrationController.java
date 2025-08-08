@@ -2,7 +2,7 @@ package com.example.backend.controller.payment;
 
 import com.example.backend.dto.payment.PaypayRegistrationRequestDto;
 import com.example.backend.entity.payment.PaypayAccount;
-import com.example.backend.service.PaypayService;
+import com.example.backend.service.payment.PaypayService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

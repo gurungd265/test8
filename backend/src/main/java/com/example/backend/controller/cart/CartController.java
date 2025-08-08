@@ -1,0 +1,256 @@
+package com.example.backend.controller.cart;
+
+import com.example.backend.dto.cart.AddCartItemDto;
+import com.example.backend.dto.cart.CartDto;
+import com.example.backend.dto.cart.CartItemDto;
+import com.example.backend.dto.cart.CartItemOptionDto;
+import com.example.backend.dto.order.OrderRequestDto;
+import com.example.backend.dto.order.OrderResponseDto;
+import com.example.backend.entity.cart.CartItem;
+import com.example.backend.service.cart.CartService;
+import com.example.backend.entity.user.User;
+
+import com.example.backend.util.CookieUtil;
+import com.example.backend.service.order.OrderService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.List;
+import java.util.UUID;
+import com.example.backend.repository.user.UserRepository;
+
+import static com.example.backend.util.CookieUtil.CART_SESSION_ID;
+
+@RestController
+@RequestMapping("/api/cart")
+@RequiredArgsConstructor
+public class CartController {
+
+
+    /**
+     * ADMIN, USER & ANONYMOUS (non-login) accessible
+     *
+     * 카트 조회	                GET	    /api/cart
+     * 카트에 상품 추가	        POST	/api/cart/items
+     * 카트 상품 수정	            PUT	    /api/cart/items/{id}
+     * 카트 상품 삭제	            DELETE	/api/cart/items/{id}
+     * 카트 전체 삭제	            DELETE	/api/cart
+     * 비로그인/로그인 카트 병합	POST	/api/cart/merge
+     * 주문 생성	                POST	/api/cart/order
+     */
+
+    private final CartService cartService;
+    private final OrderService orderService;
+    private final UserRepository userRepository;
+
+    //유저 카트 병합
+    @PostMapping("/merge")
+    public ResponseEntity<Void> mergeCarts(
+            Principal principal,
+            @RequestParam(required = true) String sessionId
+    ){
+        String userEmail = principal.getName();
+        cartService.mergeCarts(userEmail,sessionId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 카트 조회
+    @GetMapping
+    public ResponseEntity<CartDto> getCart(
+            Principal principal,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        // principal : JwtAuthenticationFilter가 JWT 검증 후 SecurityContext에 세팅한 인증 정보
+        // principal이 null 아니면 로그인한 이메일 반환, null이면 비로그인 상태
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        if(userEmail==null && sessionIdFromCookie ==null){
+            String newSessionId = UUID.randomUUID().toString();
+            CookieUtil.addCookie(response, CART_SESSION_ID, newSessionId, 60 * 60 * 24 * 7);
+            CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, newSessionId);
+            return ResponseEntity.ok(cartDto);
+        }
+        CartDto cartDto = cartService.getCartByUserEmailOrSessionId(userEmail, sessionIdFromCookie);
+        return ResponseEntity.ok(cartDto);
+    }
+
+    // 카트에 상품 추가
+    @PostMapping("/items")
+    public ResponseEntity<CartItemDto> addProductToCart(
+            @RequestBody AddCartItemDto addCartItemDto,
+            @RequestParam(required = false) String sessionId,  // sessionId 쿼리 파라미터 받기
+            Principal principal,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        String userEmail = null;
+
+        // 로그인된 사용자의 이메일을 확인
+        if (principal != null) {
+            userEmail = principal.getName();
+        }
+
+        // 비로그인 상태에서는 쿠키에서 sessionId를 가져오거나 새로 생성
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        // 세션 아이디가 없으면 새로 생성하여 쿠키에 저장
+        if (userEmail == null && sessionIdFromCookie == null && sessionId != null) {
+            sessionIdFromCookie = sessionId;  // 쿼리 파라미터로 전달된 sessionId 사용
+            CookieUtil.addCookie(response, CART_SESSION_ID, sessionIdFromCookie, 60 * 60 * 24 * 7);
+        }
+
+        // 최종적으로 사용할 sessionId
+        String finalSessionId = sessionIdFromCookie;
+
+        // 카트에 상품을 추가하는 서비스 호출
+        CartItem cartItem = cartService.addProductToCart(userEmail, finalSessionId, addCartItemDto);
+
+        // DTO 변환 후 응답
+        CartItemDto dto = convertToDto(cartItem);
+        return ResponseEntity.ok(dto);
+    }
+
+    // 카트 상품 수량 변경
+    @PutMapping("/items/{cartItemId}")
+    public ResponseEntity<CartItemDto> updateCartItem(
+            @PathVariable Long cartItemId,
+            @RequestParam int quantity,
+            Principal principal,
+            HttpServletRequest request
+    ) {
+        String userEmail = getUserEmail(principal);
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        CartItem updatedItem = cartService.updateCartItemQuantity(userEmail, sessionIdFromCookie, cartItemId, quantity);
+        CartItemDto dto = convertToDto(updatedItem);
+        return ResponseEntity.ok(dto);
+    }
+
+    // 카트 상품 삭제
+    @DeleteMapping("/items/{cartItemId}")
+    public ResponseEntity<Void> deleteCartItem(
+            @PathVariable Long cartItemId,
+            Principal principal,
+            HttpServletRequest request
+    ) {
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        cartService.softDeleteCartItem(userEmail, sessionIdFromCookie, cartItemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 카트 전체 삭제
+    @DeleteMapping
+    public ResponseEntity<Void> clearCart(
+            Principal principal,
+            HttpServletRequest request
+    ) {
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionIdFromCookie = CookieUtil.getCookie(request,CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+        cartService.softClearCart(userEmail, sessionIdFromCookie);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/items/batch-delete")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteCartItemsBatch(
+            @RequestBody List<Long> itemIds,
+            Principal principal,
+            HttpServletRequest request
+    ) {
+        String userEmail = (principal != null) ? principal.getName() : null;
+        String sessionIdFromCookie = CookieUtil.getCookie(request, CART_SESSION_ID)
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .orElse(null);
+
+        cartService.softDeleteCartItemsBatch(userEmail, sessionIdFromCookie, itemIds);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==================================================== Order ====================================================
+    @GetMapping("/count")
+    public ResponseEntity<Integer> getCartItemCount(
+            Principal principal,
+            HttpServletRequest request,
+            @RequestParam(value = "sessionId", required = false) String sessionIdParam
+    ) {
+        try{
+            if(principal!=null){
+                String userEmail = principal.getName();
+                User user = userRepository.findByEmail(userEmail)
+                        .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+                int count = cartService.getTotalCartItemCount(user);
+                return ResponseEntity.ok(count);
+            } else {
+                if (sessionIdParam == null || sessionIdParam.isEmpty()) {
+                    return ResponseEntity.ok(0);
+                }
+                int count = cartService.getTotalCartItemCount(null, sessionIdParam);
+                return ResponseEntity.ok(count);
+            }
+        } catch ( Exception e ){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(0);
+        }
+    }
+    @PostMapping("/order")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponseDto> createOrder(
+            Principal principal,
+            @RequestBody OrderRequestDto requestDto
+            ) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build(); // 비로그인 접근 차단
+        }
+        String userEmail = principal.getName();
+        OrderResponseDto orderResponseDto = orderService.createOrderFromCart(userEmail, requestDto);
+        return ResponseEntity.ok(orderResponseDto);
+    }
+
+    // 편의 메소드 =====================================================================================================
+
+    private CartItemDto convertToDto(CartItem item) {
+        return CartItemDto.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .productPrice(item.getProduct().getPrice())
+                .priceAtAddition(item.getPriceAtAddition())
+                .productImageUrl(item.getProduct().getMainImageUrl())
+                .quantity(item.getQuantity())
+                .options(item.getOptions().stream()
+                        .map(opt -> CartItemOptionDto.builder()
+                                .id(opt.getId())
+                                .productOptionId(opt.getProductOption().getId())
+                                .optionName(opt.getProductOption().getOptionName())
+                                .optionValue(opt.getOptionValue())
+                                .build())
+                        .toList())
+                .build();
+    }
+
+    // 사용자 이메일 추출
+    private String getUserEmail(Principal principal) {
+        return (principal != null) ? principal.getName() : null;
+    }
+}

@@ -1,7 +1,7 @@
 package com.example.backend.entity.user;
 
-import com.example.backend.entity.Cart;
-import com.example.backend.entity.ProductReview;
+import com.example.backend.entity.cart.Cart;
+import com.example.backend.entity.product.ProductReview;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

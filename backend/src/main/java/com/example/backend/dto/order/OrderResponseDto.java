@@ -1,6 +1,6 @@
 package com.example.backend.dto.order;
 
-import com.example.backend.dto.PaymentResponseDto;
+import com.example.backend.dto.payment.PaymentResponseDto;
 import com.example.backend.dto.user.AddressDto;
 import com.example.backend.entity.order.OrderStatus;
 import lombok.*;
