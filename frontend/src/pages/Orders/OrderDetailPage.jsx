@@ -100,7 +100,7 @@ export default function OrderDetailPage() {
             <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg">
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
                     <h2 className="text-3xl font-bold text-gray-800">注文詳細</h2>
-                    <Link to="/my-orders" className="text-blue-600 hover:text-blue-800 transition-colors">
+                    <Link to="/orders" className="text-blue-600 hover:text-blue-800 transition-colors">
                         ← 注文履歴に戻る
                     </Link>
                 </div>
