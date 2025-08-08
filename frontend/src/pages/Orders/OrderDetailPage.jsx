@@ -163,7 +163,7 @@ export default function OrderDetailPage() {
                                     <p className="text-lg font-bold text-gray-900 mb-2 md:mb-0">
                                         {(item.productPrice * item.quantity || 0).toLocaleString()}円
                                     </p>
-                                    {/* 주문 상태에 관계없이 리뷰 작성 버튼 표시 */}
+
                                     <button
                                         onClick={() => handleReview(item.productId)}
                                         className="ml-0 md:ml-4 px-4 py-2 bg-yellow-500 text-white rounded-full text-sm font-semibold hover:bg-yellow-600 transition-colors flex items-center gap-1"
