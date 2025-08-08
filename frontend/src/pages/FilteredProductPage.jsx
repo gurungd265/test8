@@ -93,7 +93,7 @@ export default function FilteredProductPage() {
         <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col md:flex-row gap-8">
                 {/*Fixed Category Sidebar*/}
-                <div className="w-full md:w-64 sticky top-4 h-fit">
+                <div className="w-full md:w-64 md:sticky top-4 h-fit">
                     <CategoryFilter
                         categories={categories}
                         selectedCategory={selectedCategory}

@@ -363,7 +363,7 @@ export default function ProductPage() {
                 </div>
 
                 {/* Info Section (1/3) */}
-                <div className="border rounded-lg shadow p-6 space-y-4">
+                <div className="lg:sticky lg:top-4 lg:self-start lg:h-auto rounded-lg shadow p-6 space-y-4">
                     {/* Rating & Reviews (another Options table need. now hardcoding) */}
                     <div>
                         <div className="text-yellow-500 font-bold text-lg">
