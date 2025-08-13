@@ -2,7 +2,7 @@ import React,{useState,useRef} from 'react';
 import {useNavigate,Link} from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://calmarkethome-env.eba-9fnphvpk.us-east-1.elasticbeanstalk.com/';
 
 export default function SignupPage(){
     const [email,setEmail] = useState('');
