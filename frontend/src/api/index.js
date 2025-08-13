@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // VITE_API_BASE_URL=http://localhost:8080
-const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://calmarket-env-1.eba-tbq9rmtf.us-east-1.elasticbeanstalk.com';
+const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://calma-env.eba-9jnpp3mk.us-east-1.elasticbeanstalk.com';
 
 const api=axios.create({
     baseURL: API_BASE_URL,
