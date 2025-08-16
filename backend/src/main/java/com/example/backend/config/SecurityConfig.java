@@ -48,7 +48,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://calmarket-g5zyqfu8u-gurungd265s-projects.vercel.app/","https://test8-2-j5sb.onrender.com")); // React/Vite 개발 서버 주소
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://calmarket-g5zyqfu8u-gurungd265s-projects.vercel.app/","https://calmarket-b3epc28q0-gurungd265s-projects.vercel.app")); // React/Vite 개발 서버 주소
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
